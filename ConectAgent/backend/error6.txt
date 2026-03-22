@@ -1,0 +1,15 @@
+C:\Users\Win 10\Documents\ConectAgente\ConectAgent\backend\node_modules\@prisma\client\runtime\library.js:125
+It should have this form: { url: "CONNECTION_STRING" }`)}}}},adapter:(e,t)=>{if(e===null)return;if(e===void 0)throw new F('"adapter" property must not be undefined, use null to conditionally disable driver adapters.');if(!Fn(t).includes("driverAdapters"))throw new F('"adapter" property can only be provided to PrismaClient constructor when "driverAdapters" preview feature is enabled.');if(Yt()==="binary")throw new F('Cannot use a driver adapter with the "binary" Query Engine. Please use the "library" Query Engine.')},datasourceUrl:e=>{if(typeof e<"u"&&typeof e!="string")throw new F(`Invalid value ${JSON.stringify(e)} for "datasourceUrl" provided to PrismaClient constructor.
+                                                                                                                                                                                                                                                                     ^
+
+PrismaClientConstructorValidationError: "adapter" property can only be provided to PrismaClient constructor when "driverAdapters" preview feature is enabled.
+Read more at https://pris.ly/d/client-constructor
+    at Object.adapter (C:\Users\Win 10\Documents\ConectAgente\ConectAgent\backend\node_modules\@prisma\client\runtime\library.js:125:262)
+    at Gl (C:\Users\Win 10\Documents\ConectAgente\ConectAgent\backend\node_modules\@prisma\client\runtime\library.js:126:2527)
+    at new t (C:\Users\Win 10\Documents\ConectAgente\ConectAgent\backend\node_modules\@prisma\client\runtime\library.js:130:748)
+    at file:///C:/Users/Win%2010/Documents/ConectAgente/ConectAgent/backend/src/lib/prisma.js:16:23
+    at ModuleJob.run (node:internal/modules/esm/module_job:345:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:651:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+
+Node.js v22.19.0
