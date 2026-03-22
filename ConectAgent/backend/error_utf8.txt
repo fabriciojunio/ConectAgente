@@ -1,0 +1,925 @@
+﻿node : C:\Users\Win 10\
+Documents\ConectAgente\
+ConectAgent\backend\nod
+e_modules\@prisma\clien
+t\runtime\library.js:29
+No linha:1 caractere:1
++ node src/server.js > 
+error.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (C:\Users\Win    
+ 10...e\library.js:    
+29:String) [], Rem    
+oteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+`)}};function 
+Ot(e){return new 
+ki(Zs(e))}function 
+Zs(e){let t=new 
+At;for(let[r,n]of 
+Object.entries(e)){let 
+i=new bn(r,Xs(n));t.add
+Field(i)}return 
+t}function 
+Xs(e){if(typeof 
+e=="string")return new 
+W(JSON.stringify(e));if
+(typeof 
+e=="number"||typeof 
+e=="boolean")return 
+new 
+W(String(e));if(typeof 
+e=="bigint")return new 
+W(`${e}n`);if(e===null)
+return new 
+W("null");if(e===void 
+0)return new W("undefin
+ed");if(vt(e))return 
+new W(`new Prisma.Decim
+al("${e.toFixed()}")`);
+if(e instanceof 
+Uint8Array)return 
+Buffer.isBuffer(e)?new 
+W(`Buffer.alloc(${e.byt
+eLength})`):new W(`new 
+Uint8Array(${e.byteLeng
+th})`);if(e instanceof 
+Date){let t=ln(e)?e.toI
+SOString():"Invalid 
+Date";return new 
+W(`new 
+Date("${t}")`)}return 
+e instanceof Me?new W(`
+Prisma.${e._getName()}`
+):It(e)?new W(`prisma.$
+{zs(e.modelName)}.$fiel
+ds.${e.name}`):Array.is
+Array(e)?zp(e):typeof 
+e=="object"?Zs(e):new W
+(Object.prototype.toStr
+ing.call(e))}function 
+zp(e){let t=new 
+St;for(let r of e)t.add
+Item(Xs(r));return 
+t}function En(e,t){let 
+r=t==="pretty"?Us:fn,n=
+e.renderAllMessages(r),
+i=new Rt(0,{colors:r}).
+write(e).toString();ret
+urn{message:n,args:i}}f
+unction wn({args:e,erro
+rs:t,errorFormat:r,call
+site:n,originalMethod:i
+,clientVersion:o,global
+Omit:s}){let 
+a=Ot(e);for(let p of t)
+pn(p,a,s);let{message:l
+,args:u}=En(a,r),c=Tt({
+message:l,callsite:n,or
+iginalMethod:i,showColo
+rs:r==="pretty",callArg
+uments:u});throw new J(
+c,{clientVersion:o})}va
+r ve=class{constructor(
+){this._map=new 
+Map}get(t){return this.
+_map.get(t)?.value}set(
+t,r){this._map.set(t,{v
+alue:r})}getOrCreate(t,
+r){let n=this._map.get(
+t);if(n)return 
+n.value;let 
+i=r();return this.set(t
+,i),i}};function 
+pr(e){let 
+t;return{get(){return t
+||(t={value:e()}),t.val
+ue}}}function 
+Te(e){return e.replace(
+/^./,t=>t.toLowerCase()
+)}function 
+ta(e,t,r){let n=Te(r);r
+eturn!t.result||!(t.res
+ult.$allModels||t.resul
+t[n])?e:Yp({...e,...ea(
+t.name,e,t.result.$allM
+odels),...ea(t.name,e,t
+.result[n])})}function 
+Yp(e){let t=new ve,r=(n
+,i)=>t.getOrCreate(n,()
+=>i.has(n)?[n]:(i.add(n
+),e[n]?e[n].needs.flatM
+ap(o=>r(o,i)):[n]));ret
+urn yt(e,n=>({...n,need
+s:r(n.name,new 
+Set)}))}function 
+ea(e,t,r){return r?yt(r
+,({needs:n,compute:i},o
+)=>({name:o,needs:n?Obj
+ect.keys(n).filter(s=>n
+[s]):[],compute:Zp(t,o,
+i)})):{}}function 
+Zp(e,t,r){let n=e?.[t]?
+.compute;return n?i=>r(
+{...i,[t]:n(i)}):r}func
+tion 
+ra(e,t){if(!t)return 
+e;let r={...e};for(let 
+n of Object.values(t))i
+f(e[n.name])for(let i 
+of 
+n.needs)r[i]=!0;return 
+r}function 
+na(e,t){if(!t)return 
+e;let r={...e};for(let 
+n of Object.values(t))i
+f(!e[n.name])for(let i 
+of n.needs)delete 
+r[i];return r}var xn=cl
+ass{constructor(t,r){th
+is.extension=t;this.pre
+vious=r;this.computedFi
+eldsCache=new ve;this.m
+odelExtensionsCache=new
+ ve;this.queryCallbacks
+Cache=new ve;this.clien
+tExtensions=pr(()=>this
+.extension.client?{...t
+his.previous?.getAllCli
+entExtensions(),...this
+.extension.client}:this
+.previous?.getAllClient
+Extensions());this.batc
+hCallbacks=pr(()=>{let 
+t=this.previous?.getAll
+BatchQueryCallbacks()??
+[],r=this.extension.que
+ry?.$__internalBatch;re
+turn r?t.concat(r):t})}
+getAllComputedFields(t)
+{return this.computedFi
+eldsCache.getOrCreate(t
+,()=>ta(this.previous?.
+getAllComputedFields(t)
+,this.extension,t))}get
+AllClientExtensions(){r
+eturn this.clientExtens
+ions.get()}getAllModelE
+xtensions(t){return thi
+s.modelExtensionsCache.
+getOrCreate(t,()=>{let 
+r=Te(t);return!this.ext
+ension.model||!(this.ex
+tension.model[r]||this.
+extension.model.$allMod
+els)?this.previous?.get
+AllModelExtensions(t):{
+...this.previous?.getAl
+lModelExtensions(t),...
+this.extension.model.$a
+llModels,...this.extens
+ion.model[r]}})}getAllQ
+ueryCallbacks(t,r){retu
+rn this.queryCallbacksC
+ache.getOrCreate(`${t}:
+${r}`,()=>{let n=this.p
+revious?.getAllQueryCal
+lbacks(t,r)??[],i=[],o=
+this.extension.query;re
+turn!o||!(o[t]||o.$allM
+odels||o[r]||o.$allOper
+ations)?n:(o[t]!==void 
+0&&(o[t][r]!==void 0&&i
+.push(o[t][r]),o[t].$al
+lOperations!==void 0&&i
+.push(o[t].$allOperatio
+ns)),t!=="$none"&&o.$al
+lModels!==void 0&&(o.$a
+llModels[r]!==void 0&&i
+.push(o.$allModels[r]),
+o.$allModels.$allOperat
+ions!==void 0&&i.push(o
+.$allModels.$allOperati
+ons)),o[r]!==void 0&&i.
+push(o[r]),o.$allOperat
+ions!==void 0&&i.push(o
+.$allOperations),n.conc
+at(i))})}getAllBatchQue
+ryCallbacks(){return th
+is.batchCallbacks.get()
+}},kt=class e{construct
+or(t){this.head=t}stati
+c empty(){return new 
+e}static 
+single(t){return new 
+e(new xn(t))}isEmpty(){
+return 
+this.head===void 
+0}append(t){return new 
+e(new xn(t,this.head))}
+getAllComputedFields(t)
+{return this.head?.getA
+llComputedFields(t)}get
+AllClientExtensions(){r
+eturn this.head?.getAll
+ClientExtensions()}getA
+llModelExtensions(t){re
+turn this.head?.getAllM
+odelExtensions(t)}getAl
+lQueryCallbacks(t,r){re
+turn this.head?.getAllQ
+ueryCallbacks(t,r)??[]}
+getAllBatchQueryCallbac
+ks(){return this.head?.
+getAllBatchQueryCallbac
+ks()??[]}};var ia=Symbo
+l(),dr=class{constructo
+r(t){if(t!==ia)throw 
+new Error("Skip 
+instance can not be 
+constructed directly")}
+ifUndefined(t){return 
+t===void 
+0?Pn:t}},Pn=new 
+dr(ia);function 
+Re(e){return e 
+instanceof dr}var Xp={f
+indUnique:"findUnique",
+findUniqueOrThrow:"find
+UniqueOrThrow",findFirs
+t:"findFirst",findFirst
+OrThrow:"findFirstOrThr
+ow",findMany:"findMany"
+,count:"aggregate",crea
+te:"createOne",createMa
+ny:"createMany",createM
+anyAndReturn:"createMan
+yAndReturn",update:"upd
+ateOne",updateMany:"upd
+ateMany",upsert:"upsert
+One",delete:"deleteOne"
+,deleteMany:"deleteMany
+",executeRaw:"executeRa
+w",queryRaw:"queryRaw",
+aggregate:"aggregate",g
+roupBy:"groupBy",runCom
+mandRaw:"runCommandRaw"
+,findRaw:"findRaw",aggr
+egateRaw:"aggregateRaw"
+},oa="explicitly 
+`undefined` values are 
+not allowed";function v
+n({modelName:e,action:t
+,args:r,runtimeDataMode
+l:n,extensions:i=kt.emp
+ty(),callsite:o,clientM
+ethod:s,errorFormat:a,c
+lientVersion:l,previewF
+eatures:u,globalOmit:c}
+){let p=new Di({runtime
+DataModel:n,modelName:e
+,action:t,rootArgs:r,ca
+llsite:o,extensions:i,s
+electionPath:[],argumen
+tPath:[],originalMethod
+:s,errorFormat:a,client
+Version:l,previewFeatur
+es:u,globalOmit:c});ret
+urn{modelName:e,action:
+Xp[t],query:mr(r,p)}}fu
+nction mr({select:e,inc
+lude:t,...r}={},n){let 
+i;return n.isPreviewFea
+tureOn("omitApi")&&(i=r
+.omit,delete r.omit),{a
+rguments:aa(r,n),select
+ion:ed(e,t,i,n)}}functi
+on ed(e,t,r,n){return e
+?(t?n.throwValidationEr
+ror({kind:"MutuallyExcl
+usiveFields",firstField
+:"include",secondField:
+"select",selectionPath:
+n.getSelectionPath()}):
+r&&n.isPreviewFeatureOn
+("omitApi")&&n.throwVal
+idationError({kind:"Mut
+uallyExclusiveFields",f
+irstField:"omit",second
+Field:"select",selectio
+nPath:n.getSelectionPat
+h()}),id(e,n)):td(n,t,r
+)}function 
+td(e,t,r){let 
+n={};return e.modelOrTy
+pe&&!e.isRawAction()&&(
+n.$composites=!0,n.$sca
+lars=!0),t&&rd(n,t,e),e
+.isPreviewFeatureOn("om
+itApi")&&nd(n,r,e),n}fu
+nction rd(e,t,r){for(le
+t[n,i]of Object.entries
+(t)){if(Re(i))continue;
+let o=r.nestSelection(n
+);if(_i(i,o),i===!1||i=
+==void 0){e[n]=!1;conti
+nue}let s=r.findField(n
+);if(s&&s.kind!=="objec
+t"&&r.throwValidationEr
+ror({kind:"IncludeOnSca
+lar",selectionPath:r.ge
+tSelectionPath().concat
+(n),outputType:r.getOut
+putTypeDescription()}),
+s){e[n]=mr(i===!0?{}:i,
+o);continue}if(i===!0){
+e[n]=!0;continue}e[n]=m
+r(i,o)}}function 
+nd(e,t,r){let n=r.getCo
+mputedFields(),i={...r.
+getGlobalOmit(),...t},o
+=na(i,n);for(let[s,a]of
+ Object.entries(o)){if(
+Re(a))continue;_i(a,r.n
+estSelection(s));let l=
+r.findField(s);n?.[s]&&
+!l||(e[s]=!a)}}function
+ id(e,t){let r={},n=t.g
+etComputedFields(),i=ra
+(e,n);for(let[o,s]of Ob
+ject.entries(i)){if(Re(
+s))continue;let a=t.nes
+tSelection(o);_i(s,a);l
+et l=t.findField(o);if(
+!(n?.[o]&&!l)){if(s===!
+1||s===void 0||Re(s)){r
+[o]=!1;continue}if(s===
+!0){l?.kind==="object"?
+r[o]=mr({},a):r[o]=!0;c
+ontinue}r[o]=mr(s,a)}}r
+eturn r}function sa(e,t
+){if(e===null)return 
+null;if(typeof 
+e=="string"||typeof 
+e=="number"||typeof 
+e=="boolean")return 
+e;if(typeof e=="bigint"
+)return{$type:"BigInt",
+value:String(e)};if(Pt(
+e)){if(ln(e))return{$ty
+pe:"DateTime",value:e.t
+oISOString()};t.throwVa
+lidationError({kind:"In
+validArgumentValue",sel
+ectionPath:t.getSelecti
+onPath(),argumentPath:t
+.getArgumentPath(),argu
+ment:{name:t.getArgumen
+tName(),typeNames:["Dat
+e"]},underlyingError:"P
+rovided Date object is 
+invalid"})}if(It(e))ret
+urn{$type:"FieldRef",va
+lue:{_ref:e.name,_conta
+iner:e.modelName}};if(A
+rray.isArray(e))return 
+od(e,t);if(ArrayBuffer.
+isView(e))return{$type:
+"Bytes",value:Buffer.fr
+om(e).toString("base64"
+)};if(sd(e))return e.va
+lues;if(vt(e))return{$t
+ype:"Decimal",value:e.t
+oFixed()};if(e 
+instanceof Me){if(e!==y
+n.instances[e._getName(
+)])throw new 
+Error("Invalid ObjectEn
+umValue");return{$type:
+"Enum",value:e._getName
+()}}if(ad(e))return 
+e.toJSON();if(typeof 
+e=="object")return aa(e
+,t);t.throwValidationEr
+ror({kind:"InvalidArgum
+entValue",selectionPath
+:t.getSelectionPath(),a
+rgumentPath:t.getArgume
+ntPath(),argument:{name
+:t.getArgumentName(),ty
+peNames:[]},underlyingE
+rror:`We could not 
+serialize ${Object.prot
+otype.toString.call(e)}
+ value. Serialize the 
+object to JSON or 
+implement a 
+".toJSON()" method on 
+it`})}function aa(e,t){
+if(e.$type)return{$type
+:"Raw",value:e};let 
+r={};for(let n in 
+e){let i=e[n],o=t.nestA
+rgument(n);Re(i)||(i!==
+void 0?r[n]=sa(i,o):t.i
+sPreviewFeatureOn("stri
+ctUndefinedChecks")&&t.
+throwValidationError({k
+ind:"InvalidArgumentVal
+ue",argumentPath:o.getA
+rgumentPath(),selection
+Path:t.getSelectionPath
+(),argument:{name:t.get
+ArgumentName(),typeName
+s:[]},underlyingError:o
+a}))}return r}function 
+od(e,t){let 
+r=[];for(let n=0;n<e.le
+ngth;n++){let i=t.nestA
+rgument(String(n)),o=e[
+n];if(o===void 
+0||Re(o)){let 
+s=o===void 0?"undefined
+":"Prisma.skip";t.throw
+ValidationError({kind:"
+InvalidArgumentValue",s
+electionPath:i.getSelec
+tionPath(),argumentPath
+:i.getArgumentPath(),ar
+gument:{name:`${t.getAr
+gumentName()}[${n}]`,ty
+peNames:[]},underlyingE
+rror:`Can not use 
+\`${s}\` value within 
+array. Use \`null\` or 
+filter out \`${s}\` val
+ues`})}r.push(sa(o,i))}
+return r}function 
+sd(e){return typeof e==
+"object"&&e!==null&&e._
+_prismaRawParameters__=
+==!0}function 
+ad(e){return typeof e==
+"object"&&e!==null&&typ
+eof e.toJSON=="function
+"}function 
+_i(e,t){e===void 0&&t.i
+sPreviewFeatureOn("stri
+ctUndefinedChecks")&&t.
+throwValidationError({k
+ind:"InvalidSelectionVa
+lue",selectionPath:t.ge
+tSelectionPath(),underl
+yingError:oa})}var 
+Di=class e{constructor(
+t){this.params=t;this.p
+arams.modelName&&(this.
+modelOrType=this.params
+.runtimeDataModel.model
+s[this.params.modelName
+]??this.params.runtimeD
+ataModel.types[this.par
+ams.modelName])}throwVa
+lidationError(t){wn({er
+rors:[t],originalMethod
+:this.params.originalMe
+thod,args:this.params.r
+ootArgs??{},callsite:th
+is.params.callsite,erro
+rFormat:this.params.err
+orFormat,clientVersion:
+this.params.clientVersi
+on,globalOmit:this.para
+ms.globalOmit})}getSele
+ctionPath(){return this
+.params.selectionPath}g
+etArgumentPath(){return
+ this.params.argumentPa
+th}getArgumentName(){re
+turn this.params.argume
+ntPath[this.params.argu
+mentPath.length-1]}getO
+utputTypeDescription(){
+if(!(!this.params.model
+Name||!this.modelOrType
+))return{name:this.para
+ms.modelName,fields:thi
+s.modelOrType.fields.ma
+p(t=>({name:t.name,type
+Name:"boolean",isRelati
+on:t.kind==="object"}))
+}}isRawAction(){return[
+"executeRaw","queryRaw"
+,"runCommandRaw","findR
+aw","aggregateRaw"].inc
+ludes(this.params.actio
+n)}isPreviewFeatureOn(t
+){return this.params.pr
+eviewFeatures.includes(
+t)}getComputedFields(){
+if(this.params.modelNam
+e)return this.params.ex
+tensions.getAllComputed
+Fields(this.params.mode
+lName)}findField(t){ret
+urn this.modelOrType?.f
+ields.find(r=>r.name===
+t)}nestSelection(t){let
+ r=this.findField(t),n=
+r?.kind==="object"?r.ty
+pe:void 0;return new e(
+{...this.params,modelNa
+me:n,selectionPath:this
+.params.selectionPath.c
+oncat(t)})}getGlobalOmi
+t(){return this.params.
+modelName&&this.shouldA
+pplyGlobalOmit()?this.p
+arams.globalOmit?.[xt(t
+his.params.modelName)]?
+?{}:{}}shouldApplyGloba
+lOmit(){switch(this.par
+ams.action){case"findFi
+rst":case"findFirstOrTh
+row":case"findUniqueOrT
+hrow":case"findMany":ca
+se"upsert":case"findUni
+que":case"createManyAnd
+Return":case"create":ca
+se"update":case"delete"
+:return!0;case"executeR
+aw":case"aggregateRaw":
+case"runCommandRaw":cas
+e"findRaw":case"createM
+any":case"deleteMany":c
+ase"groupBy":case"updat
+eMany":case"count":case
+"aggregate":case"queryR
+aw":return!1;default:Fe
+(this.params.action,"Un
+known action")}}nestArg
+ument(t){return new e({
+...this.params,argument
+Path:this.params.argume
+ntPath.concat(t)})}};va
+r Dt=class{constructor(
+t){this._engine=t}prome
+theus(t){return this._e
+ngine.metrics({format:"
+prometheus",...t})}json
+(t){return this._engine
+.metrics({format:"json"
+,...t})}};function la(e
+){return{models:Fi(e.mo
+dels),enums:Fi(e.enums)
+,types:Fi(e.types)}}fun
+ction Fi(e){let t={};fo
+r(let{name:r,...n}of 
+e)t[r]=n;return 
+t}function ua(e,t){let 
+r=pr(()=>ld(t));Object.
+defineProperty(e,"dmmf"
+,{get:()=>r.get()})}fun
+ction ld(e){return{data
+model:{models:Li(e.mode
+ls),enums:Li(e.enums),t
+ypes:Li(e.types)}}}func
+tion Li(e){return Objec
+t.entries(e).map(([t,r]
+)=>({name:t,...r}))}var
+ Ni=new WeakMap,Tn="$$P
+rismaTypedSql",Mi=class
+{constructor(t,r){Ni.se
+t(this,{sql:t,values:r}
+),Object.defineProperty
+(this,Tn,{value:Tn})}ge
+t sql(){return 
+Ni.get(this).sql}get 
+values(){return Ni.get(
+this).values}};function
+ ca(e){return(...t)=>ne
+w Mi(e,t)}function 
+pa(e){return e!=null&&e
+[Tn]===Tn}function fr(e
+){return{ok:!1,error:e,
+map(){return fr(e)},fla
+tMap(){return 
+fr(e)}}}var $i=class{co
+nstructor(){this.regist
+eredErrors=[]}consumeEr
+ror(t){return this.regi
+steredErrors[t]}registe
+rNewError(t){let r=0;fo
+r(;this.registeredError
+s[r]!==void 
+0;)r++;return this.regi
+steredErrors[r]={error:
+t},r}},qi=e=>{let 
+t=new $i,r=Ce(t,e.trans
+actionContext.bind(e)),
+n={adapterName:e.adapte
+rName,errorRegistry:t,q
+ueryRaw:Ce(t,e.queryRaw
+.bind(e)),executeRaw:Ce
+(t,e.executeRaw.bind(e)
+),provider:e.provider,t
+ransactionContext:async
+(...i)=>(await r(...i))
+.map(s=>ud(t,s))};retur
+n e.getConnectionInfo&&
+(n.getConnectionInfo=pd
+(t,e.getConnectionInfo.
+bind(e))),n},ud=(e,t)=>
+{let r=Ce(e,t.startTran
+saction.bind(t));return
+{adapterName:t.adapterN
+ame,provider:t.provider
+,queryRaw:Ce(e,t.queryR
+aw.bind(t)),executeRaw:
+Ce(e,t.executeRaw.bind(
+t)),startTransaction:as
+ync(...n)=>(await r(...
+n)).map(o=>cd(e,o))}},c
+d=(e,t)=>({adapterName:
+t.adapterName,provider:
+t.provider,options:t.op
+tions,queryRaw:Ce(e,t.q
+ueryRaw.bind(t)),execut
+eRaw:Ce(e,t.executeRaw.
+bind(t)),commit:Ce(e,t.
+commit.bind(t)),rollbac
+k:Ce(e,t.rollback.bind(
+t))});function 
+Ce(e,t){return async(..
+.r)=>{try{return await 
+t(...r)}catch(n){let i=
+e.registerNewError(n);r
+eturn fr({kind:"Generic
+Js",id:i})}}}function p
+d(e,t){return(...r)=>{t
+ry{return 
+t(...r)}catch(n){let i=
+e.registerNewError(n);r
+eturn fr({kind:"Generic
+Js",id:i})}}}var 
+Wl=k(oi());var Hl=requi
+re("async_hooks"),Kl=re
+quire("events"),zl=k(re
+quire("fs")),Fr=k(requi
+re("path"));var 
+oe=class e{constructor(
+t,r){if(t.length-1!==r.
+length)throw 
+t.length===0?new 
+TypeError("Expected at 
+least 1 string"):new 
+TypeError(`Expected 
+${t.length} strings to 
+have ${t.length-1} 
+values`);let 
+n=r.reduce((s,a)=>s+(a 
+instanceof e?a.values.l
+ength:1),0);this.values
+=new Array(n),this.stri
+ngs=new Array(n+1),this
+.strings[0]=t[0];let i=
+0,o=0;for(;i<r.length;)
+{let 
+s=r[i++],a=t[i];if(s 
+instanceof e){this.stri
+ngs[o]+=s.strings[0];le
+t l=0;for(;l<s.values.l
+ength;)this.values[o++]
+=s.values[l++],this.str
+ings[o]=s.strings[l];th
+is.strings[o]+=a}else t
+his.values[o++]=s,this.
+strings[o]=a}}get 
+sql(){let t=this.string
+s.length,r=1,n=this.str
+ings[0];for(;r<t;)n+=`?
+${this.strings[r++]}`;r
+eturn n}get 
+statement(){let t=this.
+strings.length,r=1,n=th
+is.strings[0];for(;r<t;
+)n+=`:${r}${this.string
+s[r++]}`;return n}get 
+text(){let t=this.strin
+gs.length,r=1,n=this.st
+rings[0];for(;r<t;)n+=`
+$${r}${this.strings[r++
+]}`;return n}inspect(){
+return{sql:this.sql,sta
+tement:this.statement,t
+ext:this.text,values:th
+is.values}}};function d
+a(e,t=",",r="",n=""){if
+(e.length===0)throw 
+new 
+TypeError("Expected 
+`join([])` to be 
+called with an array 
+of multiple elements, 
+but got an empty 
+array");return new oe([
+r,...Array(e.length-1).
+fill(t),n],e)}function 
+ji(e){return new 
+oe([e],[])}var 
+ma=ji("");function 
+Vi(e,...t){return new 
+oe(e,t)}function gr(e){
+return{getKeys(){return
+ Object.keys(e)},getPro
+pertyValue(t){return 
+e[t]}}}function re(e,t)
+{return{getKeys(){retur
+n[e]},getPropertyValue(
+){return 
+t()}}}function 
+ot(e){let t=new ve;retu
+rn{getKeys(){return e.g
+etKeys()},getPropertyVa
+lue(r){return t.getOrCr
+eate(r,()=>e.getPropert
+yValue(r))},getProperty
+Descriptor(r){return e.
+getPropertyDescriptor?.
+(r)}}}var Rn={enumerabl
+e:!0,configurable:!0,wr
+itable:!0};function 
+Cn(e){let t=new Set(e);
+return{getOwnPropertyDe
+scriptor:()=>Rn,has:(r,
+n)=>t.has(n),set:(r,n,i
+)=>t.add(n)&&Reflect.se
+t(r,n,i),ownKeys:()=>[.
+..t]}}var fa=Symbol.for
+("nodejs.util.inspect.c
+ustom");function 
+Se(e,t){let 
+r=dd(t),n=new 
+Set,i=new Proxy(e,{get(
+o,s){if(n.has(s))return
+ o[s];let 
+a=r.get(s);return a?a.g
+etPropertyValue(s):o[s]
+},has(o,s){if(n.has(s))
+return!0;let 
+a=r.get(s);return a?a.h
+as?.(s)??!0:Reflect.has
+(o,s)},ownKeys(o){let s
+=ga(Reflect.ownKeys(o),
+r),a=ga(Array.from(r.ke
+ys()),r);return[...new 
+Set([...s,...a,...n])]}
+,set(o,s,a){return r.ge
+t(s)?.getPropertyDescri
+ptor?.(s)?.writable===!
+1?!1:(n.add(s),Reflect.
+set(o,s,a))},getOwnProp
+ertyDescriptor(o,s){let
+ a=Reflect.getOwnProper
+tyDescriptor(o,s);if(a&
+&!a.configurable)return
+ a;let 
+l=r.get(s);return l?l.g
+etPropertyDescriptor?{.
+..Rn,...l?.getPropertyD
+escriptor(s)}:Rn:a},def
+ineProperty(o,s,a){retu
+rn n.add(s),Reflect.def
+ineProperty(o,s,a)}});r
+eturn 
+i[fa]=function(){let 
+o={...this};return 
+delete 
+o[fa],o},i}function 
+dd(e){let t=new 
+Map;for(let r of 
+e){let 
+n=r.getKeys();for(let 
+i of 
+n)t.set(i,r)}return 
+t}function 
+ga(e,t){return e.filter
+(r=>t.get(r)?.has?.(r)?
+?!0)}function _t(e){ret
+urn{getKeys(){return e}
+,has(){return!1},getPro
+pertyValue(){}}}functio
+n Ft(e,t){return{batch:
+e,transaction:t?.kind==
+="batch"?{isolationLeve
+l:t.options.isolationLe
+vel}:void 0}}function 
+ha(e){if(e===void 
+0)return"";let 
+t=Ot(e);return new Rt(0
+,{colors:fn}).write(t).
+toString()}var 
+md="P2037";function st(
+{error:e,user_facing_er
+ror:t},r,n){return 
+t.error_code?new V(fd(t
+,n),{code:t.error_code,
+clientVersion:r,meta:t.
+meta,batchRequestIdx:t.
+batch_request_idx}):new
+ B(e,{clientVersion:r,b
+atchRequestIdx:t.batch_
+request_idx})}function 
+fd(e,t){let r=e.message
+;return(t==="postgresql
+"||t==="postgres"||t===
+"mysql")&&e.error_code=
+==md&&(r+=`
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+                       
+        
+
+TypeError: Cannot read 
+properties of 
+undefined (reading 
+'bind')
+    at qi 
+(C:\Users\Win 10\Docume
+nts\ConectAgente\Conect
+Agent\backend\node_modu
+les\@prisma\client\runt
+ime\library.js:29:13283
+)
+    at new t 
+(C:\Users\Win 10\Docume
+nts\ConectAgente\Conect
+Agent\backend\node_modu
+les\@prisma\client\runt
+ime\library.js:130:1251
+)
+    at file:///C:/Users
+/Win%2010/Documents/Con
+ectAgente/ConectAgent/b
+ackend/src/lib/prisma.j
+s:16:23
+    at ModuleJob.run (n
+ode:internal/modules/es
+m/module_job:345:25)
+    at async onImport.t
+racePromise.__proto__ (
+node:internal/modules/e
+sm/loader:651:26)
+    at async asyncRunEn
+tryPointWithESMLoader (
+node:internal/modules/r
+un_main:117:5)
+
+Node.js v22.19.0
