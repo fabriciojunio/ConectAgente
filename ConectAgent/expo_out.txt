@@ -1,0 +1,17 @@
+
+> conectagente@1.0.0 web
+> expo start --web
+
+Starting project at C:\Users\Win 10\Documents\ConectAgente\ConectAgent
+PluginError: Failed to resolve plugin for module "expo-router" relative to "C:\Users\Win 10\Documents\ConectAgente\ConectAgent"
+PluginError: Failed to resolve plugin for module "expo-router" relative to "C:\Users\Win 10\Documents\ConectAgente\ConectAgent"
+    at resolvePluginForModule (C:\Users\Win 10\Documents\ConectAgente\ConectAgent\node_modules\@expo\cli\node_modules\@expo\config-plugins\build\utils\plugin-resolver.js:72:11)
+    at resolveConfigPluginFunctionWithInfo (C:\Users\Win 10\Documents\ConectAgente\ConectAgent\node_modules\@expo\cli\node_modules\@expo\config-plugins\build\utils\plugin-resolver.js:152:7)
+    at resolveConfigPluginFunction (C:\Users\Win 10\Documents\ConectAgente\ConectAgent\node_modules\@expo\cli\node_modules\@expo\config-plugins\build\utils\plugin-resolver.js:143:7)
+    at withStaticPlugin (C:\Users\Win 10\Documents\ConectAgente\ConectAgent\node_modules\@expo\cli\node_modules\@expo\config-plugins\build\plugins\withStaticPlugin.js:87:70)
+    at C:\Users\Win 10\Documents\ConectAgente\ConectAgent\node_modules\@expo\cli\node_modules\@expo\config-plugins\build\plugins\withPlugins.js:30:84
+    at Array.reduce (<anonymous>)
+    at withPlugins (C:\Users\Win 10\Documents\ConectAgente\ConectAgent\node_modules\@expo\cli\node_modules\@expo\config-plugins\build\plugins\withPlugins.js:30:18)
+    at withConfigPlugins (C:\Users\Win 10\Documents\ConectAgente\ConectAgent\node_modules\@expo\cli\node_modules\@expo\config\build\plugins\withConfigPlugins.js:36:47)
+    at fillAndReturnConfig (C:\Users\Win 10\Documents\ConectAgente\ConectAgent\node_modules\@expo\cli\node_modules\@expo\config\build\Config.js:218:78)
+    at getConfig (C:\Users\Win 10\Documents\ConectAgente\ConectAgent\node_modules\@expo\cli\node_modules\@expo\config\build\Config.js:274:10)

@@ -1,0 +1,35 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+enum Role {
+  ADMIN
+  AGENTE
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  login     String   @unique
+  senha     String
+  role      Role     @default(AGENTE)
+  forms     FormRecord[]
+  createdAt DateTime @default(now())
+}
+
+model FormRecord {
+  id          Int      @id @default(autoincrement())
+  paciente    String
+  endereco    String
+  dataVisita  DateTime
+  observacoes String?
+  agenteId    Int
+  agente      User     @relation(fields: [agenteId], references: [id])
+  createdAt   DateTime @default(now())
+}

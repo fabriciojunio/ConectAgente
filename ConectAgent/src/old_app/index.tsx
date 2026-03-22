@@ -10,7 +10,7 @@ import { Input } from '../components/input'
 export default function Login(){
 
     function homeAgente(){
-        router.push("/Agente/home")
+        router.push("./Agente/home")
     }
 
     return(
