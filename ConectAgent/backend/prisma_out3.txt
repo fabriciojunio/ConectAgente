@@ -1,0 +1,15 @@
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma\schema.prisma.
+Datasource "db": PostgreSQL database "neondb", schema "public" at "ep-delicate-wave-ahgp5lsg.c-3.us-east-1.aws.neon.tech:5432"
+Error: ERROR: cannot drop table agente because other objects depend on it
+DETAIL: view vw_resumo_visitas_agente depends on table agente
+HINT: Use DROP ... CASCADE to drop the dependent objects too.
+   0: sql_schema_connector::apply_migration::migration_step
+           with step=DropTable { table_id: TableId(0) }
+             at schema-engine\connectors\sql-schema-connector\src\apply_migration.rs:28
+   1: sql_schema_connector::apply_migration::apply_migration
+             at schema-engine\connectors\sql-schema-connector\src\apply_migration.rs:11
+   2: schema_core::state::SchemaPush
+             at schema-engine\core\src\state.rs:547
+
