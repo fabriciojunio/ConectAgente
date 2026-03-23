@@ -4,6 +4,7 @@ import {
   TextInput, RefreshControl, Platform, Modal, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { visitaRepository } from '../../database/repositories/visitaRepository';
@@ -109,6 +110,7 @@ export default function AdminVisitas() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      <StatusBar style="dark" />
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Visitas</Text>
