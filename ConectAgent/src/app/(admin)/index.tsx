@@ -250,7 +250,7 @@ const qb = StyleSheet.create({
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#4A148C' },
-  scroll: { flex: 1 },
+  scroll: { flex: 1, backgroundColor: COLORS.background },
   scrollContent: { flexGrow: 1 },
 
   header: {
