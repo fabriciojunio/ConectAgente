@@ -4,6 +4,7 @@ import {
   RefreshControl, Platform, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { agenteRepository } from '../../database/repositories/agenteRepository';
@@ -71,6 +72,7 @@ export default function AdminConfiguracoes() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      <StatusBar style="dark" />
       <ScrollView
         style={styles.scroll}
         showsVerticalScrollIndicator={false}

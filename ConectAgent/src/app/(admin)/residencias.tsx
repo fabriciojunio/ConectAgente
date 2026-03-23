@@ -4,6 +4,7 @@ import {
   TextInput, RefreshControl, Platform, Modal, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { residenciaRepository } from '../../database/repositories/residenciaRepository';
@@ -93,6 +94,7 @@ export default function AdminResidencias() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      <StatusBar style="dark" />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Residências</Text>
         <Text style={styles.headerCount}>{todas.length} cadastradas</Text>
