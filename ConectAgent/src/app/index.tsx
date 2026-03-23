@@ -1,35 +1,23 @@
-import { View, Text, Image } from 'react-native'
-import { router } from "expo-router"
-import React from 'react'
+import { useEffect } from 'react';
+import { router } from 'expo-router';
+import { useAuth } from '../contexts/AuthContext';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
-import { styles } from "./styles"
-import { Button } from '../components/button'
-import { Input } from '../components/input'
+/**
+ * Rota raiz — redireciona para login, app ou painel admin dependendo do estado de autenticação.
+ */
+export default function Index() {
+  const { isAuthenticated, isLoading, isAdmin } = useAuth();
 
-
-export default function Login(){
-
-    function homeAgente(){
-        router.push("/Agente/home")
+  useEffect(() => {
+    if (!isLoading) {
+      if (isAuthenticated) {
+        router.replace(isAdmin ? '/(admin)' : '/(app)');
+      } else {
+        router.replace('/(auth)/login');
+      }
     }
+  }, [isAuthenticated, isLoading, isAdmin]);
 
-    return(
-        <View style={styles.container}>
-
-            <View style={styles.logo}>
-                <Image source={require('../../assets/images/LOGO-remove-title.png')} style={styles.logo_img}/>
-            </View>
-
-            <View style={styles.form}>
-                <Text>Login</Text>
-                <Input placeholder="Digite seu login"/>
-                <Text>Senha</Text>
-                <Input placeholder="Digite sua senha"/>
-                <Button title='Login'onPress={homeAgente}/>
-            </View>
-
-
-
-        </View>
-    )
+  return <LoadingSpinner message="Carregando ConectAgente..." />;
 }
