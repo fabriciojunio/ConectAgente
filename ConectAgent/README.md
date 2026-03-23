@@ -13,6 +13,7 @@
 - [Arquitetura](#arquitetura)
 - [Estrutura de Pastas](#estrutura-de-pastas)
 - [Design Patterns](#design-patterns)
+- [Painel Administrativo](#painel-administrativo)
 - [Segurança](#segurança)
 - [LGPD](#lgpd)
 - [Instalação e Configuração](#instalação-e-configuração)
@@ -34,6 +35,7 @@ O ConectAgente resolve um problema crítico da Atenção Básica: ACS muitas vez
 - **Agenda consultas** com visão de calendário
 - Exporta **relatórios** em CSV/Excel
 - Mantém **histórico completo** de todas as visitas por residência
+- **Painel administrativo** para gestores com estatísticas globais, audit log LGPD e gerenciamento de equipe
 
 ---
 
@@ -118,20 +120,27 @@ visitaRepository.criar()
                            └──▶ marcarSucesso() + limparSincronizados()
 ```
 
+### Roteamento (Expo Router)
+
+```
+app/
+├── index.tsx              → redireciona conforme perfil (agente ou admin)
+├── (auth)/                → telas públicas (login, cadastro, recuperar-senha)
+├── (app)/                 → rotas do agente de saúde (requer sessão)
+└── (admin)/               → rotas do administrador (requer is_admin = true)
+```
+
 ---
 
 ## Estrutura de Pastas
 
 ```
 src/
-├── app/                        # Expo Router — telas organizadas por rota
-│   ├── (auth)/                 # Rotas públicas (login, cadastro, recuperar-senha)
-│   ├── (app)/                  # Rotas protegidas (requer sessão ativa)
-│   │   ├── residencia/         # CRUD de residências
-│   │   ├── morador/            # CRUD de moradores
-│   │   ├── visita/             # Registro e histórico de visitas
-│   │   └── prontuario/         # Prontuário clínico por morador
-│   └── _layout.tsx             # Root layout (providers)
+├── app/
+│   ├── (auth)/                 # Login, cadastro, recuperação de senha
+│   ├── (app)/                  # Área do agente: residências, moradores, visitas, prontuário
+│   ├── (admin)/                # Área do administrador: painel, agentes, relatórios, sistema
+│   └── _layout.tsx             # Root layout com todos os providers
 │
 ├── components/
 │   ├── button/                 # Botão com variantes (primary, ghost, danger...)
@@ -139,29 +148,26 @@ src/
 │   └── ui/                     # Badge, Card, PageHeader, EmptyState, SyncIndicator
 │
 ├── contexts/
-│   ├── AuthContext.tsx          # Sessão, login, logout, timeout 8h
+│   ├── AuthContext.tsx          # Sessão, login (retorna Agente), logout, timeout 8h
 │   ├── SyncContext.tsx          # Estado da sync, auto-sync 30s
 │   ├── NetworkContext.tsx       # Monitoramento de conectividade
 │   └── ThemeContext.tsx         # Dark/light mode persistido
 │
 ├── database/
-│   ├── database.ts             # Conexão SQLite singleton (WAL + FK)
+│   ├── database.ts             # Conexão SQLite singleton (WAL + FK + migrations)
 │   ├── schema.ts               # CREATE TABLE + migrations + indexes
-│   └── repositories/           # Data Access Layer (1 arquivo por entidade)
-│       ├── agenteRepository.ts
-│       ├── moradorRepository.ts
+│   └── repositories/
+│       ├── agenteRepository.ts     # Auth, rate limiting, CRUD de agentes
+│       ├── moradorRepository.ts    # CRUD + busca com SQL LIKE seguro
 │       ├── residenciaRepository.ts
 │       ├── visitaRepository.ts
 │       ├── prontuarioRepository.ts
 │       └── syncQueueRepository.ts
 │
 ├── hooks/
-│   ├── useVisitas.ts           # Estado + ações para visitas
-│   ├── useMoradores.ts         # Estado + ações para moradores
-│   └── useResidencias.ts       # Estado + ações para residências
-│
-├── lib/
-│   └── supabase.ts             # Cliente Supabase configurado
+│   ├── useVisitas.ts
+│   ├── useMoradores.ts
+│   └── useResidencias.ts
 │
 ├── services/
 │   ├── syncService.ts          # Motor de sync (fila → Supabase)
@@ -169,18 +175,15 @@ src/
 │   ├── cepService.ts           # Busca endereço por CEP (ViaCEP)
 │   └── exportService.ts        # Exportação CSV/Excel
 │
-├── tasks/
-│   └── backgroundSync.ts       # Background task (produção)
-│
 ├── types/
 │   └── index.ts                # Todos os tipos, enums e interfaces
 │
 └── utils/
     ├── constants.ts            # Cores, chaves, limites, timeouts
-    ├── encryption.ts           # Hash com salt, XOR local, SecureStore
-    ├── validators.ts           # Zod schemas + funções de validação
+    ├── encryption.ts           # SHA-256-CTR (v2), hash com salt, SecureStore
+    ├── validators.ts           # Zod schemas + validações + escapeForLike()
     ├── formatters.ts           # CPF, CEP, datas, máscaras
-    └── lgpd.ts                 # Utilitários LGPD (anonimização, consentimento)
+    └── lgpd.ts                 # Anonimização, consentimento
 ```
 
 ---
@@ -227,54 +230,95 @@ const residenciaSchema = z.object({
 
 ---
 
+## Painel Administrativo
+
+O administrador acessa uma área separada (`/(admin)`) com tema roxo, distinta da área do agente.
+
+| Tela | Funcionalidade |
+|---|---|
+| **Painel** | Estatísticas globais (agentes, residências, moradores, visitas do mês/hoje, sync pendente) |
+| **Agentes** | Lista completa com busca, estatísticas por agente, definição de metas mensais |
+| **Residências** | Todas as residências com moradores e histórico de visitas |
+| **Visitas** | Todas as visitas com filtros por status e agente, detalhes de sinais vitais e checklist |
+| **Sistema** | Estatísticas do banco, credenciais admin, audit log LGPD paginado |
+
+### Credenciais padrão do administrador
+
+| Campo | Valor |
+|---|---|
+| CPF | `111.444.777-35` |
+| Senha | `Admin@2025` |
+
+> **Troque a senha no primeiro login.** O administrador padrão é criado automaticamente na inicialização do app.
+
+---
+
 ## Segurança
 
 ### Autenticação
+
 | Mecanismo | Implementação |
 |---|---|
-| Hash de senha | SHA256 com salt aleatório de 16 bytes (`salt$hash`) |
-| Migração automática | Login com senha legada (sem salt) migra para novo formato transparentemente |
-| Proteção timing attack | Busca CPF separada da comparação de senha (sem retorno diferencial no SQL) |
+| Hash de senha | SHA-256 com salt aleatório de 16 bytes — formato `salt$hash` |
+| Migração automática | Login com senha legada (sem salt) migra transparentemente para o novo formato |
+| Timing-safe | `verificarSenha` é sempre executada, mesmo quando o CPF não existe no banco |
+| Rate limiting | 5 tentativas por CPF → bloqueio de 15 minutos |
 | Sessão | Token UUID em `expo-secure-store` (iOS Keychain / Android Keystore) |
-| Timeout | Sessão expira em 8 horas, renovada por atividade do usuário |
+| Timeout | Sessão expira em 8 horas, renovada por atividade |
 | Logout | Limpa token, chave de criptografia e cache em memória |
 
-### Armazenamento
-| Dado | Onde fica | Proteção |
-|---|---|---|
-| Senhas | SQLite | SHA256 + salt (não reversível) |
-| CPF, cartão SUS, nome, telefone | SQLite | XOR + chave em SecureStore |
-| Token de sessão | SecureStore | Keychain/Keystore do OS |
-| Chave de criptografia | SecureStore | Keychain/Keystore do OS |
+### Criptografia de campos PII
+
+O app usa **SHA-256 no modo CTR (stream cipher)** com IV aleatório de 16 bytes por cifração.
+
+```
+Formato armazenado: "v2:<base64(iv[16] || ciphertext[n])>"
+Compatibilidade retroativa: strings sem prefixo "v2:" são descriptografadas via XOR legado
+```
+
+| Dado | Proteção |
+|---|---|
+| Senha | SHA-256 + salt (irreversível) |
+| CPF, cartão SUS, nome, telefone | SHA-256-CTR com IV aleatório + chave em SecureStore |
+| Token de sessão | SecureStore (Keychain/Keystore do OS) |
+| Chave de criptografia | SecureStore (Keychain/Keystore do OS) |
 
 ### Banco de dados
+
 - **Parameterized queries** em todas as operações — zero risco de SQL Injection
-- **PRAGMA foreign_keys = ON** — integridade referencial garantida
-- **PRAGMA journal_mode = WAL** — recuperação de falhas sem corrupção
+- **`escapeForLike()`** — escapa metacaracteres `%`, `_`, `\` antes de queries com `LIKE`
+- **`PRAGMA foreign_keys = ON`** — integridade referencial garantida
+- **`PRAGMA journal_mode = WAL`** — recuperação de falhas sem corrupção
+- **Migrations específicas** — erros de `duplicate column` são ignorados; outros são relançados
 
 ### Recuperação de senha (LGPD-compliant)
+
 1. Usuário informa CPF + e-mail cadastrado
 2. Mensagem de erro **genérica** — não revela qual campo falhou
-3. Delay artificial de 800ms — proteção contra ataques de temporização
+3. Verificação normaliza o e-mail (lowercase + trim) antes da consulta
 4. Nova senha usa hash com salt
 5. Evento registrado no `audit_log`
 
 ### O que está protegido
-- ✅ SQL Injection — parameterized queries
-- ✅ Rainbow tables — salt nas senhas
-- ✅ Timing attack no login — busca separada da comparação
-- ✅ Token hijacking — SecureStore nativo
-- ✅ Enumeração de usuários — mensagem genérica na recuperação
-- ✅ Dados em repouso — campos PII criptografados localmente
-- ✅ Sessão infinita — timeout de 8 horas
-- ✅ XSS — não aplicável (React Native)
-- ✅ CSRF — não aplicável (app nativo sem cookies)
+
+- SQL Injection — parameterized queries + escapeForLike()
+- Rainbow tables — salt nas senhas
+- Timing attack no login — verificarSenha sempre executada com hash dummy
+- Brute force — rate limiting (5 tentativas / 15 min de bloqueio)
+- Token hijacking — SecureStore nativo
+- Enumeração de usuários — mensagem genérica na recuperação
+- Dados em repouso — campos PII criptografados com SHA-256-CTR
+- Sessão infinita — timeout de 8 horas
+- XSS — não aplicável (React Native)
+- CSRF — não aplicável (app nativo sem cookies)
 
 ### O que requer atenção em produção
-- ⚠️ **RLS no Supabase** — configurar Row-Level Security para isolar dados por `agente_id`
-- ⚠️ **Certificate pinning** — para apps financeiros/saúde críticos, fixar certificado TLS
-- ⚠️ **Root/jailbreak detection** — considerar `expo-device` para detectar dispositivos comprometidos
-- ⚠️ **Ofuscação de código** — habilitar ProGuard/Hermes no build de produção
+
+- **RLS no Supabase** — configurar Row-Level Security para isolar dados por `agente_id`
+- **Certificate pinning** — para apps de saúde críticos, fixar certificado TLS
+- **Root/jailbreak detection** — considerar `expo-device` para detectar dispositivos comprometidos
+- **Ofuscação de código** — habilitar ProGuard/Hermes no build de produção
+- **Upgrade para AES-256-GCM** — substituir SHA-256-CTR por cipher autenticado
 
 ---
 
@@ -290,7 +334,7 @@ O sistema implementa os principais requisitos da Lei Geral de Proteção de Dado
 | **Segurança** (Art. 46) | Criptografia local, hash com salt, SecureStore |
 | **Prevenção** (Art. 6º, VIII) | Validações impedem dados inválidos ou desnecessários |
 | **Direito de exclusão** (Art. 18, VI) | Soft delete + anonimização do nome |
-| **Rastreabilidade** (Art. 37) | `audit_log` registra todas as ações sensíveis |
+| **Rastreabilidade** (Art. 37) | `audit_log` registra ações sensíveis (reset de senha, criação de agentes) |
 | **Consentimento** (Art. 7º, I) | Tabela `consentimentos` por tipo de dado |
 | **Bases legais** (Art. 7º, II) | Saúde pública — execução de políticas públicas |
 
@@ -309,6 +353,7 @@ O sistema implementa os principais requisitos da Lei Geral de Proteção de Dado
 ## Instalação e Configuração
 
 ### Pré-requisitos
+
 - Node.js 20+
 - Expo CLI: `npm install -g expo-cli`
 - Android Studio ou Xcode (para emuladores)
@@ -317,7 +362,7 @@ O sistema implementa os principais requisitos da Lei Geral de Proteção de Dado
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/seu-usuario/ConectAgente.git
+git clone https://github.com/CamilaRaimundo/ConectAgente.git
 cd ConectAgente/ConectAgent
 
 # 2. Instale as dependências
@@ -341,18 +386,15 @@ npx expo start --ios
 
 ## Variáveis de Ambiente
 
-Crie um arquivo `.env` na raiz do projeto:
+Crie um arquivo `.env` na raiz do projeto (use `.env.example` como base):
 
 ```env
 # Supabase (obrigatório para sincronização)
 EXPO_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...
-
-# API (opcional — para funcionalidades futuras)
-EXPO_PUBLIC_API_URL=https://api.conectagente.com.br/v1
 ```
 
-> **Nota de segurança**: A `ANON_KEY` do Supabase é uma chave pública — pode estar no código. A segurança real depende das políticas RLS configuradas no servidor.
+> **Nota:** A `ANON_KEY` do Supabase é uma chave pública. A segurança real depende das políticas RLS configuradas no servidor.
 
 ---
 
@@ -369,18 +411,31 @@ npm run test -- --watchAll
 npm run test:ci
 ```
 
+### Resultados atuais
+
+```
+Test Suites: 18 passed
+Tests:       263 passed
+Coverage:    ~80% statements / ~83% lines
+```
+
 ### Cobertura mínima exigida: 60%
 
-| Módulo | Cobertura |
+| Módulo | O que é testado |
 |---|---|
-| `src/utils/validators.ts` | CPF, SUS, CEP, datas, email, telefone |
-| `src/services/authService.ts` | Login offline, sessão, logout, renovação |
-| `src/services/syncService.ts` | Processamento da fila, tratamento de erros |
-| `src/database/repositories/` | CRUD de agentes, moradores, residências, visitas |
-| `src/hooks/` | useVisitas, useResidencias |
-| `src/components/ui/` | Badge, Card, EmptyState, Button |
+| `utils/encryption.ts` | SHA-256-CTR, hash com salt, verificarSenha, round-trip, compatibilidade legado XOR |
+| `utils/validators.ts` | CPF, SUS, CEP, datas, email, telefone, escapeForLike, schemas Zod |
+| `repositories/agenteRepository` | Criar, autenticar, rate limiting, migração legado, verificarIdentidade, resetarSenha |
+| `repositories/moradorRepository` | CRUD, busca com LIKE seguro |
+| `repositories/residenciaRepository` | CRUD, soft delete |
+| `repositories/visitaRepository` | Criar, listar, estatísticas |
+| `services/authService` | Login offline, sessão, logout, renovação |
+| `services/syncService` | Processamento da fila, tratamento de erros |
+| `hooks/` | useVisitas, useResidencias |
+| `components/ui/` | Badge, Card, EmptyState, Button |
 
 ### Mocks utilizados
+
 - `expo-secure-store` — armazenamento seguro simulado
 - `expo-sqlite` — banco de dados simulado
 - `expo-crypto` — hash determinístico para testes
@@ -418,25 +473,27 @@ CREATE POLICY "agente_isolation" ON visitas
 ## Roadmap
 
 ### v1.1 — Em desenvolvimento
-- [ ] Painel web administrativo (Next.js + Supabase)
-  - Dashboard com estatísticas por equipe
-  - Gestão de agentes (criar, ativar, desativar)
-  - Mapa de cobertura territorial
-  - Exportação de relatórios gerenciais
+
 - [ ] Sincronização em background (build de produção)
 - [ ] Assinatura digital do morador na visita
+- [ ] Foto do domicílio na visita
 
 ### v1.2 — Planejado
+
+- [ ] Painel web administrativo (Next.js + Supabase)
+  - Dashboard com estatísticas por equipe
+  - Mapa de cobertura territorial
+  - Exportação de relatórios gerenciais
 - [ ] Notificações push para agendamentos
 - [ ] Integração com e-SUS/SISAB (sistema nacional)
 - [ ] Modo supervisor — coordenador vê equipe completa
-- [ ] Foto do domicílio na visita
 
 ### Segurança — Backlog
+
+- [ ] Upgrade para AES-256-GCM (cipher autenticado)
 - [ ] Certificate pinning (TLS)
 - [ ] Root/jailbreak detection
 - [ ] Ofuscação de código (ProGuard + Hermes)
-- [ ] Upgrade para AES-256-GCM (criptografia local)
 - [ ] Política de senha configurável (complexidade mínima)
 
 ---
