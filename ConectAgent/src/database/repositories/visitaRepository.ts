@@ -313,7 +313,13 @@ export const visitaRepository = {
     if (filtros?.status) { sql += ` AND v.status = ?`; params.push(filtros.status); }
     sql += ` ORDER BY v.data_visita DESC LIMIT 300`;
     const rows = await db.getAllAsync<Record<string, unknown>>(sql, params);
-    return rows.map((row) => ({ ...mapRow(row), agente_nome: row.agente_nome as string | undefined }));
+    return rows.map((row) => ({
+      ...mapRow(row),
+      agente_nome: row.agente_nome as string | undefined,
+      logradouro: row.logradouro as string | undefined,
+      numero: row.numero as string | undefined,
+      bairro: row.bairro as string | undefined,
+    }));
   },
 
   async obterUltimasVisitas(limite = 10): Promise<Array<Visita & { agente_nome?: string }>> {
