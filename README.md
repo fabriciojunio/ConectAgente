@@ -17,7 +17,8 @@
 11. [Instalação](#11-instalação)
 12. [Variáveis de Ambiente](#12-variáveis-de-ambiente)
 13. [Supabase — RLS](#13-supabase--rls)
-14. [Roadmap](#14-roadmap)
+14. [Painel Web — conectagente-web](#14-painel-web--conectagente-web)
+15. [Roadmap](#15-roadmap)
 
 ---
 
@@ -923,7 +924,140 @@ O schema completo está em `supabase/schema.sql`.
 
 ---
 
-## 14. Roadmap
+## 14. Painel Web — conectagente-web
+
+O painel web é um dashboard administrativo desenvolvido em **Next.js 15** que complementa o app mobile. Ele consome o **mesmo banco Supabase** e permite que supervisores e administradores gerenciem a operação sem precisar do app mobile.
+
+> Diretório: `conectagente-web/`
+
+### Tecnologias do painel web
+
+| Camada | Tecnologia | Versão |
+|---|---|---|
+| Framework | Next.js (App Router) | ^15.1.0 |
+| Runtime | React | ^19.0.0 |
+| Linguagem | TypeScript | ~5.8.3 |
+| Estilização | Tailwind CSS | ^3.4.0 |
+| Backend / Auth | Supabase (SSR + RLS) | ^2.45.4 |
+| Gráficos | Recharts | ^2.15.0 |
+| Validação | Zod | ^3.24.0 |
+| Ícones | Lucide React | ^0.468.0 |
+| Relatórios | jsPDF + xlsx | ^2.5.2 / ^0.18.5 |
+| Datas | date-fns | ^4.1.0 |
+| Testes | Jest + Testing Library | ^29 / ^16 |
+
+### Funcionalidades do painel web
+
+| Página | Rota | Descrição |
+|---|---|---|
+| **Dashboard** | `/` | Cards com estatísticas (visitas hoje/semana/mês, agentes ativos, famílias), gráficos de linha, barra e pizza, alertas de atraso, visitas recentes |
+| **Agentes** | `/agentes` | Lista com busca, detalhe individual com desempenho, ranking por período |
+| **Famílias** | `/familias` | Listagem paginada, detalhe com moradores e histórico de visitas |
+| **Visitas** | `/visitas` | Filtros por status, agente e período, estatísticas gerais |
+| **Moradores** | `/moradores` | Listagem com estatísticas de saúde (hipertensos, diabéticos, gestantes) |
+| **Monitoramento** | `/monitoramento` | Cobertura por microárea, mapa de cobertura territorial |
+| **Territorial** | `/territorial` | Visualização territorial da cobertura de saúde |
+| **Relatórios** | `/relatorios` | Exportação de relatórios em PDF e Excel |
+| **Admin** | `/admin` | Gestão de usuários, solicitações de registro pendentes |
+| **Login** | `/login` | Autenticação via Supabase Auth |
+| **Registro** | `/registro` | Cadastro com aprovação do administrador |
+
+### Arquitetura do painel web
+
+```
+conectagente-web/
+├── src/
+│   ├── app/
+│   │   ├── (auth)/          # Login e registro (layout público)
+│   │   ├── (dashboard)/     # Todas as páginas autenticadas
+│   │   ├── actions/         # Server actions (login, registro, auth)
+│   │   └── api/health/      # Endpoint de health check
+│   │
+│   ├── components/
+│   │   ├── charts/          # VisitasLineChart, StatusPieChart, AgentesBarChart,
+│   │   │                    # CoberturaChart, HeatmapBairros
+│   │   ├── dashboard/       # DashboardCards, AlertasAtraso, RecentVisitas
+│   │   ├── layout/          # Sidebar, Header, FilterBar, LoadingBar
+│   │   └── ui/              # Button, Card, Badge, Input, Table, Pagination,
+│   │                        # StatCard, Skeleton, Dialog, Select, EmptyState
+│   │
+│   ├── hooks/               # useAuth, useFilters, usePagination, usePrefetch
+│   ├── lib/                 # Supabase clients, cache, requestQueue, rateLimit,
+│   │                        # validation, utils, constants
+│   ├── services/            # dashboardService, visitaService, agenteService,
+│   │                        # familiaService, moradorService, adminService,
+│   │                        # monitoramentoService, relatorioService, auditService
+│   └── types/               # Interfaces e enums TypeScript
+│
+├── jest.config.js
+├── jest.setup.js
+└── tsconfig.json
+```
+
+### Segurança do painel web
+
+- **Rate limiting** em server actions (login, registro)
+- **Error boundaries** com fallback UI
+- **Fila de requisições** com retry e exponential backoff
+- **Validação de entrada** com Zod em todas as bordas
+- **Sanitização** de inputs contra XSS
+- **Middleware** de autenticação protegendo rotas do dashboard
+- **Row-Level Security** no Supabase (mesmo banco do app mobile)
+
+### Testes do painel web
+
+```bash
+cd conectagente-web
+npm test              # todos os testes
+npm test -- --verbose # com detalhes
+npm run test:coverage # com cobertura
+```
+
+```
+Test Suites : 20 passed, 20 total
+Tests       : 220 passed, 220 total
+```
+
+| Módulo | Testes |
+|---|---|
+| Services (7) | dashboardService, visitaService, agenteService, familiaService, moradorService, adminService, monitoramentoService |
+| Hooks (1) | useAuth (login, logout, roles, sessão) |
+| Components (7) | Sidebar, DashboardCards, ErrorBoundary, Button, Card, Badge, Pagination, StatCard |
+| Lib (4) | utils, validation, rateLimit, requestQueue |
+
+### Instalação do painel web
+
+```bash
+cd conectagente-web
+
+# Instalar dependências
+npm install
+
+# Configurar variáveis de ambiente
+cp .env.example .env.local
+# Editar .env.local com credenciais do Supabase
+
+# Desenvolvimento
+npm run dev
+
+# Build de produção
+npm run build
+npm start
+```
+
+### Variáveis de ambiente do painel web
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...
+```
+
+> A `SERVICE_ROLE_KEY` é usada apenas no servidor (server actions) para operações administrativas. Nunca expor no client-side.
+
+---
+
+## 15. Roadmap
 
 ### v1.0 — Concluído
 
