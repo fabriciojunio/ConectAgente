@@ -1,45 +1,75 @@
 # ConectAgente
 
-**Sistema de Gestão de Visitas Domiciliares para Agentes Comunitários de Saúde (ACS)**
+---
 
-> Aplicativo mobile offline-first para registro, acompanhamento e sincronização de visitas domiciliares, desenvolvido em conformidade com a LGPD (Lei 13.709/2018).
+## Índice
+
+1. [Sobre o Projeto](#1-sobre-o-projeto)
+2. [Funcionalidades](#2-funcionalidades)
+3. [Tecnologias](#3-tecnologias)
+4. [Arquitetura](#4-arquitetura)
+5. [Banco de Dados](#5-banco-de-dados)
+6. [Tipos e Interfaces](#6-tipos-e-interfaces)
+7. [Navegação e Telas](#7-navegação-e-telas)
+8. [Segurança](#8-segurança)
+9. [LGPD](#9-lgpd)
+10. [Testes](#10-testes)
+11. [Instalação](#11-instalação)
+12. [Variáveis de Ambiente](#12-variáveis-de-ambiente)
+13. [Supabase — RLS](#13-supabase--rls)
+14. [Roadmap](#14-roadmap)
 
 ---
 
-## Sumário
+## 1. Sobre o Projeto
 
-- [Visão Geral](#visão-geral)
-- [Tecnologias](#tecnologias)
-- [Arquitetura](#arquitetura)
-- [Estrutura de Pastas](#estrutura-de-pastas)
-- [Design Patterns](#design-patterns)
-- [Painel Administrativo](#painel-administrativo)
-- [Segurança](#segurança)
-- [LGPD](#lgpd)
-- [Instalação e Configuração](#instalação-e-configuração)
-- [Variáveis de Ambiente](#variáveis-de-ambiente)
-- [Testes](#testes)
-- [Supabase — Configuração RLS](#supabase--configuração-rls)
-- [Roadmap](#roadmap)
+O **ConectAgente** é um aplicativo mobile desenvolvido para **Agentes Comunitários de Saúde (ACS)** da Atenção Básica do SUS. O ACS visita famílias cadastradas em sua microárea, registrando condições de saúde, acompanhando gestantes, crianças, idosos e situações de vulnerabilidade social.
 
----
+### Problema resolvido
 
-## Visão Geral
+ACS frequentemente trabalham em áreas com cobertura de internet instável ou inexistente. Sistemas tradicionais exigem conexão constante, impossibilitando o registro em campo. O ConectAgente resolve isso com arquitetura **offline-first**: o agente registra tudo localmente mesmo sem internet, e os dados sincronizam automaticamente quando a conexão é restabelecida.
 
-O ConectAgente resolve um problema crítico da Atenção Básica: ACS muitas vezes trabalham em áreas sem internet e precisam registrar visitas, coletar dados de saúde e acompanhar famílias mesmo offline. O app:
+### Perfis de acesso
 
-- Funciona **100% offline** — dados salvos localmente no SQLite
-- **Sincroniza automaticamente** quando há internet (fila offline-first)
-- Armazena **prontuários completos** por morador (saúde geral, gestante, puericultura, saúde da mulher, social)
-- Controla **metas mensais** de visitas
-- **Agenda consultas** com visão de calendário
-- Exporta **relatórios** em CSV/Excel
-- Mantém **histórico completo** de todas as visitas por residência
-- **Painel administrativo** para gestores com estatísticas globais, audit log LGPD e gerenciamento de equipe
+| Perfil | Acesso | Tema visual |
+|---|---|---|
+| **Agente de Saúde** | Área `/(app)` | Verde |
+| **Administrador** | Área `/(admin)` | Roxo |
+
+O roteamento é feito automaticamente no login: `agente.is_admin = true` redireciona para `/(admin)`, caso contrário para `/(app)`.
 
 ---
 
-## Tecnologias
+## 2. Funcionalidades
+
+### Área do Agente `/(app)`
+
+| Funcionalidade | Descrição |
+|---|---|
+| **Dashboard** | Saudação por hora do dia, foto de perfil (câmera/galeria), estatísticas do mês, últimas residências |
+| **Residências** | Cadastro com busca automática de endereço por CEP (ViaCEP), tipo de imóvel, número de cômodos, animais |
+| **Moradores** | Ficha completa: CPF, Cartão SUS, data de nascimento, escolaridade, profissão, benefícios sociais, medicamentos |
+| **Prontuários** | 5 módulos clínicos por morador (detalhes na seção de telas) |
+| **Visitas** | Registro com sinais vitais (PA, glicemia, peso), checklist de medicamentos e vacinas, encaminhamentos |
+| **Calendário** | Visualização de agendamentos por dia (react-native-calendars) |
+| **Metas** | Acompanhamento da meta mensal de visitas com progresso visual |
+| **Busca Global** | Localiza moradores por nome, CPF ou cartão SUS |
+| **Relatórios** | Exportação em CSV e Excel (xlsx) |
+| **Recuperação de senha** | Via CPF + e-mail cadastrado, sem revelar qual campo é inválido |
+
+### Área do Administrador `/(admin)`
+
+| Tela | Funcionalidade |
+|---|---|
+| **Painel** | 7 indicadores globais + top 3 agentes do mês + últimas 5 visitas |
+| **Agentes** | Lista com busca, estatísticas individuais (residências, moradores, visitas), definir metas |
+| **Residências** | Todas as residências da equipe com moradores e histórico |
+| **Visitas** | Todas as visitas com filtros por status e agente |
+| **Sistema** | Estatísticas do banco, credenciais admin, audit log LGPD paginado |
+
+---
+
+## 3. Tecnologias
 
 | Camada | Tecnologia | Versão |
 |---|---|---|
@@ -47,318 +77,771 @@ O ConectAgente resolve um problema crítico da Atenção Básica: ACS muitas vez
 | Runtime | React Native | 0.81.5 |
 | Linguagem | TypeScript | ~5.8.3 |
 | Navegação | Expo Router (file-based) | ~6.0.23 |
-| Banco local | expo-sqlite (WAL mode) | ~16.0.10 |
-| Backend/Sync | Supabase (PostgreSQL) | ^2.45.4 |
-| Formulários | react-hook-form + Zod | ^7 / ^3 |
-| Criptografia | expo-crypto | ~15.0.8 |
+| Banco local | expo-sqlite (WAL + FTS) | ~16.0.10 |
+| Backend / Sync | Supabase (PostgreSQL + RLS) | ^2.45.4 |
+| Formulários | React Hook Form | ^7.54.2 |
+| Validação | Zod | ^3.24.2 |
+| Criptografia | expo-crypto (SHA-256) | ~15.0.8 |
 | Armazenamento seguro | expo-secure-store | ~15.0.8 |
-| Rede | expo-network | ~8.0.8 |
+| Monitoramento de rede | expo-network | ~8.0.8 |
+| Calendário | react-native-calendars | ^1.1309.0 |
+| Exportação | xlsx | ^0.18.5 |
+| CEP | ViaCEP API | — |
+| HTTP | axios | ^1.7.9 |
+| Ícones | @expo/vector-icons (Ionicons) | ^15.0.3 |
+| Gradientes | expo-linear-gradient | ~15.0.8 |
+| Câmera / Galeria | expo-image-picker | ~17.0.10 |
 | Testes | Jest + jest-expo | ^29 / ~54 |
-| UI | @expo/vector-icons, expo-linear-gradient | — |
 
 ---
 
-## Arquitetura
+## 4. Arquitetura
+
+### Diagrama geral
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    DISPOSITIVO (offline-first)           │
-│                                                         │
-│  ┌──────────┐    ┌──────────────┐    ┌───────────────┐  │
-│  │  Screens │───▶│   Hooks      │───▶│  Repositories │  │
-│  │ (Expo    │    │ (useVisitas  │    │ (SQLite +     │  │
-│  │  Router) │    │  useMoradores│    │  sync_queue)  │  │
-│  └──────────┘    │  useResid.)  │    └───────┬───────┘  │
-│                  └──────────────┘            │           │
-│  ┌──────────────────────────────┐            │           │
-│  │         Contexts             │            ▼           │
-│  │  AuthContext (sessão 8h)     │    ┌───────────────┐  │
-│  │  SyncContext (auto 30s)      │    │   SQLite DB   │  │
-│  │  NetworkContext (online?)    │    │  (WAL mode,   │  │
-│  │  ThemeContext (dark/light)   │    │  FK enabled)  │  │
-│  └──────────────────────────────┘    └───────┬───────┘  │
-│                                              │           │
-│  ┌──────────────────────────────┐            │           │
-│  │       Services               │    sync_queue          │
-│  │  syncService (fila→Supabase) │◀───────────┘           │
-│  │  authService (login/sessão)  │                        │
-│  │  cepService (busca CEP)      │            │           │
-│  │  exportService (CSV/Excel)   │            ▼           │
-│  └──────────────────────────────┘    ┌───────────────┐  │
-│                                      │  SecureStore  │  │
-│                                      │  (token, key) │  │
-│                                      └───────────────┘  │
-└──────────────────────────┬──────────────────────────────┘
-                           │ (quando online)
-                           ▼
-              ┌────────────────────────┐
-              │     SUPABASE           │
-              │  PostgreSQL + RLS      │
-              │  (isolamento por       │
-              │   agente_id)           │
-              └────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                     DISPOSITIVO MÓVEL                        │
+│                                                              │
+│   ┌─────────────┐     ┌──────────────┐   ┌──────────────┐   │
+│   │   Telas     │────▶│    Hooks     │──▶│ Repositories │   │
+│   │ Expo Router │     │ useVisitas   │   │  (SQLite)    │   │
+│   │ (app/admin) │     │ useMoradores │   └──────┬───────┘   │
+│   └─────────────┘     │ useResidenc. │          │           │
+│                       └──────────────┘          ▼           │
+│   ┌─────────────────────────────┐      ┌──────────────┐     │
+│   │         Contexts            │      │   SQLite DB  │     │
+│   │  AuthContext  (sessão 8h)   │      │  WAL + FK    │     │
+│   │  SyncContext  (auto 30s)    │      │  16 tabelas  │     │
+│   │  NetworkContext(conectado?) │      └──────┬───────┘     │
+│   │  ThemeContext (dark/light)  │             │             │
+│   └─────────────────────────────┘        sync_queue         │
+│                                               │             │
+│   ┌─────────────────────────────┐             ▼             │
+│   │         Services            │   ┌──────────────────┐   │
+│   │  syncService  (fila→Supab.) │   │   SecureStore    │   │
+│   │  authService  (login/sessão)│   │  (token + chave) │   │
+│   │  cepService   (ViaCEP)      │   └──────────────────┘   │
+│   │  exportService(CSV/Excel)   │                           │
+│   └─────────────────────────────┘                           │
+└────────────────────────────┬─────────────────────────────────┘
+                             │ quando online
+                             ▼
+               ┌─────────────────────────┐
+               │        SUPABASE         │
+               │   PostgreSQL + RLS      │
+               │  (dados por agente_id)  │
+               └─────────────────────────┘
 ```
 
-### Fluxo de dados (offline-first)
+### Padrões de projeto
 
-```
-Usuário cria visita
-       │
-       ▼
-visitaRepository.criar()
-       │
-       ├──▶ INSERT INTO visitas (status_sync='pendente')
-       │
-       └──▶ syncQueueRepository.enqueue('visitas', 'insert', id, payload)
-                           │
-                           │ (quando online)
-                           ▼
-                   syncService.sincronizar()
-                           │
-                           ├──▶ Supabase.upsert(payload)
-                           │
-                           └──▶ marcarSucesso() + limparSincronizados()
-```
-
-### Roteamento (Expo Router)
-
-```
-app/
-├── index.tsx              → redireciona conforme perfil (agente ou admin)
-├── (auth)/                → telas públicas (login, cadastro, recuperar-senha)
-├── (app)/                 → rotas do agente de saúde (requer sessão)
-└── (admin)/               → rotas do administrador (requer is_admin = true)
-```
-
----
-
-## Estrutura de Pastas
-
-```
-src/
-├── app/
-│   ├── (auth)/                 # Login, cadastro, recuperação de senha
-│   ├── (app)/                  # Área do agente: residências, moradores, visitas, prontuário
-│   ├── (admin)/                # Área do administrador: painel, agentes, relatórios, sistema
-│   └── _layout.tsx             # Root layout com todos os providers
-│
-├── components/
-│   ├── button/                 # Botão com variantes (primary, ghost, danger...)
-│   ├── forms/                  # FormField, SelectField, SwitchField
-│   └── ui/                     # Badge, Card, PageHeader, EmptyState, SyncIndicator
-│
-├── contexts/
-│   ├── AuthContext.tsx          # Sessão, login (retorna Agente), logout, timeout 8h
-│   ├── SyncContext.tsx          # Estado da sync, auto-sync 30s
-│   ├── NetworkContext.tsx       # Monitoramento de conectividade
-│   └── ThemeContext.tsx         # Dark/light mode persistido
-│
-├── database/
-│   ├── database.ts             # Conexão SQLite singleton (WAL + FK + migrations)
-│   ├── schema.ts               # CREATE TABLE + migrations + indexes
-│   └── repositories/
-│       ├── agenteRepository.ts     # Auth, rate limiting, CRUD de agentes
-│       ├── moradorRepository.ts    # CRUD + busca com SQL LIKE seguro
-│       ├── residenciaRepository.ts
-│       ├── visitaRepository.ts
-│       ├── prontuarioRepository.ts
-│       └── syncQueueRepository.ts
-│
-├── hooks/
-│   ├── useVisitas.ts
-│   ├── useMoradores.ts
-│   └── useResidencias.ts
-│
-├── services/
-│   ├── syncService.ts          # Motor de sync (fila → Supabase)
-│   ├── authService.ts          # Login, sessão, renovação
-│   ├── cepService.ts           # Busca endereço por CEP (ViaCEP)
-│   └── exportService.ts        # Exportação CSV/Excel
-│
-├── types/
-│   └── index.ts                # Todos os tipos, enums e interfaces
-│
-└── utils/
-    ├── constants.ts            # Cores, chaves, limites, timeouts
-    ├── encryption.ts           # SHA-256-CTR (v2), hash com salt, SecureStore
-    ├── validators.ts           # Zod schemas + validações + escapeForLike()
-    ├── formatters.ts           # CPF, CEP, datas, máscaras
-    └── lgpd.ts                 # Anonimização, consentimento
-```
-
----
-
-## Design Patterns
-
-### Repository Pattern
-Toda persistência de dados passa por repositórios — as telas nunca acessam o banco diretamente.
+#### Repository Pattern
+Toda leitura e escrita no banco passa por repositórios. Telas nunca acessam o SQLite diretamente.
 
 ```typescript
 // ✅ Correto
 const visitas = await visitaRepository.listar(agente.id);
 
-// ❌ Nunca faça
+// ❌ Nunca faça isso nas telas
 const db = await getDatabase();
 const rows = await db.getAllAsync('SELECT * FROM visitas');
 ```
 
-### Context + Hooks (State Management)
-Sem Redux ou Zustand — o estado global fica em Contexts, o estado de domínio em hooks customizados.
+#### Context + Hooks
+Estado global em Contexts React; estado de domínio em custom hooks.
 
 ```
-Context  →  estado global (autenticação, tema, rede, sync)
-Hook     →  estado de domínio (lista de visitas, moradores, residências)
-Screen   →  composição de hooks + UI
+AuthContext   → sessão, login, logout, timeout automático
+SyncContext   → status e disparo de sincronização
+NetworkContext→ monitoramento de conectividade em tempo real
+ThemeContext  → dark/light mode persistido
+
+useVisitas    → lista, criar, filtrar visitas
+useMoradores  → CRUD de moradores
+useResidencias→ CRUD de residências
 ```
 
-### Offline-First Queue
-Toda escrita local é imediatamente enfileirada na `sync_queue`. A sync acontece de forma assíncrona, sem bloquear o usuário.
+#### Offline-First Queue
 
-### Soft Delete (LGPD)
-Nenhum dado é excluído permanentemente. O campo `deleted_at` marca o registro como excluído. O campo `nome` é anonimizado para `"ANONIMIZADO"` na exclusão de moradores.
+```
+Usuário registra uma visita
+        │
+        ▼
+visitaRepository.criar()
+        │
+        ├──▶ INSERT INTO visitas (status_sync = 'pendente')
+        └──▶ syncQueue.enqueue('visitas', 'insert', id, payload)
+                        │
+                        │ a cada 30 segundos quando online
+                        ▼
+              syncService.sincronizar()
+                        │
+                        ├──▶ Supabase.upsert(payload)
+                        └──▶ UPDATE status_sync = 'sincronizado'
+```
 
-### Zod Schema Validation
-Toda entrada do usuário é validada em runtime por schemas Zod antes de chegar ao repositório.
+#### Zod Schema Validation
+Toda entrada do usuário é validada antes de chegar ao repositório.
 
 ```typescript
 const residenciaSchema = z.object({
-  cep: z.string().refine(validarCEP, 'CEP inválido'),
-  num_comodos: z.coerce.number().min(1).max(50),
-  // ...
+  cep:        z.string().refine(validarCEP, 'CEP inválido'),
+  logradouro: z.string().min(3),
+  numero:     z.string().min(1),
+  estado:     z.string().length(2),
+  tipo_imovel:z.enum(['proprio', 'alugado', 'cedido', 'outros']),
+  num_comodos:z.coerce.number().min(1).max(50),
+  tem_animais:z.boolean(),
+});
+```
+
+### Estrutura de pastas
+
+```
+ConectAgent/
+├── assets/images/          # Logo, ícone, splash, adaptive-icon
+├── src/
+│   ├── app/
+│   │   ├── _layout.tsx     # Root layout — monta todos os Providers
+│   │   ├── index.tsx       # Redireciona: agente → /(app), admin → /(admin)
+│   │   ├── (auth)/         # Público: login, cadastro, recuperar-senha
+│   │   ├── (app)/          # Agente: dashboard, residências, moradores,
+│   │   │   ├── index.tsx   #   visitas, prontuário, calendário, metas...
+│   │   │   ├── residencia/ #   [id].tsx, nova.tsx
+│   │   │   ├── morador/    #   [id].tsx, novo.tsx
+│   │   │   ├── visita/     #   [id].tsx, nova.tsx
+│   │   │   └── prontuario/ #   [moradorId].tsx
+│   │   └── (admin)/        # Admin: painel, agentes, visitas, sistema
+│   │
+│   ├── components/
+│   │   ├── button/         # Button com variantes (primary, ghost, danger...)
+│   │   ├── input/          # Input estilizado com máscara
+│   │   ├── forms/          # FormField, SelectField, SwitchField
+│   │   └── ui/             # Badge, Card, PageHeader, EmptyState,
+│   │                       # LoadingSpinner, SyncIndicator
+│   ├── contexts/
+│   │   ├── AuthContext.tsx # login() retorna Agente (roteamento imediato)
+│   │   ├── SyncContext.tsx
+│   │   ├── NetworkContext.tsx
+│   │   └── ThemeContext.tsx
+│   │
+│   ├── database/
+│   │   ├── database.ts     # Singleton SQLite (WAL + FK + migrations)
+│   │   ├── schema.ts       # CREATE TABLE + índices + migrations
+│   │   └── repositories/
+│   │       ├── agenteRepository.ts     # auth, rate limiting, admin
+│   │       ├── moradorRepository.ts    # CRUD + busca LIKE seguro
+│   │       ├── residenciaRepository.ts
+│   │       ├── visitaRepository.ts
+│   │       ├── prontuarioRepository.ts
+│   │       └── syncQueueRepository.ts
+│   │
+│   ├── hooks/
+│   │   ├── useVisitas.ts
+│   │   ├── useMoradores.ts
+│   │   └── useResidencias.ts
+│   │
+│   ├── services/
+│   │   ├── authService.ts    # Login local + sessão no SecureStore
+│   │   ├── syncService.ts    # Processa sync_queue → Supabase
+│   │   ├── cepService.ts     # Busca endereço por CEP (ViaCEP)
+│   │   └── exportService.ts  # Gera CSV/Excel
+│   │
+│   ├── types/index.ts        # Todos os tipos, enums e interfaces
+│   └── utils/
+│       ├── encryption.ts     # SHA-256-CTR + hash com salt + SecureStore
+│       ├── validators.ts     # Zod schemas + validações + escapeForLike()
+│       ├── formatters.ts     # CPF, CEP, datas, máscaras
+│       ├── constants.ts      # Cores, chaves, limites
+│       └── lgpd.ts           # Anonimização, consentimento
+│
+├── supabase/schema.sql       # Schema PostgreSQL + políticas RLS
+├── .env.example
+├── app.json
+├── package.json
+└── tsconfig.json
+```
+
+---
+
+## 5. Banco de Dados
+
+### 16 tabelas SQLite
+
+```
+agentes                  → usuários do sistema (agentes e admin)
+residencias              → domicílios cadastrados
+moradores                → pessoas por residência
+prontuarios              → prontuário por morador (versionado)
+prontuario_saude         → condições crônicas, aferições, consultas
+prontuario_gestante      → pré-natal, vacinas, suplementos
+prontuario_puericultura  → crianças: peso, altura, vacinas, escola
+prontuario_mulher        → papanicolau, mamografia, anticoncepção
+prontuario_social        → vulnerabilidade, violência, saúde mental
+medicamentos             → lista de medicamentos por morador
+vacinas                  → cartão de vacinas
+receitas                 → receitas médicas
+visitas                  → registro de visitas domiciliares
+agendamentos             → consultas agendadas
+metas_visitas            → meta mensal por agente
+sync_queue               → fila de operações pendentes de sync
+audit_log                → rastreamento LGPD de ações sensíveis
+consentimentos           → base legal LGPD por morador e tipo de dado
+```
+
+### Configurações SQLite
+
+```sql
+PRAGMA foreign_keys = ON;    -- integridade referencial
+PRAGMA journal_mode = WAL;   -- recuperação sem corrupção
+PRAGMA synchronous = NORMAL; -- equilíbrio segurança/performance
+```
+
+### Índices
+
+```sql
+CREATE INDEX idx_moradores_residencia  ON moradores(residencia_id);
+CREATE INDEX idx_moradores_cpf         ON moradores(cpf);
+CREATE INDEX idx_moradores_cartao_sus  ON moradores(cartao_sus);
+CREATE INDEX idx_visitas_agente        ON visitas(agente_id);
+CREATE INDEX idx_visitas_data          ON visitas(data_visita);
+CREATE INDEX idx_agendamentos_data     ON agendamentos(data_agendada);
+CREATE INDEX idx_sync_queue_status     ON sync_queue(status);
+CREATE INDEX idx_residencias_agente    ON residencias(agente_id);
+```
+
+### Soft Delete (LGPD)
+
+Nenhum registro é excluído fisicamente. O campo `deleted_at` marca exclusão lógica, e o nome do morador é substituído por `"ANONIMIZADO"`:
+
+```sql
+UPDATE moradores
+SET deleted_at = datetime('now'), nome = 'ANONIMIZADO'
+WHERE id = ?;
+
+-- Queries sempre filtram registros excluídos
+SELECT * FROM moradores WHERE deleted_at IS NULL;
+```
+
+### Migrations
+
+Ao inicializar, o app executa cada `ALTER TABLE` individualmente. Erros de `duplicate column` ou `already exists` são ignorados; outros erros são relançados:
+
+```typescript
+} catch (err) {
+  const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+  if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
+    throw err;
+  }
+}
+```
+
+---
+
+## 6. Tipos e Interfaces
+
+Todos definidos em `src/types/index.ts`.
+
+### Enums
+
+```typescript
+enum Sexo {
+  masculino = 'masculino',
+  feminino  = 'feminino',
+  outro     = 'outro',
+}
+
+enum TipoImovel {
+  proprio = 'proprio',
+  alugado = 'alugado',
+  cedido  = 'cedido',
+  outros  = 'outros',
+}
+
+enum StatusVisita {
+  agendada      = 'agendada',
+  realizada     = 'realizada',
+  cancelada     = 'cancelada',
+  nao_encontrado= 'nao_encontrado',
+}
+
+enum StatusSync {
+  pendente      = 'pendente',
+  sincronizado  = 'sincronizado',
+  erro          = 'erro',
+}
+
+enum Escolaridade {
+  sem_escolaridade       = 'sem_escolaridade',
+  fundamental_incompleto = 'fundamental_incompleto',
+  fundamental_completo   = 'fundamental_completo',
+  medio_incompleto       = 'medio_incompleto',
+  medio_completo         = 'medio_completo',
+  superior_incompleto    = 'superior_incompleto',
+  superior_completo      = 'superior_completo',
+  pos_graduacao          = 'pos_graduacao',
+}
+
+enum NivelVulnerabilidade {
+  nenhum = 'nenhum',
+  baixo  = 'baixo',
+  medio  = 'medio',
+  alto   = 'alto',
+  critico= 'critico',
+}
+```
+
+### Interfaces principais
+
+```typescript
+interface Agente {
+  id:             string;   // UUID
+  nome:           string;
+  cpf:            string;   // 11 dígitos sem formatação
+  email:          string;
+  telefone?:      string;
+  area_atuacao:   string;
+  unidade_saude:  string;
+  ativo:          boolean;
+  is_admin:       boolean;
+  created_at:     string;   // ISO 8601
+  updated_at:     string;
+}
+
+interface Residencia {
+  id:                    string;
+  cep:                   string;
+  logradouro:            string;
+  numero:                string;
+  complemento?:          string;
+  bairro:                string;
+  cidade:                string;
+  estado:                string;  // 2 chars
+  tipo_imovel:           TipoImovel;
+  num_comodos:           number;
+  tem_animais:           boolean;
+  animais_info?:         string;
+  morador_responsavel_id?: string;
+  agente_id:             string;
+  status_sync:           StatusSync;
+  created_at:            string;
+  updated_at:            string;
+  deleted_at?:           string | null;
+}
+
+interface Morador {
+  id:                    string;
+  residencia_id:         string;
+  nome:                  string;
+  cpf?:                  string;
+  cartao_sus?:           string;
+  telefone?:             string;
+  data_nascimento:       string;  // DD/MM/AAAA
+  cidade_nascimento?:    string;
+  nome_pai?:             string;
+  nome_mae?:             string;
+  sexo:                  Sexo;
+  escolaridade?:         Escolaridade;
+  profissao?:            string;
+  tem_doenca:            boolean;
+  doencas?:              string;
+  beneficio_bolsa_familia: boolean;
+  tem_convenio:          boolean;
+  convenio_nome?:        string;
+  toma_medicamento:      boolean;
+  medicamentos_lista?:   string;
+  is_responsavel:        boolean;
+  agente_id:             string;
+  status_sync:           StatusSync;
+  created_at:            string;
+  updated_at:            string;
+  deleted_at?:           string | null;
+}
+
+interface Visita {
+  id:                      string;
+  residencia_id:           string;
+  morador_id?:             string;
+  agente_id:               string;
+  data_visita:             string;  // YYYY-MM-DD
+  status:                  StatusVisita;
+  motivo_visita?:          string;
+  queixas?:                string;
+  observacoes?:            string;
+  pa_visita?:              string;  // ex: "120/80"
+  glicemia_visita?:        number;
+  peso_visita?:            number;
+  medicamentos_em_dia?:    boolean;
+  cartao_vacinas_em_dia?:  boolean;
+  encaminhamentos?:        string;
+  precisa_agendamento?:    boolean;
+  especialidade_agendamento?: string;
+  status_sync:             StatusSync;
+  created_at:              string;
+  updated_at:              string;
+}
+```
+
+---
+
+## 7. Navegação e Telas
+
+### Fluxo de navegação
+
+```
+Abertura
+    │
+    ▼
+index.tsx
+    ├── sem sessão ──────────────────────▶ /(auth)/login
+    │
+    └── com sessão
+            ├── is_admin = true  ────────▶ /(admin)
+            └── is_admin = false ────────▶ /(app)
+```
+
+### (auth) — Área pública
+
+| Tela | Rota | Descrição |
+|---|---|---|
+| Login | `/(auth)/login` | CPF com formatação automática + senha; redireciona por perfil; exibe erro de rate limiting |
+| Cadastro | `/(auth)/cadastro` | Disponível apenas se não houver agente cadastrado no dispositivo |
+| Recuperar senha | `/(auth)/recuperar-senha` | CPF + e-mail; mensagem genérica (não revela campo inválido) |
+
+### (app) — Área do Agente (5 abas)
+
+| Aba | Ícone | Telas acessíveis |
+|---|---|---|
+| Home | house | Dashboard com estatísticas e foto de perfil |
+| Residências | home | Lista + nova + detalhe (moradores e visitas) |
+| Visitas | clipboard | Lista + nova + detalhe com sinais vitais |
+| Calendário | calendar | Agendamentos por dia |
+| Mais | menu | Metas, busca, relatórios, configurações, logout |
+
+**Telas de detalhe (Stack):**
+
+| Tela | Rota | Descrição |
+|---|---|---|
+| Detalhe residência | `/(app)/residencia/[id]` | Moradores cadastrados, histórico de visitas |
+| Nova residência | `/(app)/residencia/nova` | Busca CEP automática, todos os campos |
+| Detalhe morador | `/(app)/morador/[id]` | Ficha completa + acesso ao prontuário |
+| Novo morador | `/(app)/morador/novo` | Dados pessoais, saúde, benefícios |
+| Prontuário | `/(app)/prontuario/[moradorId]` | 5 abas: Saúde Geral, Gestante, Puericultura, Mulher, Social |
+| Nova visita | `/(app)/visita/nova` | PA, glicemia, peso, checklist, encaminhamentos |
+| Detalhe visita | `/(app)/visita/[id]` | Registro completo da visita |
+
+**Prontuário — 5 módulos:**
+
+| Módulo | Campos |
+|---|---|
+| Saúde Geral | Hipertensão, diabetes, acamado, tuberculose, hanseníase, PA, HGT, receita, próxima consulta, queixas |
+| Gestante | DUM, semanas de gestação, pré-natal em dia, vacina tétano, hepatite B, sulfato ferroso, ácido fólico |
+| Puericultura | Peso, altura, cartão de vacinas, consulta de acompanhamento, creche/escola |
+| Saúde da Mulher | Papanicolau, mamografia, anticoncepção, consulta ginecológica |
+| Social | Vulnerabilidade, negligência parental, violência doméstica, depressão, uso de álcool/drogas, encaminhamento assistente social |
+
+### (admin) — Área do Administrador (5 abas, tema roxo)
+
+| Aba | Descrição |
+|---|---|
+| Painel | 7 cards de estatísticas globais + top 3 agentes + últimas 5 visitas |
+| Agentes | Busca, stats por agente, modal com detalhes e definição de meta |
+| Residências | Todas as residências + moradores + histórico de visitas |
+| Visitas | Filtros por status e agente, detalhes completos |
+| Sistema | Tamanho do banco, credenciais admin, audit log paginado |
+
+---
+
+## 8. Segurança
+
+### Fluxo de autenticação
+
+```
+login(cpf, senha)
+    │
+    ├── _isLocked(cpf)?
+    │       └── sim → throw 'Conta temporariamente bloqueada'
+    │
+    ├── SELECT * FROM agentes WHERE cpf = ? AND ativo = 1
+    │
+    ├── verificarSenha(senha, hash)   ← sempre executado (timing-safe)
+    │       ├── hash contém '$'?
+    │       │     ├── sim → [salt, hash] = stored.split('$')
+    │       │     │         computed = SHA256(salt + senha)
+    │       │     │         return computed === hash
+    │       │     └── não → formato legado
+    │       │               computed = SHA256(senha)
+    │       │               return computed === hash
+    │       └── (se usuário não existe: hash dummy = '0000...0$0000...0')
+    │
+    ├── !row || !senhaValida?
+    │       └── sim → _registerFailure(cpf) → return null
+    │
+    ├── _clearFailures(cpf)
+    │
+    └── hash sem '$'? → hashSenha(senha) → UPDATE agentes SET senha_hash (migração)
+```
+
+### Hash de senha
+
+```
+Formato: "<salt_hex_32chars>$<sha256_hex_64chars>"
+
+Geração:
+  salt      = getRandomBytesAsync(16) → hex (32 chars)
+  hash      = SHA256(salt + senha)    → hex (64 chars)
+  armazenado= salt + "$" + hash
+
+Verificação:
+  [salt, hash] = stored.split('$')
+  computed     = SHA256(salt + senha)
+  válido       = computed === hash
+```
+
+### Criptografia de campos PII (SHA-256-CTR)
+
+Campos sensíveis (CPF, cartão SUS, nome, telefone, nome do pai/mãe) são cifrados com **SHA-256 no modo CTR**:
+
+```
+Chave:    256 bits — gerada uma vez, armazenada no Keychain/Keystore
+IV:       16 bytes aleatórios por cifração
+Keystream: SHA256(key_hex || iv_hex || counter_hex_8) → 32 bytes por bloco
+Cifração: plaintext_byte XOR keystream_byte
+Formato:  "v2:" + base64(iv[16] || ciphertext[n])
+
+Retrocompatibilidade: dados sem "v2:" são descriptografados via XOR legado
+```
+
+Por que SHA-256-CTR e não XOR simples?
+- XOR com chave fixa é reversível e determinístico — mesma entrada, mesmo ciphertext
+- CTR com IV aleatório gera ciphertext diferente a cada cifração (semantic security)
+- Sem dependências externas além de `expo-crypto`
+
+### Rate Limiting
+
+```typescript
+const MAX_LOGIN_ATTEMPTS  = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000;  // 15 minutos
+
+// Mapa em memória (persiste enquanto o processo vive)
+Map<cpf, { count: number; lockedUntil: number }>
+
+_isLocked(cpf):
+  entry.lockedUntil === 0   → não está bloqueado (acumulando falhas)
+  entry.lockedUntil > now   → bloqueado
+  entry.lockedUntil <= now  → bloqueio expirou → delete entry
+
+_registerFailure(cpf):
+  count++
+  if count >= 5 → lockedUntil = now + 15min
+
+loginRateStatus(cpf):
+  → { locked: boolean, remaining: number, unlocksAt?: number }
+```
+
+### Proteção contra SQL Injection
+
+```typescript
+// Sempre parameterized queries
+await db.getFirstAsync(
+  'SELECT * FROM agentes WHERE cpf = ? AND ativo = 1',
+  [cpf]
+);
+
+// Busca com LIKE — metacaracteres escapados
+function escapeForLike(query: string): string {
+  return query
+    .replace(/\\/g, '\\\\')
+    .replace(/%/g, '\\%')
+    .replace(/_/g, '\\_');
+}
+
+await db.getAllAsync(
+  `SELECT * FROM moradores WHERE nome LIKE ? ESCAPE '\\'`,
+  [`%${escapeForLike(nome)}%`]
+);
+```
+
+### Sessão
+
+```
+Duração:   8 horas (SESSION_TIMEOUT_MS)
+Token:     UUID armazenado no expo-secure-store
+Renovação: automática quando app volta do background (AppState listener)
+Logout:    limpa token + chave de criptografia + cache em memória
+```
+
+### Resumo de proteções
+
+| Vetor de ataque | Proteção implementada |
+|---|---|
+| SQL Injection | Parameterized queries em 100% das queries |
+| SQL LIKE Injection | `escapeForLike()` escapa `%`, `_`, `\` |
+| Rainbow tables | Salt aleatório de 16 bytes nas senhas |
+| Timing attack (user enumeration) | `verificarSenha` sempre executada com hash dummy |
+| Brute force / força bruta | Rate limiting: 5 tentativas / bloqueio 15 min |
+| User enumeration na recuperação | Mensagem de erro genérica |
+| Dados em repouso | SHA-256-CTR com IV aleatório + chave no Keychain/Keystore |
+| Token hijacking | expo-secure-store (TEE/Secure Enclave quando disponível) |
+| Sessão infinita | Timeout de 8 horas + logout automático |
+| Migração de hash inseguro | Formato legado migrado automaticamente no login |
+| XSS | Não aplicável — app nativo React Native |
+| CSRF | Não aplicável — sem cookies |
+
+### Atenção em produção
+
+- **RLS no Supabase** — obrigatório (ver seção 13)
+- **AES-256-GCM** — substituto recomendado ao SHA-256-CTR (cipher autenticado)
+- **Certificate pinning** — fixar certificado TLS para apps de saúde
+- **Root/jailbreak detection** — `expo-device` para dispositivos comprometidos
+- **ProGuard/Hermes** — ofuscação do bundle no build de produção
+
+---
+
+## 9. LGPD
+
+O ConectAgente foi desenvolvido com conformidade à **Lei 13.709/2018**:
+
+| Requisito | Implementação |
+|---|---|
+| Finalidade (Art. 6º, I) | Dados usados exclusivamente para atenção básica à saúde pública |
+| Adequação (Art. 6º, II) | Coleta limitada ao necessário para as visitas domiciliares |
+| Transparência (Art. 6º, VI) | Aviso LGPD no login e cadastro |
+| Segurança (Art. 46) | Criptografia local, hash com salt, SecureStore nativo |
+| Prevenção (Art. 6º, VIII) | Validações impedem dados inválidos ou desnecessários |
+| Exclusão (Art. 18, VI) | Soft delete + anonimização do nome (`"ANONIMIZADO"`) |
+| Rastreabilidade (Art. 37) | `audit_log` com timestamp em ações sensíveis |
+| Consentimento (Art. 7º, I) | Tabela `consentimentos` por morador e tipo de dado |
+| Base legal (Art. 7º, II) | Execução de políticas públicas de saúde |
+
+### Audit Log
+
+```sql
+-- Estrutura
+audit_log (
+  id          TEXT PRIMARY KEY,
+  agente_id   TEXT,              -- quem realizou a ação
+  acao        TEXT,              -- 'RESET_SENHA', 'CRIAR_AGENTE', etc.
+  tabela      TEXT,              -- tabela afetada
+  registro_id TEXT,              -- ID do registro afetado
+  detalhes    TEXT,              -- descrição sem dados sensíveis
+  created_at  TEXT               -- timestamp ISO 8601
+)
+
+-- Evento registrado automaticamente
+INSERT INTO audit_log VALUES (
+  uuid(), agente_id,
+  'RESET_SENHA', 'agentes', agente_id,
+  'Recuperação de senha via verificação CPF+email',
+  datetime('now')
+);
+```
+
+### Dados coletados e base legal
+
+| Dado | Finalidade | Base Legal LGPD |
+|---|---|---|
+| Nome, CPF, data de nascimento | Identificação do morador | Art. 7º, II |
+| Condições de saúde, medicamentos | Acompanhamento clínico | Art. 11, II, b |
+| Vulnerabilidade social | Encaminhamento assistência social | Art. 7º, II |
+| Dados de gestante e puericultura | Atenção pré-natal e infantil | Art. 11, II, b |
+| Endereço | Planejamento de visitas domiciliares | Art. 7º, II |
+
+---
+
+## 10. Testes
+
+### Executar
+
+```bash
+npm test              # todos os testes em modo watch
+npm run test:ci       # com cobertura de código (CI)
+```
+
+### Resultado atual
+
+```
+Test Suites : 18 passed
+Tests       : 263 passed
+Coverage    : ~80% statements / ~83% lines
+Threshold   : 60% mínimo em branches/functions/lines/statements
+```
+
+### Cobertura por módulo
+
+| Arquivo de teste | O que cobre |
+|---|---|
+| `utils/encryption.test.ts` | hashSHA256, hashSenha com salt, verificarSenha (novo + legado), SHA-256-CTR round-trip, IV aleatório, cache de chave, retrocompatibilidade XOR |
+| `utils/validators.test.ts` | CPF, cartão SUS, CEP, email (TLD, subdomínio, trim), telefone, datas BR, escapeForLike (%, _, \\, múltiplos), schemas Zod |
+| `utils/formatters.test.ts` | Formatação de CPF, CEP, datas, máscaras numéricas |
+| `utils/lgpd.test.ts` | Anonimização de dados, utilitários de consentimento |
+| `repositories/agenteRepository.test.ts` | criar (admin/não-admin), autenticar (correto/errado/inexistente), timing-safe, migração hash legado, rate limiting (4 falhas, bloqueio após 5, status, reset após sucesso), buscarPorId, existeAgenteCadastrado, atualizar, verificarIdentidade, resetarSenha, garantirAdminPadrao |
+| `repositories/moradorRepository.test.ts` | CRUD completo, busca com LIKE seguro |
+| `repositories/residenciaRepository.test.ts` | CRUD, soft delete |
+| `repositories/visitaRepository.test.ts` | Criar, listar, estatísticas, últimas visitas |
+| `services/authService.test.ts` | Login offline, persistência de sessão, logout, renovação |
+| `services/syncService.test.ts` | Processamento da fila, tratamento de erros de rede |
+| `services/cepService.test.ts` | Busca de endereço, tratamento de CEP inválido |
+| `services/exportService.test.ts` | Geração de CSV e Excel |
+| `hooks/useVisitas.test.ts` | Estado, filtros, CRUD de visitas |
+| `hooks/useResidencias.test.ts` | Estado, busca, CRUD de residências |
+| `components/ui/Badge.test.tsx` | Variantes de cor e texto |
+| `components/ui/Card.test.tsx` | Renderização e interação |
+| `components/ui/EmptyState.test.tsx` | Estado vazio com ícone e mensagem |
+| `components/button/Button.test.tsx` | Variantes, loading, disabled |
+
+### Estratégia de mocks
+
+```typescript
+// expo-crypto — hash determinístico baseado no input
+jest.mock('expo-crypto', () => ({
+  getRandomBytesAsync: jest.fn(),
+  digestStringAsync: jest.fn(),
+  CryptoDigestAlgorithm: { SHA256: 'SHA-256' },
+}));
+
+// expo-secure-store — SecureStore simulado
+jest.mock('expo-secure-store', () => ({
+  getItemAsync: jest.fn().mockResolvedValue('0123456789abcdef'.repeat(4)),
+  setItemAsync: jest.fn(),
+}));
+
+// SQLite — banco simulado
+const mockDb = {
+  runAsync:            jest.fn(),
+  getFirstAsync:       jest.fn(),
+  getAllAsync:          jest.fn(),
+  withTransactionAsync:jest.fn((cb) => cb()),
+};
+```
+
+### Isolamento entre testes (estado em memória)
+
+```typescript
+// agenteRepository mantém Map de rate limiting e cache de chave em memória
+// Ambos devem ser resetados em beforeEach para evitar vazamento de estado
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  clearEncryptionKeyCache();       // reseta cache da chave de criptografia
+  _resetLoginAttemptsForTesting(); // limpa o Map de tentativas de login
+  mockedCrypto.digestStringAsync.mockResolvedValue('hashed-password');
 });
 ```
 
 ---
 
-## Painel Administrativo
-
-O administrador acessa uma área separada (`/(admin)`) com tema roxo, distinta da área do agente.
-
-| Tela | Funcionalidade |
-|---|---|
-| **Painel** | Estatísticas globais (agentes, residências, moradores, visitas do mês/hoje, sync pendente) |
-| **Agentes** | Lista completa com busca, estatísticas por agente, definição de metas mensais |
-| **Residências** | Todas as residências com moradores e histórico de visitas |
-| **Visitas** | Todas as visitas com filtros por status e agente, detalhes de sinais vitais e checklist |
-| **Sistema** | Estatísticas do banco, credenciais admin, audit log LGPD paginado |
-
-### Credenciais padrão do administrador
-
-| Campo | Valor |
-|---|---|
-| CPF | `111.444.777-35` |
-| Senha | `Admin@2025` |
-
-> **Troque a senha no primeiro login.** O administrador padrão é criado automaticamente na inicialização do app.
-
----
-
-## Segurança
-
-### Autenticação
-
-| Mecanismo | Implementação |
-|---|---|
-| Hash de senha | SHA-256 com salt aleatório de 16 bytes — formato `salt$hash` |
-| Migração automática | Login com senha legada (sem salt) migra transparentemente para o novo formato |
-| Timing-safe | `verificarSenha` é sempre executada, mesmo quando o CPF não existe no banco |
-| Rate limiting | 5 tentativas por CPF → bloqueio de 15 minutos |
-| Sessão | Token UUID em `expo-secure-store` (iOS Keychain / Android Keystore) |
-| Timeout | Sessão expira em 8 horas, renovada por atividade |
-| Logout | Limpa token, chave de criptografia e cache em memória |
-
-### Criptografia de campos PII
-
-O app usa **SHA-256 no modo CTR (stream cipher)** com IV aleatório de 16 bytes por cifração.
-
-```
-Formato armazenado: "v2:<base64(iv[16] || ciphertext[n])>"
-Compatibilidade retroativa: strings sem prefixo "v2:" são descriptografadas via XOR legado
-```
-
-| Dado | Proteção |
-|---|---|
-| Senha | SHA-256 + salt (irreversível) |
-| CPF, cartão SUS, nome, telefone | SHA-256-CTR com IV aleatório + chave em SecureStore |
-| Token de sessão | SecureStore (Keychain/Keystore do OS) |
-| Chave de criptografia | SecureStore (Keychain/Keystore do OS) |
-
-### Banco de dados
-
-- **Parameterized queries** em todas as operações — zero risco de SQL Injection
-- **`escapeForLike()`** — escapa metacaracteres `%`, `_`, `\` antes de queries com `LIKE`
-- **`PRAGMA foreign_keys = ON`** — integridade referencial garantida
-- **`PRAGMA journal_mode = WAL`** — recuperação de falhas sem corrupção
-- **Migrations específicas** — erros de `duplicate column` são ignorados; outros são relançados
-
-### Recuperação de senha (LGPD-compliant)
-
-1. Usuário informa CPF + e-mail cadastrado
-2. Mensagem de erro **genérica** — não revela qual campo falhou
-3. Verificação normaliza o e-mail (lowercase + trim) antes da consulta
-4. Nova senha usa hash com salt
-5. Evento registrado no `audit_log`
-
-### O que está protegido
-
-- SQL Injection — parameterized queries + escapeForLike()
-- Rainbow tables — salt nas senhas
-- Timing attack no login — verificarSenha sempre executada com hash dummy
-- Brute force — rate limiting (5 tentativas / 15 min de bloqueio)
-- Token hijacking — SecureStore nativo
-- Enumeração de usuários — mensagem genérica na recuperação
-- Dados em repouso — campos PII criptografados com SHA-256-CTR
-- Sessão infinita — timeout de 8 horas
-- XSS — não aplicável (React Native)
-- CSRF — não aplicável (app nativo sem cookies)
-
-### O que requer atenção em produção
-
-- **RLS no Supabase** — configurar Row-Level Security para isolar dados por `agente_id`
-- **Certificate pinning** — para apps de saúde críticos, fixar certificado TLS
-- **Root/jailbreak detection** — considerar `expo-device` para detectar dispositivos comprometidos
-- **Ofuscação de código** — habilitar ProGuard/Hermes no build de produção
-- **Upgrade para AES-256-GCM** — substituir SHA-256-CTR por cipher autenticado
-
----
-
-## LGPD
-
-O sistema implementa os principais requisitos da Lei Geral de Proteção de Dados:
-
-| Requisito | Implementação |
-|---|---|
-| **Finalidade** (Art. 6º, I) | Dados usados exclusivamente para atenção básica à saúde pública |
-| **Adequação** (Art. 6º, II) | Coleta limitada ao necessário para visitas domiciliares |
-| **Transparência** (Art. 6º, VI) | Aviso LGPD na tela de login e cadastro |
-| **Segurança** (Art. 46) | Criptografia local, hash com salt, SecureStore |
-| **Prevenção** (Art. 6º, VIII) | Validações impedem dados inválidos ou desnecessários |
-| **Direito de exclusão** (Art. 18, VI) | Soft delete + anonimização do nome |
-| **Rastreabilidade** (Art. 37) | `audit_log` registra ações sensíveis (reset de senha, criação de agentes) |
-| **Consentimento** (Art. 7º, I) | Tabela `consentimentos` por tipo de dado |
-| **Bases legais** (Art. 7º, II) | Saúde pública — execução de políticas públicas |
-
-### Dados coletados e finalidade
-
-| Dado | Finalidade | Base Legal |
-|---|---|---|
-| Nome, CPF, data nascimento | Identificação do morador | Art. 7º, II (saúde pública) |
-| Condições de saúde, medicamentos | Acompanhamento clínico | Art. 11, II, b (saúde) |
-| Vulnerabilidade social | Encaminhamento assistência social | Art. 7º, II |
-| Dados de gestante, puericultura | Atenção pré-natal e infantil | Art. 11, II, b |
-| Localização (endereço) | Planejamento de visitas | Art. 7º, II |
-
----
-
-## Instalação e Configuração
+## 11. Instalação
 
 ### Pré-requisitos
 
-- Node.js 20+
-- Expo CLI: `npm install -g expo-cli`
-- Android Studio ou Xcode (para emuladores)
+- **Node.js** 20+
+- **Expo CLI**: `npm install -g expo-cli`
+- **Android Studio** (emulador Android) ou **Xcode** (iOS — macOS apenas)
+- Conta no **Supabase** (para sincronização — opcional no desenvolvimento local)
 
-### Setup
+### Passo a passo
 
 ```bash
 # 1. Clone o repositório
@@ -370,131 +853,123 @@ npm install
 
 # 3. Configure as variáveis de ambiente
 cp .env.example .env
-# Edite .env com suas credenciais do Supabase
+# Edite .env com as credenciais do Supabase
 
-# 4. Inicie o app
+# 4. Inicie o servidor de desenvolvimento
 npx expo start
 
-# Para Android
+# Android
 npx expo start --android
 
-# Para iOS
+# iOS (somente macOS)
 npx expo start --ios
 ```
 
+### Credenciais padrão do administrador
+
+Na primeira execução, o app cria automaticamente um administrador padrão:
+
+| Campo | Valor |
+|---|---|
+| CPF | `111.444.777-35` |
+| Senha | `Admin@2025` |
+
+> Troque a senha imediatamente após o primeiro login.
+
 ---
 
-## Variáveis de Ambiente
+## 12. Variáveis de Ambiente
 
-Crie um arquivo `.env` na raiz do projeto (use `.env.example` como base):
+Crie `.env` baseado em `.env.example`:
 
 ```env
-# Supabase (obrigatório para sincronização)
+# Supabase (necessário para sincronização com a nuvem)
 EXPO_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...
 ```
 
-> **Nota:** A `ANON_KEY` do Supabase é uma chave pública. A segurança real depende das políticas RLS configuradas no servidor.
+> A `ANON_KEY` é uma chave pública do Supabase. A segurança real vem das políticas **Row-Level Security** configuradas no servidor.
 
 ---
 
-## Testes
+## 13. Supabase — RLS
 
-```bash
-# Rodar todos os testes
-npm test
-
-# Modo watch (desenvolvimento)
-npm run test -- --watchAll
-
-# Com cobertura de código
-npm run test:ci
-```
-
-### Resultados atuais
-
-```
-Test Suites: 18 passed
-Tests:       263 passed
-Coverage:    ~80% statements / ~83% lines
-```
-
-### Cobertura mínima exigida: 60%
-
-| Módulo | O que é testado |
-|---|---|
-| `utils/encryption.ts` | SHA-256-CTR, hash com salt, verificarSenha, round-trip, compatibilidade legado XOR |
-| `utils/validators.ts` | CPF, SUS, CEP, datas, email, telefone, escapeForLike, schemas Zod |
-| `repositories/agenteRepository` | Criar, autenticar, rate limiting, migração legado, verificarIdentidade, resetarSenha |
-| `repositories/moradorRepository` | CRUD, busca com LIKE seguro |
-| `repositories/residenciaRepository` | CRUD, soft delete |
-| `repositories/visitaRepository` | Criar, listar, estatísticas |
-| `services/authService` | Login offline, sessão, logout, renovação |
-| `services/syncService` | Processamento da fila, tratamento de erros |
-| `hooks/` | useVisitas, useResidencias |
-| `components/ui/` | Badge, Card, EmptyState, Button |
-
-### Mocks utilizados
-
-- `expo-secure-store` — armazenamento seguro simulado
-- `expo-sqlite` — banco de dados simulado
-- `expo-crypto` — hash determinístico para testes
-- `@supabase/supabase-js` — cliente simulado
-
----
-
-## Supabase — Configuração RLS
-
-**OBRIGATÓRIO para produção.** Configure as seguintes políticas no painel do Supabase:
+**Obrigatório para produção.** Sem Row-Level Security, qualquer agente autenticado consegue ver dados de outros agentes.
 
 ```sql
 -- Habilitar RLS em todas as tabelas
-ALTER TABLE residencias ENABLE ROW LEVEL SECURITY;
-ALTER TABLE moradores ENABLE ROW LEVEL SECURITY;
-ALTER TABLE visitas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE residencias  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE moradores    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE visitas      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE agendamentos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE prontuarios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE prontuarios  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE medicamentos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vacinas      ENABLE ROW LEVEL SECURITY;
 
--- Política: agente só acessa seus próprios dados
-CREATE POLICY "agente_isolation" ON residencias
+-- Isolamento por agente: cada agente acessa apenas seus próprios dados
+CREATE POLICY "isolamento_agente" ON residencias
   FOR ALL USING (agente_id = auth.uid());
 
-CREATE POLICY "agente_isolation" ON moradores
+CREATE POLICY "isolamento_agente" ON moradores
   FOR ALL USING (agente_id = auth.uid());
 
-CREATE POLICY "agente_isolation" ON visitas
+CREATE POLICY "isolamento_agente" ON visitas
   FOR ALL USING (agente_id = auth.uid());
 
--- Repita para: agendamentos, prontuarios, metas_visitas, audit_log
+-- Repita para: agendamentos, prontuarios, medicamentos, vacinas, metas_visitas
 ```
+
+O schema completo está em `supabase/schema.sql`.
 
 ---
 
-## Roadmap
+## 14. Roadmap
 
-### v1.1 — Em desenvolvimento
+### v1.0 — Concluído
 
-- [ ] Sincronização em background (build de produção)
-- [ ] Assinatura digital do morador na visita
-- [ ] Foto do domicílio na visita
+- [x] App mobile offline-first (React Native + Expo)
+- [x] CRUD completo: residências, moradores, visitas, prontuários
+- [x] Sincronização com Supabase (fila offline-first)
+- [x] Autenticação local com sessão de 8h
+- [x] Criptografia SHA-256-CTR + SecureStore
+- [x] Conformidade LGPD (soft delete, anonimização, audit log, consentimento)
+- [x] Calendário de agendamentos
+- [x] Metas mensais de visitas
+- [x] Exportação CSV/Excel
+- [x] Área administrativa no app mobile
 
-### v1.2 — Planejado
+### v1.1 — Concluído
 
-- [ ] Painel web administrativo (Next.js + Supabase)
-  - Dashboard com estatísticas por equipe
+- [x] Painel web administrativo (Next.js 15 + Supabase)
+  - Dashboard com estatísticas por equipe e por microárea
+  - Gestão de agentes, famílias, moradores e visitas
   - Mapa de cobertura territorial
   - Exportação de relatórios gerenciais
-- [ ] Notificações push para agendamentos
-- [ ] Integração com e-SUS/SISAB (sistema nacional)
-- [ ] Modo supervisor — coordenador vê equipe completa
+  - Rate limiting, error boundaries, validação de entrada
+  - 220 testes unitários (Jest + Testing Library)
+  - Sistema de registro com aprovação de admin
+
+### v1.2 — Em desenvolvimento
+
+- [ ] Sincronização em background (background task em build de produção)
+- [ ] Assinatura digital do morador na visita (`assinatura_base64`)
+- [ ] Foto do domicílio na visita
+
+### v1.3 — Planejado
+
+- [ ] Notificações push para agendamentos (expo-notifications)
+- [ ] Integração com e-SUS/SISAB (sistema nacional do Ministério da Saúde)
+- [ ] Modo supervisor — coordenador visualiza equipe completa
+- [ ] Deploy do painel web em produção (Vercel + Supabase cloud)
 
 ### Segurança — Backlog
 
-- [ ] Upgrade para AES-256-GCM (cipher autenticado)
+- [ ] Upgrade para AES-256-GCM (cipher autenticado — substitui SHA-256-CTR)
 - [ ] Certificate pinning (TLS)
 - [ ] Root/jailbreak detection
 - [ ] Ofuscação de código (ProGuard + Hermes)
 - [ ] Política de senha configurável (complexidade mínima)
+- [ ] 2FA para administradores
 
 ---
 
@@ -502,4 +977,4 @@ CREATE POLICY "agente_isolation" ON visitas
 
 Proprietário — ConectAgente © 2026. Todos os direitos reservados.
 
-Este software é destinado ao uso por Secretarias Municipais de Saúde e equipes de Atenção Básica credenciadas.
+Desenvolvido para uso por Secretarias Municipais de Saúde e equipes de Atenção Básica credenciadas.

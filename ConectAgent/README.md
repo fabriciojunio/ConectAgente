@@ -472,21 +472,42 @@ CREATE POLICY "agente_isolation" ON visitas
 
 ## Roadmap
 
-### v1.1 — Em desenvolvimento
+### v1.0 — Concluído
+
+- [x] App mobile offline-first (React Native + Expo)
+- [x] CRUD completo: residências, moradores, visitas, prontuários
+- [x] Sincronização com Supabase (fila offline-first)
+- [x] Autenticação local com sessão de 8h
+- [x] Criptografia SHA-256-CTR + SecureStore
+- [x] Conformidade LGPD (soft delete, anonimização, audit log, consentimento)
+- [x] Calendário de agendamentos
+- [x] Metas mensais de visitas
+- [x] Exportação CSV/Excel
+- [x] Área administrativa no app mobile
+
+### v1.1 — Concluído
+
+- [x] Painel web administrativo (Next.js 15 + Supabase) — `conectagente-web/`
+  - Dashboard com estatísticas por equipe e por microárea
+  - Gestão de agentes, famílias, moradores e visitas
+  - Mapa de cobertura territorial
+  - Exportação de relatórios gerenciais
+  - Rate limiting, error boundaries, validação de entrada
+  - 220 testes unitários (Jest + Testing Library)
+  - Sistema de registro com aprovação de admin
+
+### v1.2 — Em desenvolvimento
 
 - [ ] Sincronização em background (build de produção)
 - [ ] Assinatura digital do morador na visita
 - [ ] Foto do domicílio na visita
 
-### v1.2 — Planejado
+### v1.3 — Planejado
 
-- [ ] Painel web administrativo (Next.js + Supabase)
-  - Dashboard com estatísticas por equipe
-  - Mapa de cobertura territorial
-  - Exportação de relatórios gerenciais
 - [ ] Notificações push para agendamentos
 - [ ] Integração com e-SUS/SISAB (sistema nacional)
 - [ ] Modo supervisor — coordenador vê equipe completa
+- [ ] Deploy do painel web em produção (Vercel + Supabase cloud)
 
 ### Segurança — Backlog
 
@@ -495,6 +516,7 @@ CREATE POLICY "agente_isolation" ON visitas
 - [ ] Root/jailbreak detection
 - [ ] Ofuscação de código (ProGuard + Hermes)
 - [ ] Política de senha configurável (complexidade mínima)
+- [ ] 2FA para administradores
 
 ---
 
