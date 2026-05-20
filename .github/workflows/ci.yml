@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-mobile:
+    name: Testes — App Mobile
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ConectAgente-mobile/package-lock.json
+
+      - name: Instalar dependências
+        working-directory: ConectAgente-mobile
+        run: npm ci
+
+      - name: Executar testes
+        working-directory: ConectAgente-mobile
+        run: npm test -- --coverage --passWithNoTests
+
+      - name: Cobertura
+        uses: codecov/codecov-action@v4
+        if: always()
+
+  typecheck-mobile:
+    name: TypeCheck — App Mobile
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ConectAgente-mobile/package-lock.json
+
+      - name: Instalar dependências
+        working-directory: ConectAgente-mobile
+        run: npm ci
+
+      - name: Verificar tipos TypeScript
+        working-directory: ConectAgente-mobile
+        run: npx tsc --noEmit
+
+  test-web:
+    name: Testes — Portal Web
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ConectAgente-web/package-lock.json
+
+      - name: Instalar dependências
+        working-directory: ConectAgente-web
+        run: npm ci
+
+      - name: Build
+        working-directory: ConectAgente-web
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
