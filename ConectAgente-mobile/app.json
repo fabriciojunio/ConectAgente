@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "ConectAgente",
+    "slug": "ConectAgente",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/LOGO-remove.png",
+    "scheme": "conectagente",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/LOGO-remove.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#a9c7c3"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.conectagente.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/LOGO-remove.png",
+        "backgroundColor": "#a9c7c3"
+      },
+      "package": "com.conectagente.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-sqlite",
+        {
+          "enableFTS": true
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
