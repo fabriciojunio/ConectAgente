@@ -21,13 +21,13 @@ describe('DashboardCards', () => {
 
     expect(screen.getByText('Visitas Hoje')).toBeInTheDocument();
     expect(screen.getByText('12')).toBeInTheDocument();
-    expect(screen.getByText('Visitas no Mes')).toBeInTheDocument();
+    expect(screen.getByText('Visitas no Mês')).toBeInTheDocument();
     expect(screen.getByText('240')).toBeInTheDocument();
-    expect(screen.getByText('Total Familias')).toBeInTheDocument();
+    expect(screen.getByText('Total Famílias')).toBeInTheDocument();
     expect(screen.getByText('150')).toBeInTheDocument();
     expect(screen.getByText('Agentes Ativos')).toBeInTheDocument();
     expect(screen.getByText('20')).toBeInTheDocument();
-    expect(screen.getByText('Taxa de Conclusao')).toBeInTheDocument();
+    expect(screen.getByText('Taxa de Conclusão')).toBeInTheDocument();
     expect(screen.getByText('83.3%')).toBeInTheDocument();
     expect(screen.getByText('Visitas Pendentes')).toBeInTheDocument();
     expect(screen.getByText('40')).toBeInTheDocument();

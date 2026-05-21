@@ -30,12 +30,12 @@ const DEMO_STATS: DashboardStats = {
 const NAV_ITEMS = [
   { label: 'Dashboard', icon: LayoutDashboard, active: true },
   { label: 'Visitas', icon: ClipboardList },
-  { label: 'Familias', icon: Home },
+  { label: 'Famílias', icon: Home },
   { label: 'Moradores', icon: Users },
   { label: 'Agentes', icon: UserCheck },
   { label: 'Monitoramento', icon: Activity },
   { label: 'Territorial', icon: Map },
-  { label: 'Relatorios', icon: FileBarChart },
+  { label: 'Relatórios', icon: FileBarChart },
 ];
 
 export default function DemoPage() {
@@ -56,7 +56,7 @@ export default function DemoPage() {
           fontWeight: 500,
         }}
       >
-        Modo Demonstracao — dados simulados.{' '}
+        Modo Demonstração — dados simulados.{' '}
         <Link href="/login" className="underline font-semibold">
           Acessar sistema completo
         </Link>
@@ -88,7 +88,7 @@ export default function DemoPage() {
             </div>
             <div>
               <p style={{ fontWeight: 700, fontSize: 13, color: '#0D47A1', margin: 0 }}>ConectAgente</p>
-              <p style={{ fontSize: 10, color: '#9CA3AF', margin: 0 }}>Painel de Gestao</p>
+              <p style={{ fontSize: 10, color: '#9CA3AF', margin: 0 }}>Painel de Gestão</p>
             </div>
           </div>
 
@@ -144,7 +144,7 @@ export default function DemoPage() {
               D
             </div>
             <div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: 0 }}>Usuario Demo</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: 0 }}>Usuário Demo</p>
               <p style={{ fontSize: 11, color: '#9CA3AF', margin: 0 }}>Supervisor</p>
             </div>
           </div>
@@ -161,7 +161,7 @@ export default function DemoPage() {
             }}
           >
             <LogOut size={15} />
-            Sair da demonstracao
+            Sair da demonstração
           </Link>
         </div>
       </aside>
@@ -180,7 +180,7 @@ export default function DemoPage() {
         >
           <div>
             <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#111827' }}>Dashboard</h1>
-            <p style={{ margin: 0, fontSize: 13, color: '#6B7280' }}>Visao geral das operacoes</p>
+            <p style={{ margin: 0, fontSize: 13, color: '#6B7280' }}>Visão geral das operações</p>
           </div>
           <span
             style={{
@@ -192,7 +192,7 @@ export default function DemoPage() {
               borderRadius: 999,
             }}
           >
-            Demonstracao
+            Demonstração
           </span>
         </header>
 
@@ -203,7 +203,7 @@ export default function DemoPage() {
             {/* Visitas por semana */}
             <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E5E7EB', padding: 24 }}>
               <h3 style={{ margin: '0 0 16px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6B7280' }}>
-                Visitas por Semana (Mes Atual)
+                Visitas por Semana (Mês Atual)
               </h3>
               {[
                 { label: 'Semana 1', value: 142 },
@@ -233,7 +233,7 @@ export default function DemoPage() {
             {/* Top agentes */}
             <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E5E7EB', padding: 24 }}>
               <h3 style={{ margin: '0 0 16px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6B7280' }}>
-                Top Agentes - Visitas no Mes
+                Top Agentes — Visitas no Mês
               </h3>
               {[
                 { nome: 'Ana Silva', visitas: 48 },
@@ -287,11 +287,11 @@ export default function DemoPage() {
               Visitas Recentes
             </h3>
             {[
-              { familia: 'Familia Rodrigues', agente: 'Ana Silva', status: 'Realizada', data: 'Hoje, 09:30' },
-              { familia: 'Familia Oliveira', agente: 'Carlos Mendes', status: 'Realizada', data: 'Hoje, 08:15' },
-              { familia: 'Familia Santos', agente: 'Juliana Costa', status: 'Pendente', data: 'Ontem, 15:00' },
-              { familia: 'Familia Ferreira', agente: 'Roberto Lima', status: 'Realizada', data: 'Ontem, 14:30' },
-              { familia: 'Familia Pereira', agente: 'Fernanda Souza', status: 'Realizada', data: 'Ontem, 11:00' },
+              { familia: 'Família Rodrigues', agente: 'Ana Silva', status: 'Realizada', data: 'Hoje, 09:30' },
+              { familia: 'Família Oliveira', agente: 'Carlos Mendes', status: 'Realizada', data: 'Hoje, 08:15' },
+              { familia: 'Família Santos', agente: 'Juliana Costa', status: 'Pendente', data: 'Ontem, 15:00' },
+              { familia: 'Família Ferreira', agente: 'Roberto Lima', status: 'Realizada', data: 'Ontem, 14:30' },
+              { familia: 'Família Pereira', agente: 'Fernanda Souza', status: 'Realizada', data: 'Ontem, 11:00' },
             ].map((v, i) => (
               <div
                 key={v.familia}
