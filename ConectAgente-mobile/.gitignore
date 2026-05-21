@@ -7,7 +7,8 @@ node_modules/
 .expo/
 dist/
 web-build/
-expo-env.d.ts
+# expo-env.d.ts é commitado para evitar erros de TypeScript no VS Code
+# (o Expo gera este arquivo automaticamente, mas ele é necessário para tipagem)
 
 # Native
 .kotlin/
