@@ -25,7 +25,7 @@ export default function DashboardCards({ stats, loading }: DashboardCardsProps) 
     return (
       <section
         className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
-        aria-label="Carregando estatisticas"
+        aria-label="Carregando estatísticas"
       >
         {Array.from({ length: 8 }).map((_, i) => (
           <SkeletonCard key={i} />
@@ -43,14 +43,14 @@ export default function DashboardCards({ stats, loading }: DashboardCardsProps) 
       subtitle: 'realizadas hoje',
     },
     {
-      title: 'Visitas no Mes',
+      title: 'Visitas no Mês',
       value: stats.visitas_mes,
       icon: CalendarDays,
       color: 'info' as const,
-      subtitle: 'neste mes',
+      subtitle: 'neste mês',
     },
     {
-      title: 'Total Familias',
+      title: 'Total Famílias',
       value: stats.total_familias,
       icon: Home,
       color: 'success' as const,
@@ -64,7 +64,7 @@ export default function DashboardCards({ stats, loading }: DashboardCardsProps) 
       subtitle: 'em atividade',
     },
     {
-      title: 'Taxa de Conclusao',
+      title: 'Taxa de Conclusão',
       value: `${stats.taxa_conclusao.toFixed(1)}%`,
       icon: TrendingUp,
       color: stats.taxa_conclusao >= 80 ? ('success' as const) : ('warning' as const),
@@ -75,14 +75,14 @@ export default function DashboardCards({ stats, loading }: DashboardCardsProps) 
       value: stats.visitas_pendentes,
       icon: Clock,
       color: 'warning' as const,
-      subtitle: 'aguardando realizacao',
+      subtitle: 'aguardando realização',
     },
     {
       title: 'Visitas Realizadas',
       value: stats.visitas_realizadas,
       icon: Activity,
       color: 'success' as const,
-      subtitle: 'concluidas',
+      subtitle: 'concluídas',
     },
     {
       title: 'Total Moradores',
@@ -96,7 +96,7 @@ export default function DashboardCards({ stats, loading }: DashboardCardsProps) 
   return (
     <section
       className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
-      aria-label="Estatisticas do dashboard"
+      aria-label="Estatísticas do dashboard"
     >
       {cards.map((card) => (
         <StatCard
