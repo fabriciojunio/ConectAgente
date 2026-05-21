@@ -926,6 +926,8 @@ O schema completo está em `supabase/schema.sql`.
 
 ## 14. Painel Web — conectagente-web
 
+**Deploy em produção:** [conectagente-web.vercel.app](https://conectagente-web.vercel.app) · **Modo demo:** [conectagente-web.vercel.app/demo](https://conectagente-web.vercel.app/demo)
+
 O painel web é um dashboard administrativo desenvolvido em **Next.js 15** que complementa o app mobile. Ele consome o **mesmo banco Supabase** e permite que supervisores e administradores gerenciem a operação sem precisar do app mobile.
 
 > Diretório: `conectagente-web/`
@@ -1094,7 +1096,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...
 - [ ] Notificações push para agendamentos (expo-notifications)
 - [ ] Integração com e-SUS/SISAB (sistema nacional do Ministério da Saúde)
 - [ ] Modo supervisor — coordenador visualiza equipe completa
-- [ ] Deploy do painel web em produção (Vercel + Supabase cloud)
+- [x] Deploy do painel web em produção — [conectagente-web.vercel.app](https://conectagente-web.vercel.app)
 
 ### Segurança — Backlog
 

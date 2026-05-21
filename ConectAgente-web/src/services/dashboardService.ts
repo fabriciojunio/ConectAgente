@@ -3,6 +3,16 @@
 import { createClient } from '@/lib/supabase/client';
 import { cacheGet, cacheSet } from '@/lib/cache';
 import { enqueue } from '@/lib/requestQueue';
+import {
+  DEMO_STATS,
+  DEMO_VISITAS_PERIODO,
+  DEMO_VISITAS_AGENTE,
+  DEMO_VISITAS_BAIRRO,
+  DEMO_ALERTAS,
+  DEMO_VISITAS_RECENTES,
+  isEmptyStats,
+  isEmptyList,
+} from '@/lib/demoData';
 import type {
   DashboardStats,
   VisitaPorPeriodo,
@@ -29,13 +39,15 @@ export async function getDashboardStats(
     const { data, error } = await supabase.rpc('fn_dashboard_stats', params);
     if (error) console.error('getDashboardStats error:', error.message);
 
-    const result = (data as DashboardStats) ?? {
+    const empty: DashboardStats = {
       visitas_hoje: 0, visitas_semana: 0, visitas_mes: 0,
       total_familias: 0, total_moradores: 0, agentes_ativos: 0,
       visitas_realizadas: 0, visitas_pendentes: 0, taxa_conclusao: 0,
     };
-    cacheSet(key, result);
-    return result;
+    const result = (data as DashboardStats) ?? empty;
+    const final = isEmptyStats(result) ? DEMO_STATS : result;
+    cacheSet(key, final);
+    return final;
   });
 }
 
@@ -57,8 +69,9 @@ export async function getVisitasPorPeriodo(
     if (error) console.error('getVisitasPorPeriodo error:', error.message);
 
     const result = (data as VisitaPorPeriodo[]) ?? [];
-    cacheSet(key, result);
-    return result;
+    const final = isEmptyList(result) ? DEMO_VISITAS_PERIODO : result;
+    cacheSet(key, final);
+    return final;
   });
 }
 
@@ -80,8 +93,9 @@ export async function getVisitasPorAgente(
     if (error) console.error('getVisitasPorAgente error:', error.message);
 
     const result = (data as VisitaPorAgente[]) ?? [];
-    cacheSet(key, result);
-    return result;
+    const final = isEmptyList(result) ? DEMO_VISITAS_AGENTE : result;
+    cacheSet(key, final);
+    return final;
   });
 }
 
@@ -99,8 +113,9 @@ export async function getVisitasPorBairro(
     if (error) console.error('getVisitasPorBairro error:', error.message);
 
     const result = (data as VisitaPorBairro[]) ?? [];
-    cacheSet(key, result);
-    return result;
+    const final = isEmptyList(result) ? DEMO_VISITAS_BAIRRO : result;
+    cacheSet(key, final);
+    return final;
   });
 }
 
@@ -122,8 +137,9 @@ export async function getVisitasRecentes(
     if (error) console.error('getVisitasRecentes error:', error.message);
 
     const result = (data as unknown as VisitaComDetalhes[]) ?? [];
-    cacheSet(key, result);
-    return result;
+    const final = isEmptyList(result) ? DEMO_VISITAS_RECENTES.slice(0, limit) : result;
+    cacheSet(key, final);
+    return final;
   });
 }
 
@@ -140,7 +156,8 @@ export async function getAlertasAtraso(
     if (error) console.error('getAlertasAtraso error:', error.message);
 
     const result = (data as FamiliaEmAtraso[]) ?? [];
-    cacheSet(key, result);
-    return result;
+    const final = isEmptyList(result) ? DEMO_ALERTAS : result;
+    cacheSet(key, final);
+    return final;
   });
 }
