@@ -24,9 +24,9 @@ export interface AlertasAtrasoProps {
 
 const criticidadeLabelMap: Record<NivelCriticidade, string> = {
   [NivelCriticidade.NORMAL]: 'Normal',
-  [NivelCriticidade.ATENCAO]: 'Atencao',
+  [NivelCriticidade.ATENCAO]: 'Atenção',
   [NivelCriticidade.ALERTA]: 'Alerta',
-  [NivelCriticidade.CRITICO]: 'Critico',
+  [NivelCriticidade.CRITICO]: 'Crítico',
 };
 
 function getCriticidadeBadgeVariant(
