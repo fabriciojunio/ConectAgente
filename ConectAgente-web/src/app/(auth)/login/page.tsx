@@ -234,8 +234,23 @@ export default function LoginPage() {
                 )}
               </button>
 
+              {/* Separador + Demo */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-[#E5EAF2]" />
+                <span className="text-xs text-[#9CA3AF]">ou</span>
+                <div className="flex-1 h-px bg-[#E5EAF2]" />
+              </div>
+
+              <Link
+                href="/demo"
+                className="w-full py-3 rounded-lg text-[#1565C0] font-semibold text-sm bg-[#EEF2FF] hover:bg-[#DBEAFE] transition-colors border border-[#BFDBFE] flex items-center justify-center gap-2"
+              >
+                <span className="text-base">👤</span>
+                <span>Acessar demonstração</span>
+              </Link>
+
               {/* Link para registro */}
-              <div className="text-center pt-2">
+              <div className="text-center">
                 <p className="text-sm text-[#6B7280]">
                   Não tem acesso?{' '}
                   <Link href="/registro" className="text-[#1565C0] hover:text-[#0D47A1] font-semibold">
@@ -244,24 +259,6 @@ export default function LoginPage() {
                 </p>
               </div>
             </form>
-
-            <div className="mt-6 pt-5 border-t border-[#E5EAF2]">
-              <div className="mb-4 p-3 bg-[#F0FDF4] border border-[#BBF7D0] rounded-lg">
-                <p className="text-xs font-semibold text-[#166534] mb-1.5">Credenciais de demonstração</p>
-                <p className="text-xs text-[#15803D] font-mono">CPF: <strong>000.000.000-00</strong></p>
-                <p className="text-xs text-[#15803D] font-mono">Senha: <strong>demo1234</strong></p>
-              </div>
-              <div className="flex flex-col items-center gap-3">
-                <p className="text-xs text-[#9CA3AF]">ou acesse sem precisar cadastro</p>
-                <Link
-                  href="/demo"
-                  className="w-full py-3 rounded-lg text-[#1565C0] font-semibold text-sm bg-[#EEF2FF] hover:bg-[#DBEAFE] transition-colors border border-[#BFDBFE] flex items-center justify-center gap-2"
-                >
-                  <span className="text-base">👤</span>
-                  <span>Acessar demonstração</span>
-                </Link>
-              </div>
-            </div>
           </div>
         </div>
 
