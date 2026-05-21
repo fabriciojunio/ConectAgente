@@ -245,15 +245,22 @@ export default function LoginPage() {
               </div>
             </form>
 
-            <div className="mt-6 pt-5 border-t border-[#E5EAF2] flex flex-col items-center gap-3">
-              <p className="text-xs text-[#9CA3AF]">Quer explorar sem credenciais?</p>
-              <Link
-                href="/demo"
-                className="w-full py-3 rounded-lg text-[#1565C0] font-semibold text-sm bg-[#EEF2FF] hover:bg-[#DBEAFE] transition-colors border border-[#BFDBFE] flex items-center justify-center gap-2"
-              >
-                <span className="text-base">👤</span>
-                <span>Acessar demonstração</span>
-              </Link>
+            <div className="mt-6 pt-5 border-t border-[#E5EAF2]">
+              <div className="mb-4 p-3 bg-[#F0FDF4] border border-[#BBF7D0] rounded-lg">
+                <p className="text-xs font-semibold text-[#166534] mb-1.5">Credenciais de demonstração</p>
+                <p className="text-xs text-[#15803D] font-mono">CPF: <strong>000.000.000-00</strong></p>
+                <p className="text-xs text-[#15803D] font-mono">Senha: <strong>demo1234</strong></p>
+              </div>
+              <div className="flex flex-col items-center gap-3">
+                <p className="text-xs text-[#9CA3AF]">ou acesse sem precisar cadastro</p>
+                <Link
+                  href="/demo"
+                  className="w-full py-3 rounded-lg text-[#1565C0] font-semibold text-sm bg-[#EEF2FF] hover:bg-[#DBEAFE] transition-colors border border-[#BFDBFE] flex items-center justify-center gap-2"
+                >
+                  <span className="text-base">👤</span>
+                  <span>Acessar demonstração</span>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
