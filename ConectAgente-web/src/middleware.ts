@@ -5,7 +5,7 @@ import { createServerClient } from '@supabase/ssr';
 const ADMIN_ROUTES = ['/admin', '/admin/usuarios'];
 
 /** Routes that do not require authentication */
-const PUBLIC_ROUTES = ['/login', '/registro'];
+const PUBLIC_ROUTES = ['/login', '/registro', '/demo'];
 
 /**
  * Next.js middleware for authentication, role-based access control,

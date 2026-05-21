@@ -244,6 +244,17 @@ export default function LoginPage() {
                 </p>
               </div>
             </form>
+
+            <div className="mt-6 pt-5 border-t border-[#E5EAF2] flex flex-col items-center gap-3">
+              <p className="text-xs text-[#9CA3AF]">Quer explorar sem credenciais?</p>
+              <Link
+                href="/demo"
+                className="w-full py-3 rounded-lg text-[#1565C0] font-semibold text-sm bg-[#EEF2FF] hover:bg-[#DBEAFE] transition-colors border border-[#BFDBFE] flex items-center justify-center gap-2"
+              >
+                <span className="text-base">👤</span>
+                <span>Acessar demonstração</span>
+              </Link>
+            </div>
           </div>
         </div>
 
