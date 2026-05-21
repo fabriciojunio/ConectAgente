@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import { cacheGet, cacheSet } from '@/lib/cache';
 import { enqueue } from '@/lib/requestQueue';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
+import { DEMO_AGENTES_PAGINADO, isEmptyList } from '@/lib/demoData';
 import type {
   AgenteComEstatisticas,
   ResidenciaComDetalhes,
@@ -41,7 +42,9 @@ export async function getAgentes(
     if (error) throw new Error(`Erro ao buscar agentes: ${error.message}`);
 
     if (!agentes || agentes.length === 0) {
-      return { data: [], total: 0, page, per_page: perPage, total_pages: 0 };
+      const demo = { ...DEMO_AGENTES_PAGINADO, page, per_page: perPage };
+      cacheSet(key, demo);
+      return demo;
     }
 
     // Usa count queries com head:true (sem baixar dados) — muito mais rápido
