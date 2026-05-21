@@ -19,7 +19,7 @@ jobs:
           cache-dependency-path: ConectAgente-mobile/package-lock.json
       - name: Instalar dependencias
         working-directory: ConectAgente-mobile
-        run: npm ci
+        run: npm install
       - name: Executar testes
         working-directory: ConectAgente-mobile
         run: npm test -- --passWithNoTests
@@ -36,4 +36,4 @@ jobs:
           cache-dependency-path: ConectAgente-web/package-lock.json
       - name: Instalar dependencias
         working-directory: ConectAgente-web
-        run: npm ci
+        run: npm install
