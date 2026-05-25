@@ -1,13 +1,29 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  compress: true,
+  poweredByHeader: false,
+  productionBrowserSourceMaps: false,
+
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: [] } : false,
+  },
+
   experimental: {
     serverActions: {
-      bodySizeLimit: '2mb',
+      bodySizeLimit: '10mb',
     },
   },
+
   images: {
-    remotePatterns: [],
+    formats: ['image/avif', 'image/webp'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
   },
   headers: async () => [
     {
