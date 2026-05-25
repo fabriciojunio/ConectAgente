@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: false,
 
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: [] } : false,
+    removeConsole: process.env.NODE_ENV === 'production',
   },
 
   experimental: {
