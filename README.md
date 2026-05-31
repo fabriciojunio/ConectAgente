@@ -16,8 +16,8 @@
 10. [Testes](#10-testes)
 11. [Instalação](#11-instalação)
 12. [Variáveis de Ambiente](#12-variáveis-de-ambiente)
-13. [Supabase — RLS](#13-supabase--rls)
-14. [Painel Web — conectagente-web](#14-painel-web--conectagente-web)
+13. [Supabase: RLS](#13-supabase-rls)
+14. [Painel Web: conectagente-web](#14-painel-web-conectagente-web)
 15. [Roadmap](#15-roadmap)
 
 ---
@@ -87,7 +87,7 @@ O roteamento é feito automaticamente no login: `agente.is_admin = true` redirec
 | Monitoramento de rede | expo-network | ~8.0.8 |
 | Calendário | react-native-calendars | ^1.1309.0 |
 | Exportação | xlsx | ^0.18.5 |
-| CEP | ViaCEP API | — |
+| CEP | ViaCEP API | - |
 | HTTP | axios | ^1.7.9 |
 | Ícones | @expo/vector-icons (Ionicons) | ^15.0.3 |
 | Gradientes | expo-linear-gradient | ~15.0.8 |
@@ -204,7 +204,7 @@ ConectAgent/
 ├── assets/images/          # Logo, ícone, splash, adaptive-icon
 ├── src/
 │   ├── app/
-│   │   ├── _layout.tsx     # Root layout — monta todos os Providers
+│   │   ├── _layout.tsx     # Root layout: monta todos os Providers
 │   │   ├── index.tsx       # Redireciona: agente → /(app), admin → /(admin)
 │   │   ├── (auth)/         # Público: login, cadastro, recuperar-senha
 │   │   ├── (app)/          # Agente: dashboard, residências, moradores,
@@ -502,7 +502,7 @@ index.tsx
             └── is_admin = false ────────▶ /(app)
 ```
 
-### (auth) — Área pública
+### (auth): Área pública
 
 | Tela | Rota | Descrição |
 |---|---|---|
@@ -510,7 +510,7 @@ index.tsx
 | Cadastro | `/(auth)/cadastro` | Disponível apenas se não houver agente cadastrado no dispositivo |
 | Recuperar senha | `/(auth)/recuperar-senha` | CPF + e-mail; mensagem genérica (não revela campo inválido) |
 
-### (app) — Área do Agente (5 abas)
+### (app): Área do Agente (5 abas)
 
 | Aba | Ícone | Telas acessíveis |
 |---|---|---|
@@ -532,7 +532,7 @@ index.tsx
 | Nova visita | `/(app)/visita/nova` | PA, glicemia, peso, checklist, encaminhamentos |
 | Detalhe visita | `/(app)/visita/[id]` | Registro completo da visita |
 
-**Prontuário — 5 módulos:**
+**Prontuário: 5 módulos:**
 
 | Módulo | Campos |
 |---|---|
@@ -542,7 +542,7 @@ index.tsx
 | Saúde da Mulher | Papanicolau, mamografia, anticoncepção, consulta ginecológica |
 | Social | Vulnerabilidade, negligência parental, violência doméstica, depressão, uso de álcool/drogas, encaminhamento assistente social |
 
-### (admin) — Área do Administrador (5 abas, tema roxo)
+### (admin): Área do Administrador (5 abas, tema roxo)
 
 | Aba | Descrição |
 |---|---|
@@ -605,7 +605,7 @@ Verificação:
 Campos sensíveis (CPF, cartão SUS, nome, telefone, nome do pai/mãe) são cifrados com **SHA-256 no modo CTR**:
 
 ```
-Chave:    256 bits — gerada uma vez, armazenada no Keychain/Keystore
+Chave:    256 bits: gerada uma vez, armazenada no Keychain/Keystore
 IV:       16 bytes aleatórios por cifração
 Keystream: SHA256(key_hex || iv_hex || counter_hex_8) → 32 bytes por bloco
 Cifração: plaintext_byte XOR keystream_byte
@@ -615,7 +615,7 @@ Retrocompatibilidade: dados sem "v2:" são descriptografados via XOR legado
 ```
 
 Por que SHA-256-CTR e não XOR simples?
-- XOR com chave fixa é reversível e determinístico — mesma entrada, mesmo ciphertext
+- XOR com chave fixa é reversível e determinístico: mesma entrada, mesmo ciphertext
 - CTR com IV aleatório gera ciphertext diferente a cada cifração (semantic security)
 - Sem dependências externas além de `expo-crypto`
 
@@ -650,7 +650,7 @@ await db.getFirstAsync(
   [cpf]
 );
 
-// Busca com LIKE — metacaracteres escapados
+// Busca com LIKE: metacaracteres escapados
 function escapeForLike(query: string): string {
   return query
     .replace(/\\/g, '\\\\')
@@ -687,16 +687,16 @@ Logout:    limpa token + chave de criptografia + cache em memória
 | Token hijacking | expo-secure-store (TEE/Secure Enclave quando disponível) |
 | Sessão infinita | Timeout de 8 horas + logout automático |
 | Migração de hash inseguro | Formato legado migrado automaticamente no login |
-| XSS | Não aplicável — app nativo React Native |
-| CSRF | Não aplicável — sem cookies |
+| XSS | Não aplicável: app nativo React Native |
+| CSRF | Não aplicável: sem cookies |
 
 ### Atenção em produção
 
-- **RLS no Supabase** — obrigatório (ver seção 13)
-- **AES-256-GCM** — substituto recomendado ao SHA-256-CTR (cipher autenticado)
-- **Certificate pinning** — fixar certificado TLS para apps de saúde
-- **Root/jailbreak detection** — `expo-device` para dispositivos comprometidos
-- **ProGuard/Hermes** — ofuscação do bundle no build de produção
+- **RLS no Supabase**: obrigatório (ver seção 13)
+- **AES-256-GCM**: substituto recomendado ao SHA-256-CTR (cipher autenticado)
+- **Certificate pinning**: fixar certificado TLS para apps de saúde
+- **Root/jailbreak detection**: `expo-device` para dispositivos comprometidos
+- **ProGuard/Hermes**: ofuscação do bundle no build de produção
 
 ---
 
@@ -795,20 +795,20 @@ Threshold   : 60% mínimo em branches/functions/lines/statements
 ### Estratégia de mocks
 
 ```typescript
-// expo-crypto — hash determinístico baseado no input
+// expo-crypto: hash determinístico baseado no input
 jest.mock('expo-crypto', () => ({
   getRandomBytesAsync: jest.fn(),
   digestStringAsync: jest.fn(),
   CryptoDigestAlgorithm: { SHA256: 'SHA-256' },
 }));
 
-// expo-secure-store — SecureStore simulado
+// expo-secure-store: SecureStore simulado
 jest.mock('expo-secure-store', () => ({
   getItemAsync: jest.fn().mockResolvedValue('0123456789abcdef'.repeat(4)),
   setItemAsync: jest.fn(),
 }));
 
-// SQLite — banco simulado
+// SQLite: banco simulado
 const mockDb = {
   runAsync:            jest.fn(),
   getFirstAsync:       jest.fn(),
@@ -839,8 +839,8 @@ beforeEach(() => {
 
 - **Node.js** 20+
 - **Expo CLI**: `npm install -g expo-cli`
-- **Android Studio** (emulador Android) ou **Xcode** (iOS — macOS apenas)
-- Conta no **Supabase** (para sincronização — opcional no desenvolvimento local)
+- **Android Studio** (emulador Android) ou **Xcode** (iOS: macOS apenas)
+- Conta no **Supabase** (para sincronização: opcional no desenvolvimento local)
 
 ### Passo a passo
 
@@ -893,7 +893,7 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...
 
 ---
 
-## 13. Supabase — RLS
+## 13. Supabase: RLS
 
 **Obrigatório para produção.** Sem Row-Level Security, qualquer agente autenticado consegue ver dados de outros agentes.
 
@@ -924,7 +924,7 @@ O schema completo está em `supabase/schema.sql`.
 
 ---
 
-## 14. Painel Web — conectagente-web
+## 14. Painel Web: conectagente-web
 
 **Deploy em produção:** [conectagente-web.vercel.app](https://conectagente-web.vercel.app) · **Modo demo:** [conectagente-web.vercel.app/demo](https://conectagente-web.vercel.app/demo)
 
@@ -1061,7 +1061,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...
 
 ## 15. Roadmap
 
-### v1.0 — Concluído
+### v1.0: Concluído
 
 - [x] App mobile offline-first (React Native + Expo)
 - [x] CRUD completo: residências, moradores, visitas, prontuários
@@ -1074,7 +1074,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...
 - [x] Exportação CSV/Excel
 - [x] Área administrativa no app mobile
 
-### v1.1 — Concluído
+### v1.1: Concluído
 
 - [x] Painel web administrativo (Next.js 15 + Supabase)
   - Dashboard com estatísticas por equipe e por microárea
@@ -1085,22 +1085,22 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...
   - 220 testes unitários (Jest + Testing Library)
   - Sistema de registro com aprovação de admin
 
-### v1.2 — Em desenvolvimento
+### v1.2: Em desenvolvimento
 
 - [ ] Sincronização em background (background task em build de produção)
 - [ ] Assinatura digital do morador na visita (`assinatura_base64`)
 - [ ] Foto do domicílio na visita
 
-### v1.3 — Planejado
+### v1.3: Planejado
 
 - [ ] Notificações push para agendamentos (expo-notifications)
 - [ ] Integração com e-SUS/SISAB (sistema nacional do Ministério da Saúde)
-- [ ] Modo supervisor — coordenador visualiza equipe completa
-- [x] Deploy do painel web em produção — [conectagente-web.vercel.app](https://conectagente-web.vercel.app)
+- [ ] Modo supervisor: coordenador visualiza equipe completa
+- [x] Deploy do painel web em produção: [conectagente-web.vercel.app](https://conectagente-web.vercel.app)
 
-### Segurança — Backlog
+### Segurança: Backlog
 
-- [ ] Upgrade para AES-256-GCM (cipher autenticado — substitui SHA-256-CTR)
+- [ ] Upgrade para AES-256-GCM (cipher autenticado: substitui SHA-256-CTR)
 - [ ] Certificate pinning (TLS)
 - [ ] Root/jailbreak detection
 - [ ] Ofuscação de código (ProGuard + Hermes)
@@ -1111,6 +1111,6 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...
 
 ## Licença
 
-Proprietário — ConectAgente © 2026. Todos os direitos reservados.
+Proprietário: ConectAgente © 2026. Todos os direitos reservados.
 
 Desenvolvido para uso por Secretarias Municipais de Saúde e equipes de Atenção Básica credenciadas.
