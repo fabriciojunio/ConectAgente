@@ -19,7 +19,7 @@
 - [Instalação e Configuração](#instalação-e-configuração)
 - [Variáveis de Ambiente](#variáveis-de-ambiente)
 - [Testes](#testes)
-- [Supabase — Configuração RLS](#supabase--configuração-rls)
+- [Supabase: Configuração RLS](#supabase-configuração-rls)
 - [Roadmap](#roadmap)
 
 ---
@@ -28,7 +28,7 @@
 
 O ConectAgente resolve um problema crítico da Atenção Básica: ACS muitas vezes trabalham em áreas sem internet e precisam registrar visitas, coletar dados de saúde e acompanhar famílias mesmo offline. O app:
 
-- Funciona **100% offline** — dados salvos localmente no SQLite
+- Funciona **100% offline**: dados salvos localmente no SQLite
 - **Sincroniza automaticamente** quando há internet (fila offline-first)
 - Armazena **prontuários completos** por morador (saúde geral, gestante, puericultura, saúde da mulher, social)
 - Controla **metas mensais** de visitas
@@ -54,7 +54,7 @@ O ConectAgente resolve um problema crítico da Atenção Básica: ACS muitas vez
 | Armazenamento seguro | expo-secure-store | ~15.0.8 |
 | Rede | expo-network | ~8.0.8 |
 | Testes | Jest + jest-expo | ^29 / ~54 |
-| UI | @expo/vector-icons, expo-linear-gradient | — |
+| UI | @expo/vector-icons, expo-linear-gradient | - |
 
 ---
 
@@ -191,7 +191,7 @@ src/
 ## Design Patterns
 
 ### Repository Pattern
-Toda persistência de dados passa por repositórios — as telas nunca acessam o banco diretamente.
+Toda persistência de dados passa por repositórios: as telas nunca acessam o banco diretamente.
 
 ```typescript
 // ✅ Correto
@@ -203,7 +203,7 @@ const rows = await db.getAllAsync('SELECT * FROM visitas');
 ```
 
 ### Context + Hooks (State Management)
-Sem Redux ou Zustand — o estado global fica em Contexts, o estado de domínio em hooks customizados.
+Sem Redux ou Zustand: o estado global fica em Contexts, o estado de domínio em hooks customizados.
 
 ```
 Context  →  estado global (autenticação, tema, rede, sync)
@@ -259,7 +259,7 @@ O administrador acessa uma área separada (`/(admin)`) com tema roxo, distinta d
 
 | Mecanismo | Implementação |
 |---|---|
-| Hash de senha | SHA-256 com salt aleatório de 16 bytes — formato `salt$hash` |
+| Hash de senha | SHA-256 com salt aleatório de 16 bytes: formato `salt$hash` |
 | Migração automática | Login com senha legada (sem salt) migra transparentemente para o novo formato |
 | Timing-safe | `verificarSenha` é sempre executada, mesmo quando o CPF não existe no banco |
 | Rate limiting | 5 tentativas por CPF → bloqueio de 15 minutos |
@@ -285,40 +285,40 @@ Compatibilidade retroativa: strings sem prefixo "v2:" são descriptografadas via
 
 ### Banco de dados
 
-- **Parameterized queries** em todas as operações — zero risco de SQL Injection
-- **`escapeForLike()`** — escapa metacaracteres `%`, `_`, `\` antes de queries com `LIKE`
-- **`PRAGMA foreign_keys = ON`** — integridade referencial garantida
-- **`PRAGMA journal_mode = WAL`** — recuperação de falhas sem corrupção
-- **Migrations específicas** — erros de `duplicate column` são ignorados; outros são relançados
+- **Parameterized queries** em todas as operações: zero risco de SQL Injection
+- **`escapeForLike()`**: escapa metacaracteres `%`, `_`, `\` antes de queries com `LIKE`
+- **`PRAGMA foreign_keys = ON`**: integridade referencial garantida
+- **`PRAGMA journal_mode = WAL`**: recuperação de falhas sem corrupção
+- **Migrations específicas**: erros de `duplicate column` são ignorados; outros são relançados
 
 ### Recuperação de senha (LGPD-compliant)
 
 1. Usuário informa CPF + e-mail cadastrado
-2. Mensagem de erro **genérica** — não revela qual campo falhou
+2. Mensagem de erro **genérica**: não revela qual campo falhou
 3. Verificação normaliza o e-mail (lowercase + trim) antes da consulta
 4. Nova senha usa hash com salt
 5. Evento registrado no `audit_log`
 
 ### O que está protegido
 
-- SQL Injection — parameterized queries + escapeForLike()
-- Rainbow tables — salt nas senhas
-- Timing attack no login — verificarSenha sempre executada com hash dummy
-- Brute force — rate limiting (5 tentativas / 15 min de bloqueio)
-- Token hijacking — SecureStore nativo
-- Enumeração de usuários — mensagem genérica na recuperação
-- Dados em repouso — campos PII criptografados com SHA-256-CTR
-- Sessão infinita — timeout de 8 horas
-- XSS — não aplicável (React Native)
-- CSRF — não aplicável (app nativo sem cookies)
+- SQL Injection: parameterized queries + escapeForLike()
+- Rainbow tables: salt nas senhas
+- Timing attack no login: verificarSenha sempre executada com hash dummy
+- Brute force: rate limiting (5 tentativas / 15 min de bloqueio)
+- Token hijacking: SecureStore nativo
+- Enumeração de usuários: mensagem genérica na recuperação
+- Dados em repouso: campos PII criptografados com SHA-256-CTR
+- Sessão infinita: timeout de 8 horas
+- XSS: não aplicável (React Native)
+- CSRF: não aplicável (app nativo sem cookies)
 
 ### O que requer atenção em produção
 
-- **RLS no Supabase** — configurar Row-Level Security para isolar dados por `agente_id`
-- **Certificate pinning** — para apps de saúde críticos, fixar certificado TLS
-- **Root/jailbreak detection** — considerar `expo-device` para detectar dispositivos comprometidos
-- **Ofuscação de código** — habilitar ProGuard/Hermes no build de produção
-- **Upgrade para AES-256-GCM** — substituir SHA-256-CTR por cipher autenticado
+- **RLS no Supabase**: configurar Row-Level Security para isolar dados por `agente_id`
+- **Certificate pinning**: para apps de saúde críticos, fixar certificado TLS
+- **Root/jailbreak detection**: considerar `expo-device` para detectar dispositivos comprometidos
+- **Ofuscação de código**: habilitar ProGuard/Hermes no build de produção
+- **Upgrade para AES-256-GCM**: substituir SHA-256-CTR por cipher autenticado
 
 ---
 
@@ -336,7 +336,7 @@ O sistema implementa os principais requisitos da Lei Geral de Proteção de Dado
 | **Direito de exclusão** (Art. 18, VI) | Soft delete + anonimização do nome |
 | **Rastreabilidade** (Art. 37) | `audit_log` registra ações sensíveis (reset de senha, criação de agentes) |
 | **Consentimento** (Art. 7º, I) | Tabela `consentimentos` por tipo de dado |
-| **Bases legais** (Art. 7º, II) | Saúde pública — execução de políticas públicas |
+| **Bases legais** (Art. 7º, II) | Saúde pública: execução de políticas públicas |
 
 ### Dados coletados e finalidade
 
@@ -436,14 +436,14 @@ Coverage:    ~80% statements / ~83% lines
 
 ### Mocks utilizados
 
-- `expo-secure-store` — armazenamento seguro simulado
-- `expo-sqlite` — banco de dados simulado
-- `expo-crypto` — hash determinístico para testes
-- `@supabase/supabase-js` — cliente simulado
+- `expo-secure-store`: armazenamento seguro simulado
+- `expo-sqlite`: banco de dados simulado
+- `expo-crypto`: hash determinístico para testes
+- `@supabase/supabase-js`: cliente simulado
 
 ---
 
-## Supabase — Configuração RLS
+## Supabase: Configuração RLS
 
 **OBRIGATÓRIO para produção.** Configure as seguintes políticas no painel do Supabase:
 
@@ -472,7 +472,7 @@ CREATE POLICY "agente_isolation" ON visitas
 
 ## Roadmap
 
-### v1.0 — Concluído
+### v1.0 (concluído)
 
 - [x] App mobile offline-first (React Native + Expo)
 - [x] CRUD completo: residências, moradores, visitas, prontuários
@@ -485,9 +485,9 @@ CREATE POLICY "agente_isolation" ON visitas
 - [x] Exportação CSV/Excel
 - [x] Área administrativa no app mobile
 
-### v1.1 — Concluído
+### v1.1 (concluído)
 
-- [x] Painel web administrativo (Next.js 15 + Supabase) — `conectagente-web/`
+- [x] Painel web administrativo (Next.js 15 + Supabase): `conectagente-web/`
   - Dashboard com estatísticas por equipe e por microárea
   - Gestão de agentes, famílias, moradores e visitas
   - Mapa de cobertura territorial
@@ -496,20 +496,20 @@ CREATE POLICY "agente_isolation" ON visitas
   - 220 testes unitários (Jest + Testing Library)
   - Sistema de registro com aprovação de admin
 
-### v1.2 — Em desenvolvimento
+### v1.2 (em desenvolvimento)
 
 - [ ] Sincronização em background (build de produção)
 - [ ] Assinatura digital do morador na visita
 - [ ] Foto do domicílio na visita
 
-### v1.3 — Planejado
+### v1.3 (planejado)
 
 - [ ] Notificações push para agendamentos
 - [ ] Integração com e-SUS/SISAB (sistema nacional)
-- [ ] Modo supervisor — coordenador vê equipe completa
+- [ ] Modo supervisor: coordenador vê equipe completa
 - [ ] Deploy do painel web em produção (Vercel + Supabase cloud)
 
-### Segurança — Backlog
+### Segurança: Backlog
 
 - [ ] Upgrade para AES-256-GCM (cipher autenticado)
 - [ ] Certificate pinning (TLS)
@@ -522,6 +522,6 @@ CREATE POLICY "agente_isolation" ON visitas
 
 ## Licença
 
-Proprietário — ConectAgente © 2026. Todos os direitos reservados.
+Proprietário: ConectAgente © 2026. Todos os direitos reservados.
 
 Este software é destinado ao uso por Secretarias Municipais de Saúde e equipes de Atenção Básica credenciadas.
