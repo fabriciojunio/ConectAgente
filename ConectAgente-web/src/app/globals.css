@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@layer base {
+  * { @apply border-[#D1D9E6]; }
+  body { @apply bg-[#F4F6FA] text-[#0F1621] font-sans antialiased; }
+}
+
+@layer components {
+  .page-container { @apply p-6 space-y-6 max-w-[1600px] mx-auto; }
+  .page-title { @apply text-xl font-bold text-[#0F1621]; }
+  .page-subtitle { @apply text-sm text-[#6B7280]; }
+  .card-grid { @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4; }
+  .section-title { @apply text-base font-bold text-[#0F1621] mb-3; }
+}
+
+@layer utilities {
+  .scrollbar-thin { scrollbar-width: thin; }
+  .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { @apply bg-[#D1D9E6] rounded-full; }
+  .scrollbar-thin::-webkit-scrollbar-track { @apply bg-transparent; }
+}
