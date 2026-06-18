@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { COLORS, FONT_SIZE, SPACING, RADIUS } from '../../utils/constants';
 
-type BadgeVariant = 'hipertenso' | 'diabetico' | 'gestante' | 'puericultura' | 'success' | 'warning' | 'error' | 'info';
+type BadgeVariant = 'hipertenso' | 'diabetico' | 'gestante' | 'puericultura' | 'success' | 'warning' | 'error' | 'info' | 'medio';
 
 interface BadgeProps {
   label: string;
@@ -18,6 +18,7 @@ const VARIANT_COLORS: Record<BadgeVariant, { bg: string; text: string }> = {
   warning: { bg: COLORS.warningLight, text: COLORS.warning },
   error: { bg: COLORS.errorLight, text: COLORS.error },
   info: { bg: COLORS.infoLight, text: COLORS.info },
+  medio: { bg: '#fefbe8', text: '#a16207' },
 };
 
 export function Badge({ label, variant = 'info' }: BadgeProps) {

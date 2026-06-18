@@ -17,6 +17,7 @@ import {
   CheckCircle,
   AlertTriangle,
   ChevronRight,
+  Flag,
 } from 'lucide-react';
 
 function SkeletonRows() {
@@ -30,6 +31,25 @@ function SkeletonRows() {
           <div className="h-4 bg-gray-200 rounded w-1/6" />
         </div>
       ))}
+    </div>
+  );
+}
+
+function renderRiscoFlag(risco?: string) {
+  const configs: Record<string, { color: string; bg: string; label: string }> = {
+    critico: { color: 'text-red-600', bg: 'bg-red-50 border-red-200', label: 'Crítico' },
+    alto: { color: 'text-orange-600', bg: 'bg-orange-50 border-orange-200', label: 'Alto' },
+    medio: { color: 'text-yellow-700', bg: 'bg-yellow-50 border-yellow-200', label: 'Médio' },
+    baixo: { color: 'text-green-600', bg: 'bg-green-50 border-green-200', label: 'Baixo' },
+    nenhum: { color: 'text-gray-400', bg: 'bg-gray-50 border-gray-200', label: 'Nenhum' },
+  };
+
+  const cfg = configs[risco || 'nenhum'] ?? configs.nenhum;
+
+  return (
+    <div className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${cfg.bg}`}>
+      <Flag className={`w-3 h-3 fill-current ${cfg.color}`} />
+      <span className={cfg.color}>{cfg.label}</span>
     </div>
   );
 }
@@ -75,7 +95,15 @@ export default function FamiliasPage() {
     fetchData();
   }, [fetchData]);
 
-  const filteredFamilias = search
+  const riskWeight: Record<string, number> = {
+    critico: 1,
+    alto: 2,
+    medio: 3,
+    baixo: 4,
+    nenhum: 5,
+  };
+
+  const sortedFamilias = [...(search
     ? familias.filter(
         (f) =>
           f.moradores?.some((m: { nome?: string }) =>
@@ -84,7 +112,15 @@ export default function FamiliasPage() {
           f.logradouro?.toLowerCase().includes(search.toLowerCase()) ||
           f.bairro?.toLowerCase().includes(search.toLowerCase())
       )
-    : familias;
+    : familias)
+  ].sort((a, b) => {
+    const riskA = a.nivel_risco || 'nenhum';
+    const riskB = b.nivel_risco || 'nenhum';
+    const pesoA = riskWeight[riskA] ?? 5;
+    const pesoB = riskWeight[riskB] ?? 5;
+    if (pesoA !== pesoB) return pesoA - pesoB;
+    return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+  });
 
   const familiasComVisita = totalFamilias - familiasAtraso;
 
@@ -141,7 +177,7 @@ export default function FamiliasPage() {
       {/* Table */}
       {loading && familias.length === 0 ? (
         <SkeletonRows />
-      ) : filteredFamilias.length === 0 ? (
+      ) : sortedFamilias.length === 0 ? (
         <EmptyState
           title="Nenhuma família encontrada"
           description="Não foram encontradas famílias com os filtros selecionados."
@@ -153,6 +189,7 @@ export default function FamiliasPage() {
               <thead>
                 <tr className="border-b bg-gray-50">
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Responsável</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Risco</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Endereço</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Bairro</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Agente</th>
@@ -163,7 +200,7 @@ export default function FamiliasPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredFamilias.map((familia) => {
+                {sortedFamilias.map((familia) => {
                   const responsavel = familia.moradores?.[0]?.nome ?? 'Não informado';
                   const ultimaVisita = familia.ultima_visita;
                   const diasSemVisita = ultimaVisita
@@ -175,6 +212,9 @@ export default function FamiliasPage() {
                   return (
                     <tr key={familia.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3 font-medium">{responsavel}</td>
+                      <td className="px-4 py-3">
+                        {renderRiscoFlag(familia.nivel_risco)}
+                      </td>
                       <td className="px-4 py-3 hidden md:table-cell">
                         {familia.logradouro}, {familia.numero}
                       </td>
