@@ -114,6 +114,7 @@ export const residenciaSchema = z.object({
   num_comodos: z.coerce.number({ invalid_type_error: 'Número de cômodos inválido' }).min(1, 'Mínimo 1 cômodo').max(50, 'Máximo 50 cômodos'),
   tem_animais: z.boolean(),
   animais_info: z.string().optional(),
+  nivel_risco: z.enum(['nenhum', 'baixo', 'medio', 'alto', 'critico']).optional(),
 });
 
 export const moradorSchema = z.object({

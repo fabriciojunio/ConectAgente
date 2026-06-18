@@ -37,6 +37,7 @@ export const CREATE_TABLES_SQL = `
     morador_responsavel_id TEXT,
     agente_id TEXT NOT NULL,
     status_sync TEXT NOT NULL DEFAULT 'pendente',
+    nivel_risco TEXT NOT NULL DEFAULT 'nenhum',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     deleted_at TEXT,

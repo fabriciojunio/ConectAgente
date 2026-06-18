@@ -16,6 +16,7 @@ export const residenciaRepository = {
       morador_responsavel_id: undefined,
       agente_id: agenteId,
       status_sync: StatusSync.PENDENTE,
+      nivel_risco: data.nivel_risco ?? 'nenhum',
       created_at: now,
       updated_at: now,
     };
@@ -24,14 +25,14 @@ export const residenciaRepository = {
       `INSERT INTO residencias (
         id, cep, logradouro, numero, complemento, bairro, cidade, estado,
         tipo_imovel, num_comodos, tem_animais, animais_info,
-        morador_responsavel_id, agente_id, status_sync, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        morador_responsavel_id, agente_id, status_sync, nivel_risco, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         residencia.id, residencia.cep, residencia.logradouro, residencia.numero,
         residencia.complemento ?? null, residencia.bairro, residencia.cidade, residencia.estado,
         residencia.tipo_imovel, residencia.num_comodos, residencia.tem_animais ? 1 : 0,
         residencia.animais_info ?? null, null, residencia.agente_id,
-        residencia.status_sync, residencia.created_at, residencia.updated_at,
+        residencia.status_sync, residencia.nivel_risco, residencia.created_at, residencia.updated_at,
       ]
     );
 
@@ -46,7 +47,15 @@ export const residenciaRepository = {
        FROM residencias r
        LEFT JOIN moradores m ON m.id = r.morador_responsavel_id
        WHERE r.agente_id = ? AND r.deleted_at IS NULL
-       ORDER BY r.updated_at DESC`,
+       ORDER BY 
+         CASE r.nivel_risco
+           WHEN 'critico' THEN 1
+           WHEN 'alto' THEN 2
+           WHEN 'medio' THEN 3
+           WHEN 'baixo' THEN 4
+           ELSE 5
+         END ASC,
+         r.updated_at DESC`,
       [agenteId]
     );
     return rows.map(mapRowToResidencia);
@@ -78,6 +87,7 @@ export const residenciaRepository = {
         num_comodos = COALESCE(?, num_comodos),
         tem_animais = COALESCE(?, tem_animais),
         animais_info = COALESCE(?, animais_info),
+        nivel_risco = COALESCE(?, nivel_risco),
         status_sync = 'pendente',
         updated_at = ?
       WHERE id = ?`,
@@ -86,7 +96,7 @@ export const residenciaRepository = {
         data.complemento ?? null, data.bairro ?? null, data.cidade ?? null,
         data.estado ?? null, data.tipo_imovel ?? null, data.num_comodos ?? null,
         data.tem_animais !== undefined ? (data.tem_animais ? 1 : 0) : null,
-        data.animais_info ?? null, now, id,
+        data.animais_info ?? null, data.nivel_risco ?? null, now, id,
       ]
     );
 
@@ -141,8 +151,32 @@ export const residenciaRepository = {
   async listarTodos(filtroAgenteId?: string): Promise<Array<Residencia & { agente_nome?: string }>> {
     const db = await getDatabase();
     const sql = filtroAgenteId
-      ? `SELECT r.*, a.nome as agente_nome FROM residencias r LEFT JOIN agentes a ON a.id = r.agente_id WHERE r.agente_id = ? AND r.deleted_at IS NULL ORDER BY r.updated_at DESC`
-      : `SELECT r.*, a.nome as agente_nome FROM residencias r LEFT JOIN agentes a ON a.id = r.agente_id WHERE r.deleted_at IS NULL ORDER BY r.updated_at DESC`;
+      ? `SELECT r.*, a.nome as agente_nome 
+         FROM residencias r 
+         LEFT JOIN agentes a ON a.id = r.agente_id 
+         WHERE r.agente_id = ? AND r.deleted_at IS NULL 
+         ORDER BY 
+           CASE r.nivel_risco
+             WHEN 'critico' THEN 1
+             WHEN 'alto' THEN 2
+             WHEN 'medio' THEN 3
+             WHEN 'baixo' THEN 4
+             ELSE 5
+           END ASC,
+           r.updated_at DESC`
+      : `SELECT r.*, a.nome as agente_nome 
+         FROM residencias r 
+         LEFT JOIN agentes a ON a.id = r.agente_id 
+         WHERE r.deleted_at IS NULL 
+         ORDER BY 
+           CASE r.nivel_risco
+             WHEN 'critico' THEN 1
+             WHEN 'alto' THEN 2
+             WHEN 'medio' THEN 3
+             WHEN 'baixo' THEN 4
+             ELSE 5
+           END ASC,
+           r.updated_at DESC`;
     const rows = await db.getAllAsync<Record<string, unknown>>(sql, filtroAgenteId ? [filtroAgenteId] : []);
     return rows.map((row) => ({ ...mapRowToResidencia(row), agente_nome: row.agente_nome as string | undefined }));
   },
@@ -165,6 +199,7 @@ function mapRowToResidencia(row: Record<string, unknown>): Residencia {
     morador_responsavel_id: row.morador_responsavel_id as string | undefined,
     agente_id: row.agente_id as string,
     status_sync: row.status_sync as StatusSync,
+    nivel_risco: (row.nivel_risco || 'nenhum') as Residencia['nivel_risco'],
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,
     deleted_at: row.deleted_at as string | undefined,
