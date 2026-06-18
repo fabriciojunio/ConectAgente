@@ -113,6 +113,7 @@ export interface Residencia {
   morador_responsavel_id?: string;
   agente_id: string;
   status_sync: StatusSync;
+  nivel_risco?: NivelVulnerabilidade;
   created_at: string;
   updated_at: string;
   deleted_at?: string;
@@ -130,6 +131,7 @@ export interface ResidenciaFormData {
   num_comodos: number;
   tem_animais: boolean;
   animais_info?: string;
+  nivel_risco?: NivelVulnerabilidade;
 }
 
 // ============================================================

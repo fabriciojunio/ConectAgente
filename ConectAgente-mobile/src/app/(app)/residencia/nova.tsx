@@ -16,7 +16,7 @@ import { PageHeader } from '../../../components/ui/PageHeader';
 import { cepService } from '../../../services/cepService';
 import { residenciaSchema, ResidenciaFormDataValidated } from '../../../utils/validators';
 import { formatCEP, stripCEP } from '../../../utils/formatters';
-import { TIPO_IMOVEL_OPTIONS, ESTADOS_BRASIL, COLORS, SPACING, FONT_SIZE } from '../../../utils/constants';
+import { TIPO_IMOVEL_OPTIONS, ESTADOS_BRASIL, RISCO_OPTIONS, COLORS, SPACING, FONT_SIZE } from '../../../utils/constants';
 
 export default function NovaResidencia() {
   const { criar } = useResidencias();
@@ -31,6 +31,7 @@ export default function NovaResidencia() {
       num_comodos: 1,
       tipo_imovel: 'proprio',
       estado: 'SP',
+      nivel_risco: 'nenhum',
     },
   });
 
@@ -115,6 +116,11 @@ export default function NovaResidencia() {
           </View>
 
           <Text style={styles.sectionTitle}>Informações da moradia</Text>
+
+          <SelectField
+            control={control} name="nivel_risco" label="Classificação de Risco da Família" required
+            options={RISCO_OPTIONS}
+          />
 
           <SelectField
             control={control} name="tipo_imovel" label="Tipo de imóvel" required
