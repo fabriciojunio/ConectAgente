@@ -8,9 +8,29 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'ConectAgente - Gestão',
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000',
+  ),
+  title: {
+    default: 'ConectAgente - Gestão',
+    template: '%s | ConectAgente',
+  },
   description:
     'Plataforma de gestão e monitoramento para Agentes Comunitários de Saúde (ACS)',
+  // Sistema interno com dados de saúde: fora dos índices de busca
+  robots: {
+    index: false,
+    follow: false,
+  },
+  openGraph: {
+    title: 'ConectAgente',
+    description:
+      'Plataforma de gestão e monitoramento para Agentes Comunitários de Saúde (ACS)',
+    siteName: 'ConectAgente',
+    locale: 'pt_BR',
+    type: 'website',
+    images: ['/logo.png'],
+  },
   icons: {
     icon: '/favicon.png',
     apple: '/favicon.png',
