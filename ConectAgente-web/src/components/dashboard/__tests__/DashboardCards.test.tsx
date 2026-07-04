@@ -40,7 +40,7 @@ describe('DashboardCards', () => {
   it('shows skeleton cards when loading', () => {
     render(<DashboardCards stats={mockStats} loading={true} />);
 
-    const section = screen.getByLabelText('Carregando estatisticas');
+    const section = screen.getByLabelText('Carregando estatísticas');
     expect(section).toBeInTheDocument();
     // Should show 8 skeleton cards (direct children of the grid)
     const skeletonCards = section.querySelectorAll(':scope > div');
@@ -70,7 +70,7 @@ describe('DashboardCards', () => {
 
   it('displays correct section aria label when loaded', () => {
     render(<DashboardCards stats={mockStats} loading={false} />);
-    const section = screen.getByLabelText('Estatisticas do dashboard');
+    const section = screen.getByLabelText('Estatísticas do dashboard');
     expect(section).toBeInTheDocument();
   });
 

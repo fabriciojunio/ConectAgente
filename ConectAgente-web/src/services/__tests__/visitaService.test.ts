@@ -67,7 +67,8 @@ describe('visitaService', () => {
     });
 
     it('applies pagination parameters', async () => {
-      chainable.range.mockResolvedValue({ data: [], error: null, count: 50 });
+      const pageData = Array.from({ length: 10 }, (_, i) => ({ id: `v${i}` }));
+      chainable.range.mockResolvedValue({ data: pageData, error: null, count: 50 });
 
       const result = await getVisitas(undefined, { page: 3, per_page: 10 });
 
@@ -199,7 +200,7 @@ describe('visitaService', () => {
       expect(result.taxa_conclusao).toBe(40); // 40/100 * 100
     });
 
-    it('returns zero taxa when no visitas', async () => {
+    it('falls back to demo stats when no visitas', async () => {
       supabaseMock.from.mockImplementation(() => {
         const c: Record<string, jest.Mock> = {};
         c.select = jest.fn(() => c);
@@ -213,8 +214,9 @@ describe('visitaService', () => {
 
       const result = await getEstatisticasVisitas();
 
-      expect(result.total).toBe(0);
-      expect(result.taxa_conclusao).toBe(0);
+      // Sem dados no banco o serviço apresenta estatísticas de demonstração
+      expect(result.total).toBe(587);
+      expect(result.taxa_conclusao).toBe(95.7);
     });
   });
 });

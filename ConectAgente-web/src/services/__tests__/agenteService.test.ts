@@ -3,6 +3,7 @@ jest.mock('@/lib/supabase/client', () => ({
 }));
 
 import { createClient } from '@/lib/supabase/client';
+import { DEMO_AGENTES_PAGINADO } from '@/lib/demoData';
 import {
   getAgentes,
   getAgenteById,
@@ -88,14 +89,14 @@ describe('agenteService', () => {
       expect(result.page).toBe(1);
     });
 
-    it('returns empty result when no agents found', async () => {
+    it('falls back to demo data when no agents found', async () => {
       chainable.range.mockResolvedValueOnce({ data: [], error: null, count: 0 });
 
       const result = await getAgentes();
 
-      expect(result.data).toEqual([]);
-      expect(result.total).toBe(0);
-      expect(result.total_pages).toBe(0);
+      // Banco vazio: o serviço apresenta dados de demonstração
+      expect(result.data).toEqual(DEMO_AGENTES_PAGINADO.data);
+      expect(result.total).toBe(DEMO_AGENTES_PAGINADO.total);
     });
 
     it('throws on error', async () => {
