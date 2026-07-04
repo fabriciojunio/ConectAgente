@@ -56,7 +56,6 @@ interface SidebarProps {
 export default function Sidebar({
   currentPath,
   userRole,
-  userName,
   userUnidade,
   onLogout,
   isOpen = true,

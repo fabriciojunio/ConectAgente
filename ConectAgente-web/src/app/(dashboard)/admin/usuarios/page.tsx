@@ -13,7 +13,6 @@ import type { UserRole } from '@/types';
 import {
   Search,
   Users,
-  Shield,
   X,
   AlertTriangle,
 } from 'lucide-react';
@@ -42,12 +41,6 @@ interface Usuario {
   role: UserRole;
   ativo: boolean;
 }
-
-const roleBadgeConfig: Record<string, { label: string; className: string }> = {
-  admin: { label: 'Admin', className: 'bg-purple-100 text-purple-700' },
-  supervisor: { label: 'Supervisor', className: 'bg-blue-100 text-blue-700' },
-  agente: { label: 'Agente', className: 'bg-gray-100 text-gray-700' },
-};
 
 const roleOptions: Array<{ value: UserRole; label: string }> = [
   { value: 'admin', label: 'Administrador' },
@@ -190,7 +183,6 @@ export default function UsuariosPage() {
               </thead>
               <tbody>
                 {filteredUsuarios.map((usuario) => {
-                  const badge = roleBadgeConfig[usuario.role] ?? roleBadgeConfig.agente;
                   return (
                     <tr key={usuario.id} className="border-b last:border-0 hover:bg-gray-50">
                       <td className="px-4 py-3 font-medium">{usuario.nome}</td>

@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { gerarRelatorio } from '@/services/relatorioService';
 import {
-  Loader2,
   FileText,
   FileSpreadsheet,
   File,

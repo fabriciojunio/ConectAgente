@@ -17,7 +17,6 @@ import {
   Calendar,
   TrendingUp,
   CheckCircle,
-  Clock,
   AlertTriangle,
 } from 'lucide-react';
 
