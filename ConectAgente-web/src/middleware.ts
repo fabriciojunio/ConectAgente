@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-/** Routes that require admin or gerente role */
+/** Routes that require admin or supervisor role */
 const ADMIN_ROUTES = ['/admin', '/admin/usuarios'];
 
 /** Routes that do not require authentication */
@@ -13,7 +13,7 @@ const PUBLIC_ROUTES = ['/login', '/registro', '/demo'];
  *
  * - Redirects unauthenticated users to /login
  * - Redirects authenticated users from /login to /dashboard
- * - Restricts admin routes to gerente/admin roles
+ * - Restricts admin routes to supervisor/admin roles
  * - Sets security headers on all responses
  */
 export async function middleware(request: NextRequest) {
