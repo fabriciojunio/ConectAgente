@@ -10,6 +10,13 @@ import {
   getVisitasRecentes,
   getAlertasAtraso,
 } from '../dashboardService';
+import {
+  DEMO_STATS,
+  DEMO_VISITAS_PERIODO,
+  DEMO_VISITAS_AGENTE,
+  DEMO_VISITAS_RECENTES,
+  DEMO_ALERTAS,
+} from '@/lib/demoData';
 import type { DashboardStats, VisitaPorPeriodo, VisitaPorAgente, VisitaComDetalhes, FamiliaEmAtraso } from '@/types';
 
 const mockCreateClient = createClient as jest.MockedFunction<typeof createClient>;
@@ -81,23 +88,21 @@ describe('dashboardService', () => {
       });
     });
 
-    it('returns defaults when rpc fails', async () => {
+    it('falls back to demo stats when rpc fails', async () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: { message: 'DB error' } });
 
       const result = await getDashboardStats();
 
-      // Service logs error and returns defaults, does NOT throw
-      expect(result.visitas_hoje).toBe(0);
-      expect(result.total_familias).toBe(0);
+      // Service logs error and falls back to demo data, does NOT throw
+      expect(result).toEqual(DEMO_STATS);
     });
 
-    it('returns defaults when data is null', async () => {
+    it('falls back to demo stats when data is null', async () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: null });
 
       const result = await getDashboardStats();
 
-      expect(result.visitas_hoje).toBe(0);
-      expect(result.total_familias).toBe(0);
+      expect(result).toEqual(DEMO_STATS);
     });
   });
 
@@ -130,20 +135,20 @@ describe('dashboardService', () => {
       });
     });
 
-    it('returns empty array on error', async () => {
+    it('falls back to demo data on error', async () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: { message: 'fail' } });
 
       const result = await getVisitasPorPeriodo('2024-03-01', '2024-03-31');
 
-      // Service logs error and returns [], does NOT throw
-      expect(result).toEqual([]);
+      // Service logs error and falls back to demo data, does NOT throw
+      expect(result).toEqual(DEMO_VISITAS_PERIODO);
     });
 
-    it('returns empty array when data is null', async () => {
+    it('falls back to demo data when result is null', async () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: null });
 
       const result = await getVisitasPorPeriodo('2024-03-01', '2024-03-31');
-      expect(result).toEqual([]);
+      expect(result).toEqual(DEMO_VISITAS_PERIODO);
     });
   });
 
@@ -176,12 +181,12 @@ describe('dashboardService', () => {
       });
     });
 
-    it('returns empty array on error', async () => {
+    it('falls back to demo data on error', async () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: { message: 'fail' } });
 
       const result = await getVisitasPorAgente('2024-03-01', '2024-03-31');
 
-      expect(result).toEqual([]);
+      expect(result).toEqual(DEMO_VISITAS_AGENTE);
     });
   });
 
@@ -212,13 +217,13 @@ describe('dashboardService', () => {
       expect(chainable.limit).toHaveBeenCalledWith(5);
     });
 
-    it('returns empty array on error', async () => {
+    it('falls back to demo data on error', async () => {
       chainable.limit.mockResolvedValue({ data: null, error: { message: 'fail' } });
 
       const result = await getVisitasRecentes();
 
-      // Service logs error and returns [], does NOT throw
-      expect(result).toEqual([]);
+      // Service logs error and falls back to demo data, does NOT throw
+      expect(result).toEqual(DEMO_VISITAS_RECENTES.slice(0, 10));
     });
   });
 
@@ -248,12 +253,12 @@ describe('dashboardService', () => {
       });
     });
 
-    it('returns empty array on error', async () => {
+    it('falls back to demo data on error', async () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: { message: 'fail' } });
 
       const result = await getAlertasAtraso();
 
-      expect(result).toEqual([]);
+      expect(result).toEqual(DEMO_ALERTAS);
     });
   });
 });
