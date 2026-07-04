@@ -10,5 +10,9 @@ dist/
 android/
 ios/
 *.orig.*
+coverage/
+.vercel/
+.next/
+*.tsbuildinfo
 
 .github/java-upgrade/
