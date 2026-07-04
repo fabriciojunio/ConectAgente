@@ -13,7 +13,6 @@ import {
   Search,
   Heart,
   Users,
-  AlertTriangle,
   Baby,
   Stethoscope,
   Droplets,

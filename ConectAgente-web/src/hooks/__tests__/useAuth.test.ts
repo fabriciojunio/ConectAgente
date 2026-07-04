@@ -17,7 +17,7 @@ function buildMockSupabase() {
       }),
       signInWithPassword: jest.fn(),
       signOut: jest.fn().mockResolvedValue({ error: null }),
-      onAuthStateChange: jest.fn((callback: (event: string, session: unknown) => void) => {
+      onAuthStateChange: jest.fn(() => {
         return {
           data: {
             subscription: { unsubscribe: jest.fn() },

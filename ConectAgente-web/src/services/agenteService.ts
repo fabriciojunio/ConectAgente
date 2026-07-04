@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import { cacheGet, cacheSet } from '@/lib/cache';
 import { enqueue } from '@/lib/requestQueue';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
-import { DEMO_AGENTES_PAGINADO, isEmptyList } from '@/lib/demoData';
+import { DEMO_AGENTES_PAGINADO } from '@/lib/demoData';
 import type {
   AgenteComEstatisticas,
   ResidenciaComDetalhes,
