@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, Bell, Search, ChevronDown, X, User, Settings, LogOut, Heart, Users, ClipboardList, Home } from 'lucide-react';
+import { Menu, Bell, Search, ChevronDown, X, LogOut, Heart, Users, ClipboardList, Home } from 'lucide-react';
 
 interface HeaderProps {
   title: string;
