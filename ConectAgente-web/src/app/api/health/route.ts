@@ -26,12 +26,13 @@ export async function GET() {
     const latencyMs = Date.now() - start;
 
     if (error) {
+      // Não expor error.message: o endpoint é público e detalhes do banco
+      // (nomes de tabela, mensagens do Postgres) ajudariam um atacante.
       return NextResponse.json(
         {
           status: 'degraded',
           timestamp: new Date().toISOString(),
           database: 'unreachable',
-          error: error.message,
           latencyMs,
         },
         { status: 503 }
@@ -44,12 +45,11 @@ export async function GET() {
       database: 'connected',
       latencyMs,
     });
-  } catch (err) {
+  } catch {
     return NextResponse.json(
       {
         status: 'error',
         timestamp: new Date().toISOString(),
-        error: err instanceof Error ? err.message : 'Unknown error',
         latencyMs: Date.now() - start,
       },
       { status: 503 }
