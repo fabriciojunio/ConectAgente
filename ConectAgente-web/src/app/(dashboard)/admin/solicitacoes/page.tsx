@@ -100,7 +100,10 @@ export default function SolicitacoesPage() {
 
     setActionLoading(senhaModal.id);
     try {
-      const result = await aprovarSolicitacao(senhaModal.id, user.id, senha);
+      // O id do aprovador nao vai mais daqui: a acao no servidor o tira
+      // da sessao. Mandar do cliente era o que permitia aprovar cadastro
+      // sem credencial nenhuma.
+      const result = await aprovarSolicitacao(senhaModal.id, senha);
       if (result.success) {
         setFeedback({ type: 'success', message: `${senhaModal.nome} foi aprovado(a) com sucesso!` });
         setSenhaModal(null);
@@ -121,7 +124,7 @@ export default function SolicitacoesPage() {
 
     setActionLoading(rejectModal.id);
     try {
-      const result = await rejeitarSolicitacao(rejectModal.id, user.id, motivo.trim());
+      const result = await rejeitarSolicitacao(rejectModal.id, motivo.trim());
       if (result.success) {
         setFeedback({ type: 'success', message: `Solicitação de ${rejectModal.nome} foi rejeitada.` });
         setRejectModal(null);

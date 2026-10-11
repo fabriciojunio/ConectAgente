@@ -2,6 +2,7 @@
 
 import { headers } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import { rateLimit } from '@/lib/rateLimit';
 import { z } from 'zod';
 
@@ -118,16 +119,80 @@ export async function criarSolicitacao(formData: {
   }
 }
 
+
+// ---------------------------------------------------------------------------
+// Quem pode aprovar ou rejeitar cadastro
+// ---------------------------------------------------------------------------
+/**
+ * Confirma que quem chamou esta autenticado e tem papel de gerente ou admin.
+ *
+ * Isto nao existia, e a falta era grave. Server Action em Next.js e um
+ * endpoint HTTP alcancavel de fora. As duas funcoes abaixo recebiam o id do
+ * aprovador como parametro, confiavam nele, e usavam o cliente de servico,
+ * que ignora o RLS por definicao. O caminho de ataque era direto:
+ *
+ *   1. preencher o cadastro publico escolhendo cargo "gerente"
+ *   2. chamar `aprovarSolicitacao` com o id da propria solicitacao e
+ *      qualquer uuid como aprovador
+ *   3. receber usuario de autenticacao e linha em `agentes` com
+ *      role = 'gerente'
+ *   4. entrar no painel e ler o prontuario de todo mundo, mais a trilha
+ *      de auditoria
+ *
+ * Nenhuma credencial era necessaria. O limite de taxa que existia nao
+ * ajudava: ele contava por `aprovadorId`, que o proprio atacante escolhia.
+ *
+ * A identidade agora vem do cookie de sessao, nunca do parametro. O papel e
+ * conferido com a mesma regra da policy `audit_log_select` do banco: gerente
+ * e admin.
+ */
+async function exigirAprovador(): Promise<
+  { ok: true; aprovadorId: string } | { ok: false; erro: string }
+> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, erro: 'Sessao nao encontrada. Entre no painel novamente.' };
+  }
+
+  const admin = createAdminClient();
+  const { data: aprovador } = await admin
+    .from('agentes')
+    .select('role, ativo')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (!aprovador || aprovador.ativo === false) {
+    return { ok: false, erro: 'Conta sem acesso ao painel.' };
+  }
+
+  if (!['gerente', 'admin'].includes(aprovador.role)) {
+    return { ok: false, erro: 'Apenas gerentes e administradores aprovam cadastros.' };
+  }
+
+  return { ok: true, aprovadorId: user.id };
+}
+
 // ---------------------------------------------------------------------------
 // Aprovar solicitação (requer admin/gerente autenticado)
 // ---------------------------------------------------------------------------
 export async function aprovarSolicitacao(
   solicitacaoId: string,
-  aprovadorId: string,
   senha: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Rate limit: 10 approvals per minute per approver
+    // O id do aprovador sai da sessao, nao do parametro. Confiar no parametro
+    // era o que permitia aprovar cadastro sem credencial nenhuma.
+    const autorizacao = await exigirAprovador();
+    if (!autorizacao.ok) {
+      return { success: false, error: autorizacao.erro };
+    }
+    const aprovadorId = autorizacao.aprovadorId;
+
+    // Limite de taxa por aprovador de verdade, agora que ele e confiavel.
     const { allowed } = await rateLimit(`aprovar:${aprovadorId}`, 10, 60_000);
     if (!allowed) {
       return { success: false, error: 'Muitas tentativas. Aguarde um minuto.' };
@@ -220,10 +285,22 @@ export async function aprovarSolicitacao(
 // ---------------------------------------------------------------------------
 export async function rejeitarSolicitacao(
   solicitacaoId: string,
-  aprovadorId: string,
   motivo: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Mesma regra da aprovacao. Rejeitar tambem e ato administrativo: deixar
+    // aberto permitiria a qualquer pessoa derrubar o cadastro de um colega.
+    const autorizacao = await exigirAprovador();
+    if (!autorizacao.ok) {
+      return { success: false, error: autorizacao.erro };
+    }
+    const aprovadorId = autorizacao.aprovadorId;
+
+    const { allowed } = await rateLimit(`rejeitar:${aprovadorId}`, 20, 60_000);
+    if (!allowed) {
+      return { success: false, error: 'Muitas tentativas. Aguarde um minuto.' };
+    }
+
     const admin = createAdminClient();
 
     const { error } = await admin
