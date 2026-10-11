@@ -1,8 +1,17 @@
 name: CI
 
+# Roda em qualquer branch, e nao so em main e develop.
+#
+# O gatilho anterior listava `[main, develop]`. A branch `develop` nem existe no
+# repositorio, e o trabalho acontece em `melhorias/conectagente-enterprise`, que
+# nao estava na lista. Resultado: o CI nunca rodava onde o codigo era escrito, e
+# so apareceria num pull request para a main, depois de tudo ja pronto.
+#
+# O repositorio e publico, entao minuto de Actions e gratuito, e o
+# `concurrency` abaixo cancela execucao de commit que ja foi substituido.
 on:
   push:
-    branches: [main, develop]
+    branches: ['**']
   pull_request:
     branches: [main]
 
