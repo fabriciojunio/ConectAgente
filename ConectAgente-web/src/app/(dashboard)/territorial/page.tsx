@@ -11,6 +11,7 @@ import type { VisitaPorBairro, CoberturaMicroarea } from '@/types';
 import { cacheGetStale } from '@/lib/cache';
 import { withTimeout } from '@/lib/utils';
 import { MapPin } from 'lucide-react';
+import { usePrimeiraCarga } from '@/hooks/usePrimeiraCarga';
 
 function SkeletonRows() {
   return (
@@ -37,9 +38,10 @@ export default function TerritorialPage() {
   const [error, setError] = useState('');
   const [bairros, setBairros] = useState<VisitaPorBairro[]>([]);
   const [cobertura, setCobertura] = useState<CoberturaMicroarea[]>(initCobertura ?? []);
+  const primeiraCarga = usePrimeiraCarga(initCobertura != null);
 
   const fetchData = useCallback(async () => {
-    if (bairros.length === 0 && cobertura.length === 0) setLoading(true);
+    if (primeiraCarga.ehAPrimeira()) setLoading(true);
     setError('');
 
     const now = new Date();
@@ -56,7 +58,7 @@ export default function TerritorialPage() {
       .then(setCobertura).catch(() => {}).finally(checkDone);
     withTimeout(getVisitasPorBairro(inicio, fim), [])
       .then(setBairros).catch((err) => { setError(err instanceof Error ? err.message : 'Erro ao carregar dados territoriais'); }).finally(checkDone);
-  }, [filters]);
+  }, [filters, primeiraCarga]);
 
   useEffect(() => {
     fetchData();

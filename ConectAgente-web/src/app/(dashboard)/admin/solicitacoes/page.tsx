@@ -18,6 +18,7 @@ import {
   Loader2,
   AlertTriangle,
 } from 'lucide-react';
+import { usePrimeiraCarga } from '@/hooks/usePrimeiraCarga';
 
 function SkeletonCards() {
   return (
@@ -76,9 +77,10 @@ export default function SolicitacoesPage() {
   const [rejectModal, setRejectModal] = useState<{ id: string; nome: string } | null>(null);
   const [motivo, setMotivo] = useState('');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const primeiraCarga = usePrimeiraCarga(initSolicitacoes != null);
 
   const loadSolicitacoes = useCallback(async () => {
-    if (solicitacoes.length === 0) setLoading(true);
+    if (primeiraCarga.ehAPrimeira()) setLoading(true);
     try {
       const result = await withTimeout(getSolicitacoes(filter || undefined), { data: [], total: 0, page: 1, per_page: 20, total_pages: 0 });
       setSolicitacoes(result.data);
@@ -87,7 +89,7 @@ export default function SolicitacoesPage() {
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [filter, primeiraCarga]);
 
   useEffect(() => {
     loadSolicitacoes();
