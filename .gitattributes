@@ -1,0 +1,8 @@
+# Normaliza fim de linha. Sem isto, um .sh commitado no Windows chega com CRLF
+# no Linux e o shell responde "bad interpreter", que e um erro dificil de ler.
+* text=auto eol=lf
+*.sh  text eol=lf
+*.sql text eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
