@@ -82,6 +82,19 @@ usuário. Só o banco reclama disso.
 
 ---
 
+## Branches
+
+| Branch | Para que serve |
+|---|---|
+| `produção` | o que está validado e pronto para uso. É a branch padrão |
+| `homologação` | onde a mudança é conferida antes de subir para produção |
+
+As duas estão sempre no mesmo commit quando não há nada em andamento. O CI
+roda em qualquer branch, e não só nessas duas, porque descobrir problema no
+pull request é o momento mais caro.
+
+---
+
 ## Como o repositório está organizado
 
 ```
@@ -154,8 +167,16 @@ Honestidade sobre o estado, que vale mais que uma lista de recursos:
   existia e era coerente, mas dependia de quatro pacotes nativos não
   instalados, e ligá-los exige build de desenvolvimento. As versões para o SDK
   54 estão anotadas no histórico do Git.
-- **O histórico deste repositório está desconectado** do repositório do time.
-  Enquanto isso não for resolvido, melhoria daqui não chega lá.
+- **A classificação de risco do time já está aqui**, portada do commit do Luan
+  em vez de fundida, porque a linha deles carrega junto 97 arquivos de
+  relatório de cobertura, logs de erro e telas substituídas. O que continua
+  fora é a pasta `backend/`, um servidor Express com Prisma que o aplicativo
+  não referencia em lugar nenhum e que ficou para trás quando o projeto passou
+  a usar o Supabase direto. Ela segue no repositório do time, se fizer falta.
+- **O histórico deste repositório não tem ancestral comum com o do time.**
+  Enquanto isso não for resolvido, melhoria daqui não chega lá por um
+  `git merge` normal: vai ter que ser por porte, como foi feito com a
+  classificação de risco, ou por uma decisão conjunta de refazer a base.
 
 ---
 
