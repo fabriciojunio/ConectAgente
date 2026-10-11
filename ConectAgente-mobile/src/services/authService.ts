@@ -9,7 +9,7 @@ import { Agente } from '../types';
 import { SECURE_KEYS, SESSION_TIMEOUT_MS } from '../utils/constants';
 import { clearEncryptionKeyCache } from '../utils/encryption';
 import { isoNow } from '../utils/formatters';
-import api from './api';
+import { supabase } from '../lib/supabase';
 
 export interface SessionData {
   agente: Agente;
@@ -37,20 +37,80 @@ export const authService = {
     await SecureStore.setItemAsync(SECURE_KEYS.AGENTE_ID, agente.id);
     await SecureStore.setItemAsync(SECURE_KEYS.SESSION_EXPIRES, expires_at);
 
-    // 4. Tentar autenticar no servidor (opcional - não bloqueia se offline)
-    try {
-      const response = await api.post('/auth/login', { cpf, senha });
-      if (response.data.token) {
-        await SecureStore.setItemAsync(SECURE_KEYS.AUTH_TOKEN, response.data.token);
-        if (response.data.refresh_token) {
-          await SecureStore.setItemAsync(SECURE_KEYS.REFRESH_TOKEN, response.data.refresh_token);
-        }
-      }
-    } catch {
-      // Offline ou servidor indisponível — continua com sessão local
-    }
+    // 4. Abrir sessão no Supabase, que é o que permite sincronizar.
+    //
+    // Isto não é opcional para o dado sair do aparelho, e antes não existia.
+    // O aplicativo autenticava só localmente e falava com o Supabase usando a
+    // chave anon, sem sessão. Com `auth.uid()` nulo, toda policy de RLS nega a
+    // escrita. Medido num PostgreSQL com o schema e as policies reais:
+    //
+    //   sem sessão: new row violates row-level security policy for table
+    //               "residencias"
+    //   com sessão: as oito tabelas aceitam a gravação
+    //
+    // Não dá para contornar isso afrouxando a policy: quem usa a chave anon
+    // não tem identidade verificável, e qualquer regra que aceitasse a
+    // gravação aceitaria de qualquer pessoa com a chave, que é pública por
+    // desenho.
+    //
+    // Continua sem bloquear o login: se estiver offline, ou se o agente ainda
+    // não tiver usuário no Supabase Auth, o acesso ao aplicativo funciona
+    // normalmente e a fila espera. O que muda é que a falha passa a ser
+    // visível em vez de silenciosa.
+    await this.abrirSessaoNoServidor(agente.email, senha);
 
     return { agente, token: localToken, expires_at };
+  },
+
+  /**
+   * Abre a sessão do Supabase, usada pela sincronização.
+   *
+   * Devolve o motivo da falha em vez de lançar, porque o login local já
+   * terminou com sucesso e derrubar a entrada do agente por causa da rede
+   * contraria o próprio desenho offline-first.
+   */
+  async abrirSessaoNoServidor(
+    email: string,
+    senha: string
+  ): Promise<{ ok: boolean; motivo?: string }> {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password: senha,
+      });
+
+      if (error) {
+        // O caso mais comum em implantação nova: o agente existe na tabela
+        // `agentes` mas não tem usuário correspondente no Supabase Auth.
+        // Quem provisiona isso é a aprovação do cadastro no painel.
+        console.warn(
+          '[auth] Sem sessão no servidor, a sincronização vai ficar parada:',
+          error.message
+        );
+        return { ok: false, motivo: error.message };
+      }
+
+      return { ok: true };
+    } catch (erro) {
+      const motivo = erro instanceof Error ? erro.message : 'falha de rede';
+      console.warn('[auth] Não foi possível abrir sessão no servidor:', motivo);
+      return { ok: false, motivo };
+    }
+  },
+
+  /**
+   * Diz se existe sessão no servidor neste momento.
+   *
+   * A sessão fica no AsyncStorage e o cliente a renova sozinho
+   * (`autoRefreshToken`), então ela sobrevive a reinício do aplicativo.
+   */
+  async temSessaoNoServidor(): Promise<boolean> {
+    try {
+      const { data } = await supabase.auth.getSession();
+      return data.session != null;
+    } catch {
+      return false;
+    }
   },
 
   /**
@@ -93,11 +153,14 @@ export const authService = {
     await SecureStore.deleteItemAsync(SECURE_KEYS.AGENTE_ID);
     await SecureStore.deleteItemAsync(SECURE_KEYS.SESSION_EXPIRES);
 
-    // Notificar servidor (não crítico se falhar)
+    // Encerra a sessão do servidor também. Sem isto, o aparelho continuaria
+    // com um token válido do Supabase depois do logout, e quem pegasse o
+    // aparelho poderia ler o dado do agente anterior pela API.
     try {
-      await api.post('/auth/logout');
+      await supabase.auth.signOut();
     } catch {
-      // ignore
+      // Offline: a sessão local já foi apagada, e o token do servidor expira
+      // por conta própria.
     }
   },
 

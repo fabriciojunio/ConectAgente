@@ -17,17 +17,36 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
+const urlConfigurada = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+const chaveConfigurada = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
+/** Diz se o servidor está configurado. A sincronização depende disto. */
+export const supabaseConfigurado = urlConfigurada !== '' && chaveConfigurada !== '';
+
+if (!supabaseConfigurado) {
   console.warn(
     '[Supabase] Variáveis de ambiente não configuradas. ' +
-    'Crie o arquivo .env com EXPO_PUBLIC_SUPABASE_URL e EXPO_PUBLIC_SUPABASE_ANON_KEY.'
+    'Crie o arquivo .env com EXPO_PUBLIC_SUPABASE_URL e EXPO_PUBLIC_SUPABASE_ANON_KEY. ' +
+    'O aplicativo funciona offline, mas nada será sincronizado.'
   );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+// Endereço de reserva para quando as variáveis não estão definidas.
+//
+// O `createClient` lança `supabaseUrl is required` se receber string vazia, e
+// isso acontecia na importação do módulo: o aviso acima era escrito e a linha
+// seguinte derrubava o aplicativo inteiro, antes de qualquer tela aparecer.
+// Num sistema offline-first isso é o avesso do que se quer, porque o agente
+// em campo precisa registrar a visita mesmo sem servidor nenhum configurado.
+//
+// Com o endereço de reserva o módulo carrega, o aplicativo abre e trabalha
+// offline, e a sincronização falha com mensagem própria quando for tentada.
+const URL_RESERVA = 'https://servidor-nao-configurado.invalid';
+
+export const supabase = createClient(
+  urlConfigurada || URL_RESERVA,
+  chaveConfigurada || 'chave-nao-configurada',
+  {
   auth: {
     // Usa AsyncStorage para persistir sessão entre reinicializações do app
     storage: AsyncStorage,

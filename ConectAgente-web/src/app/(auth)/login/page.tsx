@@ -103,7 +103,7 @@ export default function LoginPage() {
       if (agente.role === 'agente') {
         await supabase.auth.signOut();
         clearTimeout(safetyTimer);
-        setError('Acesso restrito. Apenas supervisores e administradores podem usar o painel web.');
+        setError('Acesso restrito. Apenas gerentes e administradores podem usar o painel web.');
         setLoading(false);
         return;
       }

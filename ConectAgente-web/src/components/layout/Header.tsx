@@ -16,7 +16,6 @@ interface HeaderProps {
 function getRoleDisplay(role?: string): string {
   const labels: Record<string, string> = {
     admin: 'Administrador',
-    supervisor: 'Supervisor',
     gerente: 'Gerente',
     coordenador: 'Coordenador',
     agente: 'Agente',

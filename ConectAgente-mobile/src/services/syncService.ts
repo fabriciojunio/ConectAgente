@@ -39,6 +39,7 @@ import { residenciaRepository } from '../database/repositories/residenciaReposit
 import { moradorRepository } from '../database/repositories/moradorRepository';
 import { visitaRepository } from '../database/repositories/visitaRepository';
 import { supabase, SupabaseTable } from '../lib/supabase';
+import { authService } from './authService';
 import { SYNC_BATCH_SIZE } from '../utils/constants';
 
 export interface SyncStatus {
@@ -107,6 +108,20 @@ export const syncService = {
   async sincronizar(onProgress?: (progress: number, total: number) => void): Promise<void> {
     const itens = await syncQueueRepository.listarPendentes();
     if (itens.length === 0) return;
+
+    // Sem sessão no servidor, o RLS nega toda gravação. Medido com o schema e
+    // as policies reais: `new row violates row-level security policy`.
+    //
+    // Parar aqui não é detalhe de elegância. A fila conta tentativas e marca
+    // o item como erro definitivo depois de SYNC_MAX_TENTATIVAS. Se a
+    // sincronização rodasse sem sessão, cada ciclo queimaria uma tentativa de
+    // cada item, e em cinco ciclos a coleta de um dia inteiro ficaria presa
+    // como erro permanente, por uma causa que não tem nada a ver com o dado.
+    if (!(await authService.temSessaoNoServidor())) {
+      throw new Error(
+        'Sem sessão no servidor. Entre novamente para a sincronização voltar.'
+      );
+    }
 
     const batch = itens.slice(0, SYNC_BATCH_SIZE);
     let processados = 0;

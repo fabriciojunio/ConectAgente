@@ -191,14 +191,36 @@ export const agenteRepository = {
       [senhaHash, now, cpf]
     );
 
-    // Audit log LGPD — registra o evento sem guardar dados sensíveis
-    const agente = await this.buscarPorCpf(cpf);
-    if (agente) {
-      await db.runAsync(
-        `INSERT INTO audit_log (id, agente_id, acao, tabela, registro_id, detalhes, created_at)
-         VALUES (?, ?, 'RESET_SENHA', 'agentes', ?, ?, ?)`,
-        [generateUUID(), agente.id, agente.id, 'Recuperação de senha via verificação CPF+email', now]
-      );
+    // Registro de auditoria da LGPD, sem guardar dado sensível.
+    //
+    // Duas coisas estavam erradas aqui. A coluna `detalhes` não existe em
+    // nenhum schema, nem local nem no servidor, e o SQLite responde
+    // `table audit_log has no column named detalhes`. E a troca da senha
+    // acontece antes: a pessoa trocava a senha, a tela recebia a exceção e
+    // dizia que não deu, e na segunda tentativa a senha antiga já não valia
+    // mais. Travamento por um erro de nome de coluna.
+    //
+    // Agora grava nas colunas que existem, e a falha de auditoria não
+    // desfaz uma troca de senha que já aconteceu: o retorno continua
+    // verdadeiro, porque a senha de fato mudou, e o erro vai para o console
+    // em vez de virar exceção na tela.
+    try {
+      const agente = await this.buscarPorCpf(cpf);
+      if (agente) {
+        await db.runAsync(
+          `INSERT INTO audit_log (id, agente_id, acao, tabela, registro_id, dados_novos, created_at)
+           VALUES (?, ?, 'RESET_SENHA', 'agentes', ?, ?, ?)`,
+          [
+            generateUUID(),
+            agente.id,
+            agente.id,
+            JSON.stringify({ origem: 'verificacao de CPF e email' }),
+            now,
+          ]
+        );
+      }
+    } catch (erro) {
+      console.error('Falha ao registrar a troca de senha na auditoria:', erro);
     }
 
     return true;

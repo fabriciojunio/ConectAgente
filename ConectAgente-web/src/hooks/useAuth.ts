@@ -21,8 +21,17 @@ interface UseAuthReturn {
   signOut: () => Promise<void>;
   /** Whether the current user has admin role */
   isAdmin: boolean;
-  /** Whether the current user has supervisor role */
-  isSupervisor: boolean;
+  /** Coordena uma unidade de saúde */
+  isCoordenador: boolean;
+  /** Gerencia a secretaria inteira */
+  isGerente: boolean;
+  /**
+   * Enxerga o sistema inteiro, não só a própria unidade.
+   *
+   * Espelha a policy de RLS `audit_log_select`, que libera para
+   * ('gerente', 'admin').
+   */
+  podeVerTudo: boolean;
 }
 
 /**
@@ -213,6 +222,16 @@ export function useAuth(): UseAuthReturn {
     signIn,
     signOut,
     isAdmin: role === 'admin',
-    isSupervisor: role === 'supervisor',
+    isCoordenador: role === 'coordenador',
+    isGerente: role === 'gerente',
+    /**
+     * Enxerga o sistema inteiro, nao so a propria unidade.
+     *
+     * Espelha de proposito a policy de RLS `audit_log_select`, que libera
+     * para ('gerente', 'admin'). Guarda de tela que nao casa com a policy do
+     * banco produz o pior tipo de erro: a pagina abre e vem vazia, e quem usa
+     * conclui que nao ha dado em vez de que nao tem permissao.
+     */
+    podeVerTudo: role === 'gerente' || role === 'admin',
   };
 }

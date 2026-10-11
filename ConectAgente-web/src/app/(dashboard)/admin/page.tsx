@@ -73,7 +73,10 @@ export default function AdminPage() {
   }, [primeiraCarga]);
 
   // Role guard
-  if (user && user.role !== 'admin' && user.role !== 'supervisor') {
+  // Mesma regra da policy `audit_log_select` do banco: gerente e admin. O
+  // guarda antigo pedia 'supervisor', papel que o CHECK de agentes.role nao
+  // aceita, entao nenhum usuario real passava.
+  if (user && user.role !== 'admin' && user.role !== 'gerente') {
     return (
       <div className="page-container">
         <EmptyState

@@ -41,9 +41,20 @@ export const ROLES: Record<UserRole, {
     canManageUsers: false,
     canExport: false,
   },
-  supervisor: {
-    label: 'Supervisor',
+  // Os niveis seguem o alcance que as policies de RLS dao a cada papel:
+  // agente ve os proprios pacientes, coordenador ve a propria unidade de
+  // saude, gerente e admin veem tudo. Antes havia so 'supervisor', papel que
+  // o CHECK de agentes.role nem aceita.
+  coordenador: {
+    label: 'Coordenador',
     level: 2,
+    canViewAll: false,
+    canManageUsers: false,
+    canExport: true,
+  },
+  gerente: {
+    label: 'Gerente',
+    level: 3,
     canViewAll: true,
     canManageUsers: false,
     canExport: true,
@@ -119,55 +130,56 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     label: 'Dashboard',
     href: ROUTES.DASHBOARD,
     icon: 'LayoutDashboard',
-    roles: ['supervisor', 'admin'],
+    roles: ['agente', 'coordenador', 'gerente', 'admin'],
   },
   {
     label: 'Visitas',
     href: ROUTES.VISITAS,
     icon: 'ClipboardList',
-    roles: ['supervisor', 'admin'],
+    roles: ['agente', 'coordenador', 'gerente', 'admin'],
   },
   {
     label: 'Famílias',
     href: ROUTES.FAMILIAS,
     icon: 'Users',
-    roles: ['supervisor', 'admin'],
+    roles: ['agente', 'coordenador', 'gerente', 'admin'],
   },
   {
     label: 'Pacientes',
     href: ROUTES.MORADORES,
     icon: 'Heart',
-    roles: ['supervisor', 'admin'],
+    roles: ['agente', 'coordenador', 'gerente', 'admin'],
   },
   {
     label: 'Agentes',
     href: ROUTES.AGENTES,
     icon: 'UserCheck',
-    roles: ['supervisor', 'admin'],
+    roles: ['agente', 'coordenador', 'gerente', 'admin'],
   },
   {
     label: 'Monitoramento',
     href: ROUTES.MONITORAMENTO,
     icon: 'Activity',
-    roles: ['supervisor', 'admin'],
+    roles: ['agente', 'coordenador', 'gerente', 'admin'],
   },
   {
     label: 'Territorial',
     href: ROUTES.TERRITORIAL,
     icon: 'Map',
-    roles: ['supervisor', 'admin'],
+    roles: ['agente', 'coordenador', 'gerente', 'admin'],
   },
   {
     label: 'Relatórios',
     href: ROUTES.RELATORIOS,
     icon: 'FileBarChart',
-    roles: ['supervisor', 'admin'],
+    roles: ['agente', 'coordenador', 'gerente', 'admin'],
   },
   {
     label: 'Administração',
     href: ROUTES.ADMIN,
     icon: 'Shield',
-    roles: ['supervisor', 'admin'],
+    // Mesma regra da policy `audit_log_select`: gerente e admin.
+    roles: ['gerente', 'admin'],
   },
   {
     label: 'Usuários',

@@ -44,7 +44,8 @@ interface Usuario {
 
 const roleOptions: Array<{ value: UserRole; label: string }> = [
   { value: 'admin', label: 'Administrador' },
-  { value: 'supervisor', label: 'Supervisor' },
+  { value: 'coordenador', label: 'Coordenador' },
+  { value: 'gerente', label: 'Gerente' },
   { value: 'agente', label: 'Agente' },
 ];
 

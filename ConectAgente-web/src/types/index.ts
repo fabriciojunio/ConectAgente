@@ -9,8 +9,15 @@
 // Role Types
 // ---------------------------------------------------------------------------
 
-/** User roles within the ConectAgente system */
-export type UserRole = 'agente' | 'supervisor' | 'admin';
+/**
+ * Papeis do sistema, iguais ao CHECK de `agentes.role` no banco.
+ *
+ * O tipo antigo trazia 'supervisor', que nao existe em nenhum CHECK, e nao
+ * trazia 'coordenador' nem 'gerente', que existem e sao justamente os que as
+ * policies de RLS usam para decidir o que cada um ve. O resultado era guarda
+ * de tela conferindo um papel impossivel.
+ */
+export type UserRole = 'agente' | 'coordenador' | 'gerente' | 'admin';
 
 // ---------------------------------------------------------------------------
 // Enums (matching the React Native app)
@@ -320,7 +327,8 @@ export interface AgenteComEstatisticas extends Agente {
 export type StatusRegistro = 'pendente' | 'aprovado' | 'rejeitado';
 
 /** Cargos disponíveis para auto-registro (admin não pode ser solicitado) */
-export type CargoRegistro = 'supervisor' | 'outro';
+/** Cargo pedido no cadastro, igual ao CHECK de cargo_pretendido no banco. */
+export type CargoRegistro = 'coordenador' | 'gerente' | 'outro';
 
 /** Solicitação de registro de novo usuário */
 export interface SolicitacaoRegistro {
