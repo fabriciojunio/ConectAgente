@@ -58,6 +58,49 @@ export default function ResidenciaDetalhe() {
     }, [id])
   );
 
+  async function alterarRisco(r: 'nenhum' | 'baixo' | 'medio' | 'alto' | 'critico') {
+    if (!id || !residencia) return;
+    try {
+      await residenciaRepository.atualizar(id, { nivel_risco: r }, residencia.agente_id);
+      setResidencia((prev) => prev ? { ...prev, nivel_risco: r } : null);
+    } catch (err) {
+      Alert.alert('Erro', 'Não foi possível atualizar o risco.');
+    }
+  }
+
+  function obterLabelRisco(r: string) {
+    const map: Record<string, string> = {
+      critico: 'Risco Crítico',
+      alto: 'Risco Alto',
+      medio: 'Risco Médio',
+      baixo: 'Risco Baixo',
+      nenhum: 'Sem classificação',
+    };
+    return map[r] ?? r;
+  }
+
+  function obterCorRisco(r: string) {
+    const map: Record<string, string> = {
+      critico: COLORS.error,
+      alto: COLORS.warning,
+      medio: '#a16207',
+      baixo: COLORS.success,
+      nenhum: COLORS.placeholder,
+    };
+    return map[r] ?? COLORS.placeholder;
+  }
+
+  function obterSiglaRisco(r: string) {
+    const map: Record<string, string> = {
+      critico: 'Crítico',
+      alto: 'Alto',
+      medio: 'Médio',
+      baixo: 'Baixo',
+      nenhum: 'Nenhum',
+    };
+    return map[r] ?? r;
+  }
+
   if (isLoading) return <LoadingSpinner message="Carregando..." />;
   if (!residencia) return <EmptyState title="Residência não encontrada" />;
 
@@ -106,6 +149,59 @@ export default function ResidenciaDetalhe() {
             {residencia.animais_info && (
               <InfoItem label="Quais" value={residencia.animais_info} />
             )}
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* CLASSIFICAÇÃO DE RISCO */}
+          <View style={styles.riscoContainer}>
+            <Text style={styles.riscoTitle}>Classificação de Risco da Família</Text>
+            <View style={styles.badgeRow}>
+              <Badge 
+                label={obterLabelRisco(residencia.nivel_risco || 'nenhum')} 
+                variant={
+                  residencia.nivel_risco === 'critico' 
+                    ? 'error' 
+                    : residencia.nivel_risco === 'alto' 
+                    ? 'warning' 
+                    : residencia.nivel_risco === 'medio' 
+                    ? 'medio' 
+                    : residencia.nivel_risco === 'baixo' 
+                    ? 'success' 
+                    : 'info'
+                } 
+              />
+            </View>
+            
+            {/* Seletor rápido de risco */}
+            <View style={styles.riscoSeletor}>
+              {(['nenhum', 'baixo', 'medio', 'alto', 'critico'] as const).map((r) => {
+                const isSelected = (residencia.nivel_risco || 'nenhum') === r;
+                return (
+                  <TouchableOpacity
+                    key={r}
+                    onPress={() => alterarRisco(r)}
+                    style={[
+                      styles.riscoBotao,
+                      isSelected && {
+                        backgroundColor: obterCorRisco(r) + '15',
+                        borderColor: obterCorRisco(r),
+                        borderWidth: 1.5,
+                      }
+                    ]}
+                  >
+                    <Ionicons 
+                      name={isSelected ? "flag" : "flag-outline"} 
+                      size={14} 
+                      color={obterCorRisco(r)} 
+                    />
+                    <Text style={[styles.riscoBotaoText, { color: isSelected ? obterCorRisco(r) : COLORS.textLight, fontWeight: isSelected ? '700' : '400' }]}>
+                      {obterSiglaRisco(r)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         </Card>
 
@@ -331,6 +427,16 @@ const styles = StyleSheet.create({
   addressSub: { fontSize: FONT_SIZE.sm, color: COLORS.textLight },
   addressCep: { fontSize: FONT_SIZE.xs, color: COLORS.placeholder },
   divider: { height: 1, backgroundColor: COLORS.borderLight, marginVertical: SPACING.sm },
+  riscoContainer: { marginTop: SPACING.sm, gap: SPACING.xs },
+  riscoTitle: { fontSize: FONT_SIZE.xs, color: COLORS.textLight, fontWeight: '600', marginBottom: 2 },
+  badgeRow: { flexDirection: 'row', marginBottom: 2 },
+  riscoSeletor: { flexDirection: 'row', justifyContent: 'space-between', gap: 4, marginTop: 4 },
+  riscoBotao: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3,
+    paddingVertical: 6, paddingHorizontal: 2, borderRadius: RADIUS.sm, borderWidth: 1, borderColor: COLORS.borderLight,
+    backgroundColor: COLORS.white,
+  },
+  riscoBotaoText: { fontSize: 10 },
   infoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   infoItem: { minWidth: '40%' },
   infoLabel: { fontSize: FONT_SIZE.xs, color: COLORS.textLight, fontWeight: '600' },
