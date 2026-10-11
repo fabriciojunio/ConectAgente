@@ -79,7 +79,7 @@ describe('moradorRepository.criar', () => {
       tem_convenio: false,
       toma_medicamento: false,
       is_responsavel: true,
-    });
+    }, 'agente-uuid-123');
 
     expect(mockDb.runAsync).toHaveBeenCalled();
     expect(morador).toBeDefined();

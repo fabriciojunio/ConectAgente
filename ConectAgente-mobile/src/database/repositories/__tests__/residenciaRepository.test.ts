@@ -14,6 +14,7 @@ jest.mock('expo-secure-store', () => ({
 
 import { getDatabase } from '../../../database/database';
 import { residenciaRepository } from '../residenciaRepository';
+import { TipoImovel } from '../../../types';
 
 const mockGetDatabase = getDatabase as jest.MockedFunction<typeof getDatabase>;
 
@@ -58,18 +59,19 @@ describe('residenciaRepository.criar', () => {
   it('insere residência e retorna o objeto', async () => {
     mockDb.getFirstAsync.mockResolvedValue(residenciaBase);
 
+    // O agente vem como segundo argumento, nao dentro do formulario:
+    // `criar(data: ResidenciaFormData, agenteId: string)`.
     const residencia = await residenciaRepository.criar({
-      agente_id: 'agente-uuid-123',
       cep: '01310100',
       logradouro: 'Avenida Paulista',
       numero: '1000',
       bairro: 'Bela Vista',
       cidade: 'São Paulo',
       estado: 'SP',
-      tipo_imovel: 'proprio',
+      tipo_imovel: TipoImovel.PROPRIO,
       num_comodos: 4,
       tem_animais: false,
-    });
+    }, 'agente-uuid-123');
 
     expect(mockDb.runAsync).toHaveBeenCalled();
     expect(residencia).toBeDefined();
@@ -79,7 +81,6 @@ describe('residenciaRepository.criar', () => {
     mockDb.getFirstAsync.mockResolvedValue(residenciaBase);
 
     await residenciaRepository.criar({
-      agente_id: 'agente-uuid-123',
       cep: '01310100',
       logradouro: 'Av. Teste',
       numero: '1',
@@ -89,7 +90,7 @@ describe('residenciaRepository.criar', () => {
       tipo_imovel: 'alugado',
       num_comodos: 2,
       tem_animais: false,
-    });
+    }, 'agente-uuid-123');
 
     // Deve ter chamado runAsync ao menos 2x: INSERT residencia + INSERT sync_queue
     expect(mockDb.runAsync.mock.calls.length).toBeGreaterThanOrEqual(2);

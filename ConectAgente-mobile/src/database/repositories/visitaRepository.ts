@@ -1,5 +1,6 @@
+import type { SQLiteBindValue } from 'expo-sqlite';
 import { getDatabase } from '../database';
-import { Visita, Agendamento, StatusVisita, StatusSync, EstatisticasVisitas } from '../../types';
+import { Visita, Agendamento, StatusVisita, StatusSync, EstatisticasVisitas, VisitaListada } from '../../types';
 import { generateUUID, isoNow } from '../../utils/formatters';
 import { syncQueueRepository } from './syncQueueRepository';
 
@@ -69,7 +70,7 @@ export const visitaRepository = {
       LEFT JOIN moradores m ON m.id = v.morador_id
       WHERE v.agente_id = ?
     `;
-    const params: unknown[] = [agenteId];
+    const params: SQLiteBindValue[] = [agenteId];
 
     if (filtros?.data_inicio) {
       sql += ` AND v.data_visita >= ?`;
@@ -296,7 +297,7 @@ export const visitaRepository = {
     data_inicio?: string;
     data_fim?: string;
     status?: StatusVisita;
-  }): Promise<Array<Visita & { agente_nome?: string }>> {
+  }): Promise<VisitaListada[]> {
     const db = await getDatabase();
     let sql = `
       SELECT v.*, r.logradouro, r.numero, r.bairro, m.nome as morador_nome, a.nome as agente_nome
@@ -306,7 +307,7 @@ export const visitaRepository = {
       LEFT JOIN agentes a ON a.id = v.agente_id
       WHERE 1=1
     `;
-    const params: unknown[] = [];
+    const params: SQLiteBindValue[] = [];
     if (filtros?.agente_id) { sql += ` AND v.agente_id = ?`; params.push(filtros.agente_id); }
     if (filtros?.data_inicio) { sql += ` AND v.data_visita >= ?`; params.push(filtros.data_inicio); }
     if (filtros?.data_fim) { sql += ` AND v.data_visita <= ?`; params.push(filtros.data_fim); }
@@ -322,7 +323,7 @@ export const visitaRepository = {
     }));
   },
 
-  async obterUltimasVisitas(limite = 10): Promise<Array<Visita & { agente_nome?: string }>> {
+  async obterUltimasVisitas(limite = 10): Promise<VisitaListada[]> {
     const db = await getDatabase();
     const rows = await db.getAllAsync<Record<string, unknown>>(
       `SELECT v.*, r.logradouro, r.numero, r.bairro, a.nome as agente_nome
@@ -343,11 +344,23 @@ export const visitaRepository = {
 
   async definirMeta(agenteId: string, mes: number, ano: number, meta: number): Promise<void> {
     const db = await getDatabase();
+    const id = generateUUID();
     await db.runAsync(
       `INSERT OR REPLACE INTO metas_visitas (id, agente_id, mes, ano, meta_total, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [generateUUID(), agenteId, mes, ano, meta, isoNow()]
+      [id, agenteId, mes, ano, meta, isoNow()]
     );
+
+    // A meta ficava apenas no aparelho, porque ninguem a enfileirava. O
+    // coordenador nunca via a meta que o agente definiu. O campo local
+    // `meta_total` vira `meta` no caminho, pela traducao declarada em
+    // RENOMEAR_PARA_SERVIDOR.
+    await syncQueueRepository.enqueue('metas_visitas', 'insert', id, {
+      agente_id: agenteId,
+      mes,
+      ano,
+      meta_total: meta,
+    });
   },
 };
 

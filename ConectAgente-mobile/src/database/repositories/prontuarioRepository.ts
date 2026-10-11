@@ -29,6 +29,23 @@ export const prontuarioRepository = {
         `SELECT * FROM prontuarios WHERE id = ?`,
         [id]
       );
+
+      // O prontuario pai precisa subir antes das cinco sub-fichas.
+      // Sem isto ele ficava apenas no aparelho, e o servidor recusava
+      // qualquer sub-ficha pela chave estrangeira:
+      //
+      //   insert or update on table "prontuario_saude" violates foreign key
+      //   constraint "prontuario_saude_prontuario_id_fkey"
+      //
+      // Como o enfileiramento acontece aqui, na criacao, a ordem na fila
+      // fica naturalmente certa: o pai entra antes de qualquer salvarSaude.
+      await syncQueueRepository.enqueue('prontuarios', 'insert', id, {
+        morador_id: moradorId,
+        agente_id: agenteId,
+        versao: 1,
+        created_at: now,
+        updated_at: now,
+      });
     }
 
     const prontuario = mapProntuario(row!);

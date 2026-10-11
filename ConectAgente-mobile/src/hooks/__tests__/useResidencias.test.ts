@@ -33,34 +33,37 @@ jest.mock('expo-secure-store', () => ({
 import { renderHook, act } from '@testing-library/react-native';
 import { residenciaRepository } from '../../database/repositories/residenciaRepository';
 import { useResidencias } from '../useResidencias';
+import { StatusSync, TipoImovel, Residencia } from '../../types';
 
 const mockedRepo = residenciaRepository as jest.Mocked<typeof residenciaRepository>;
 
-const residenciaBase = {
+// Campos opcionais sao `string | undefined` no tipo, nao `string | null`.
+// O fixture antigo usava null, que o SQLite devolve mas o tipo nao aceita, e
+// por isso descrevia um objeto que o mapRow nunca produz.
+const residenciaBase: Residencia = {
   id: 'res-uuid-456',
   agente_id: 'agente-uuid-123',
   cep: '01310100',
   logradouro: 'Avenida Paulista',
   numero: '1000',
-  complemento: null,
   bairro: 'Bela Vista',
   cidade: 'São Paulo',
   estado: 'SP',
-  tipo_imovel: 'proprio' as const,
+  tipo_imovel: TipoImovel.PROPRIO,
   num_comodos: 4,
   tem_animais: false,
-  animais_info: null,
-  morador_responsavel_id: null,
   created_at: '2024-01-01T00:00:00.000Z',
   updated_at: '2024-01-01T00:00:00.000Z',
-  sync_status: 'pendente' as const,
+  status_sync: StatusSync.PENDENTE,
 };
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockedRepo.listar.mockResolvedValue([residenciaBase]);
   mockedRepo.criar.mockResolvedValue(residenciaBase);
-  mockedRepo.atualizar.mockResolvedValue({ ...residenciaBase });
+  // `atualizar` devolve Promise<void>; o mock antigo resolvia uma
+  // residencia, que nenhuma parte do codigo le.
+  mockedRepo.atualizar.mockResolvedValue(undefined);
   mockedRepo.excluir.mockResolvedValue(undefined);
   mockedRepo.definirResponsavel.mockResolvedValue(undefined);
 });
@@ -93,7 +96,7 @@ describe('useResidencias.criar', () => {
   it('cria residência com agente_id do contexto e retorna o objeto', async () => {
     const { result } = renderHook(() => useResidencias());
 
-    let novaResidencia: typeof residenciaBase | undefined;
+    let novaResidencia: Residencia | undefined;
     await act(async () => {
       novaResidencia = await result.current.criar({
         cep: '01310100',
@@ -102,7 +105,7 @@ describe('useResidencias.criar', () => {
         bairro: 'Bela Vista',
         cidade: 'São Paulo',
         estado: 'SP',
-        tipo_imovel: 'proprio',
+        tipo_imovel: TipoImovel.PROPRIO,
         num_comodos: 4,
         tem_animais: false,
       });

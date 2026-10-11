@@ -29,26 +29,33 @@ jest.mock('expo-secure-store', () => ({
 import { renderHook, act } from '@testing-library/react-native';
 import { visitaRepository } from '../../database/repositories/visitaRepository';
 import { useVisitas } from '../useVisitas';
+import {
+  Visita,
+  StatusVisita,
+  StatusSync,
+  EstatisticasVisitas,
+} from '../../types';
 
 const mockedRepo = visitaRepository as jest.Mocked<typeof visitaRepository>;
 
-const visitaBase = {
+// O campo de controle de sincronizacao chama-se `status_sync` no aparelho,
+// e nao `sync_status`, que e o nome da coluna equivalente no servidor. O
+// fixture usava o nome do servidor, entao descrevia um objeto que o
+// aplicativo nunca produz.
+const visitaBase: Visita = {
   id: 'visita-uuid-001',
   agente_id: 'agente-uuid-123',
   residencia_id: 'res-uuid-456',
-  morador_id: null,
   data_visita: '2024-03-15T10:00:00.000Z',
-  status: 'realizada' as const,
-  queixas: null,
-  observacoes: null,
+  status: StatusVisita.REALIZADA,
   precisa_agendamento: false,
-  especialidade_agendamento: null,
   created_at: '2024-03-15T10:00:00.000Z',
   updated_at: '2024-03-15T10:00:00.000Z',
-  sync_status: 'pendente' as const,
+  status_sync: StatusSync.PENDENTE,
 };
 
-const estatisticasBase = {
+const estatisticasBase: EstatisticasVisitas = {
+  total_realizadas: 47,
   realizadas_hoje: 2,
   realizadas_semana: 10,
   realizadas_mes: 35,
@@ -66,14 +73,15 @@ beforeEach(() => {
     id: 'agend-001',
     agente_id: 'agente-uuid-123',
     residencia_id: 'res-uuid-456',
-    morador_id: null,
     data_agendada: '2024-03-20',
     motivo: 'Retorno',
-    observacoes: null,
-    status: 'pendente' as const,
+    // 'pendente' era o vocabulario antigo do servidor e nunca existiu no
+    // aplicativo, que grava 'agendada'. Ver a migracao
+    // migration_prontuario_sync.sql, que unificou os tres vocabularios.
+    status: StatusVisita.AGENDADA,
     created_at: '2024-03-15T10:00:00.000Z',
     updated_at: '2024-03-15T10:00:00.000Z',
-    sync_status: 'pendente' as const,
+    status_sync: StatusSync.PENDENTE,
   });
   mockedRepo.cancelarAgendamento.mockResolvedValue(undefined);
   mockedRepo.definirMeta.mockResolvedValue(undefined);
@@ -104,7 +112,7 @@ describe('useVisitas.registrarVisita', () => {
       await result.current.registrarVisita({
         residencia_id: 'res-uuid-456',
         data_visita: '2024-03-15T10:00:00.000Z',
-        status: 'realizada',
+        status: StatusVisita.REALIZADA,
         precisa_agendamento: false,
       });
     });
@@ -113,7 +121,7 @@ describe('useVisitas.registrarVisita', () => {
       expect.objectContaining({
         agente_id: 'agente-uuid-123',
         residencia_id: 'res-uuid-456',
-        status: 'realizada',
+        status: StatusVisita.REALIZADA,
       })
     );
   });
