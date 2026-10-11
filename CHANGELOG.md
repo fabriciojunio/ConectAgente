@@ -6,10 +6,89 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Não Lançado]
 
+### Corrigido
+
+- **O dado coletado em campo nunca chegava ao servidor.** O aplicativo é
+  offline-first, continuava gravando no banco local e nada parecia errado para
+  o agente, enquanto o servidor recusava toda gravação. Eram 61 colunas sem
+  destino, entre elas o conteúdo clínico inteiro: pressão, glicemia, peso,
+  encaminhamento, e as cinco fichas de prontuário completas, com pré-natal,
+  vacina da criança, preventivo e relato de violência. Mais o nome divergente
+  do campo de sincronização, o identificador que não era enviado, a chave
+  errada nas tabelas de prontuário, o prontuário pai que nunca subia, e o
+  status de agendamento em três vocabulários diferentes.
+- **Elevação de privilégio na aprovação de cadastro.** As ações de servidor
+  recebiam o id do aprovador como parâmetro e não verificavam quem chamava,
+  usando o cliente que ignora o RLS. Qualquer pessoa na internet podia criar
+  para si uma conta de gerente e ler o prontuário de todos.
+- **Nenhum agente conseguia ser provisionado.** O papel do usuário estava em
+  cinco vocabulários, e `supervisor`, que o formulário oferecia e a aprovação
+  gravava, não existe em nenhum CHECK do banco. O middleware também liberava a
+  área administrativa só para um papel impossível, e o menu inteiro pedia esse
+  mesmo papel: qualquer usuário real entrava no painel e encontrava a barra
+  lateral vazia.
+- **A senha do administrador era pública.** Era a constante `Admin@2025`,
+  escrita no código, numa tabela do README e impressa na tela de
+  configurações, em repositório público. Agora é sorteada, guardada no cofre
+  do sistema e exibida uma única vez.
+- **Sete tabelas estavam sem Row Level Security**, incluindo `agentes`,
+  `audit_log` e as cinco de prontuário. Com a chave pública, qualquer pessoa
+  lia prontuário, CPF e hash de senha.
+- **A exportação de relatório estava quebrada** no aplicativo: usava uma API
+  do Expo que foi removida, e o teste passava porque imitava a API antiga.
+- **Injeção de fórmula em planilha** na exportação, no aplicativo e no painel.
+  Célula iniciada por `=` é executada pelo Excel, e as observações da visita
+  são texto livre digitado em campo.
+- **Trocar a senha trancava o agente fora da conta.** A gravação na trilha
+  usava uma coluna que não existe, e falhava depois de a senha já ter sido
+  alterada.
+- **RCE crítico sem autenticação no Next.js** 15.5.20, e doze avisos no
+  `axios` que vai dentro do aplicativo, entre eles SSRF por redirecionamento.
+- O aplicativo derrubava na importação quando faltava o arquivo de ambiente,
+  em vez de funcionar offline.
+- O filtro de status do painel administrativo oferecia um valor que não existe
+  e nunca devolvia nada, enquanto o status real ficava sem filtro.
+
 ### Adicionado
-- Integração com ViaCEP para preenchimento automático de endereço
-- Exportação de relatórios de visitas em PDF
-- Notificações push para lembretes de visitas programadas
+
+- **Sessão do Supabase no aplicativo.** Sem ela, `auth.uid()` é nulo e toda
+  policy nega a gravação. Abre no login quando há rede, sem bloquear o uso
+  offline, e a sincronização para antes de tentar quando não há sessão, para
+  não queimar as tentativas da fila.
+- **Três suítes que exercitam o banco de verdade**, em
+  `ConectAgente-web/supabase/testes/`: permissão de leitura e escrita,
+  sincronização do aplicativo com o servidor, e cadastro com aprovação. Sobem
+  um PostgreSQL descartável, aplicam o schema e as migrações, exercitam um
+  caminho real e se autodestroem. São 61 verificações, e existem porque os
+  defeitos mais graves não apareciam em teste de unidade.
+- **Testes de contrato** que comparam os dois lados de cada junta: o schema do
+  aparelho contra o do servidor, o SQL dos repositórios contra o schema local,
+  e os papéis do código contra os CHECK do banco.
+- Integração com ViaCEP para preenchimento automático de endereço.
+- Exportação de relatório em PDF, CSV e Excel no painel.
+- Verificação de tipos, suítes de banco, empacotamento do aplicativo e portão
+  de vulnerabilidade no CI.
+
+### Alterado
+
+- **`/relatorios` caiu de 442 kB para 186 kB** no primeiro carregamento. O
+  jsPDF, o jspdf-autotable e o xlsx entravam no pacote da tela mesmo para quem
+  só abria para olhar a prévia.
+- Os `enum` do TypeScript viraram objeto constante com tipo de união, o que
+  eliminou quinze erros de tipo cuja saída mais fácil era escrever `as` e
+  apagar a conferência.
+- Documentação reorganizada: o README virou ponto de entrada curto, e o
+  detalhamento foi para `docs/`, com `seguranca.md` e `lgpd.md` separando o
+  que o código faz do que ele apenas declara.
+
+### Removido
+
+- **Notificação e sincronização em segundo plano.** O código existia e era
+  coerente, mas dependia de quatro pacotes nativos não instalados, e ligá-los
+  exige build de desenvolvimento, o que faria o Expo Go deixar de rodar o
+  aplicativo. As versões compatíveis com o SDK 54 estão no histórico do Git.
+- Dois hooks que eram duplicatas mortas, chamando métodos inexistentes.
+- A pasta `landing/`, que só continha artefato de deploy vazio.
 
 ## [1.0.0] - 2026-05-19
 
@@ -17,11 +96,11 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - App mobile React Native (Expo SDK 54) offline-first
 - Portal web Next.js para gestão administrativa
 - Banco local SQLite com sincronização assíncrona para Supabase
-- Autenticação Supabase Auth com controle de perfis (Admin / Agente)
+- Autenticação local no aparelho, com controle de perfis
 - Cadastro de residências, moradores e prontuários de saúde
-- Agenda de visitas domiciliares com geolocalização
+- Agenda de visitas domiciliares
 - Metas de cobertura da equipe de Agentes de Saúde
-- Fila de sincronização com retry automático em background
-- Criptografia de dados sensíveis em conformidade com LGPD
+- Fila de sincronização com nova tentativa automática
+- Cifra dos campos de identificação no armazenamento local
 - Exportação de relatórios CSV
 - Interface acessível com suporte a modo escuro

@@ -26,7 +26,14 @@ RAIZ="$(cd "$AQUI/../../.." && pwd)"
 if command -v initdb >/dev/null 2>&1; then
   PGBIN="$(dirname "$(command -v initdb)")"
 elif [ -d "/c/Program Files/PostgreSQL" ]; then
+  # Windows, instalacao padrao do instalador oficial.
   PGBIN="/c/Program Files/PostgreSQL/$(ls -1 '/c/Program Files/PostgreSQL' | sort -rn | head -1)/bin"
+elif ls -d /usr/lib/postgresql/*/bin >/dev/null 2>&1; then
+  # Debian e Ubuntu, inclusive os runners do GitHub Actions: os binarios de
+  # servidor nao entram no PATH, so o cliente.
+  PGBIN="$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)"
+elif [ -d /opt/homebrew/opt/postgresql/bin ]; then
+  PGBIN=/opt/homebrew/opt/postgresql/bin
 else
   echo "PostgreSQL nao encontrado. Instale o pacote de servidor e tente de novo."
   exit 1
