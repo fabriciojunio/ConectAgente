@@ -52,14 +52,24 @@ export default function Residencias() {
     );
   }
 
-  const filtradas = residencias.filter((r) => {
-    const q = busca.toLowerCase();
-    return (
-      r.logradouro.toLowerCase().includes(q) ||
-      r.bairro.toLowerCase().includes(q) ||
-      r.cep.includes(q)
-    );
-  });
+  const ordemRisco: Record<string, number> = { critico: 1, alto: 2, medio: 3, baixo: 4, nenhum: 5 };
+  const filtradas = residencias
+    .filter((r) => {
+      const q = busca.toLowerCase();
+      return (
+        r.logradouro.toLowerCase().includes(q) ||
+        r.bairro.toLowerCase().includes(q) ||
+        r.cep.includes(q)
+      );
+    })
+    .sort((a, b) => {
+      const riscoA = a.nivel_risco || 'nenhum';
+      const riscoB = b.nivel_risco || 'nenhum';
+      const pesoA = ordemRisco[riscoA] ?? 5;
+      const pesoB = ordemRisco[riscoB] ?? 5;
+      if (pesoA !== pesoB) return pesoA - pesoB;
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -133,12 +143,29 @@ function ResidenciaCard({ residencia, responsavelNome, onPress, onLongPress }: {
 }) {
   const syncColor = residencia.status_sync === 'sincronizado' ? COLORS.success : COLORS.warning;
 
+  const obterRiscoFlagProps = (risco?: string) => {
+    switch (risco) {
+      case 'critico':
+        return { icon: 'flag' as const, color: COLORS.error, bg: COLORS.errorLight };
+      case 'alto':
+        return { icon: 'flag' as const, color: COLORS.warning, bg: COLORS.warningLight };
+      case 'medio':
+        return { icon: 'flag' as const, color: '#a16207', bg: '#fefbe8' };
+      case 'baixo':
+        return { icon: 'flag' as const, color: COLORS.success, bg: COLORS.successLight };
+      default:
+        return { icon: 'home-outline' as const, color: COLORS.primary, bg: COLORS.infoLight };
+    }
+  };
+
+  const riscoProps = obterRiscoFlagProps(residencia.nivel_risco);
+
   return (
     <TouchableOpacity onPress={onPress} onLongPress={onLongPress} activeOpacity={0.8}>
       <Card style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={styles.cardIcon}>
-            <Ionicons name="home-outline" size={22} color={COLORS.primary} />
+          <View style={[styles.cardIcon, { backgroundColor: riscoProps.bg }]}>
+            <Ionicons name={riscoProps.icon} size={22} color={riscoProps.color} />
           </View>
           <View style={styles.cardInfo}>
             <Text style={styles.cardTitle} numberOfLines={1}>

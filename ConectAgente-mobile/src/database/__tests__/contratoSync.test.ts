@@ -122,16 +122,36 @@ function colunasLocais(tabela: string): string[] {
   return colunasDoCorpo(corpoDaTabela(schemaLocal, tabela));
 }
 
+/**
+ * O schema do servidor com todo espaço em branco colapsado.
+ *
+ * Serve para procurar `ALTER TABLE ... ADD COLUMN` sem depender de o comando
+ * caber numa linha só. A primeira versão deste teste procurava linha a linha
+ * e deixou passar a migração do nível de risco, que está escrita assim:
+ *
+ *   ALTER TABLE residencias
+ *     ADD COLUMN IF NOT EXISTS nivel_risco TEXT DEFAULT 'nenhum'
+ *
+ * O resultado foi um alarme falso: o teste acusou coluna sem destino quando
+ * a coluna existia. Teste que acusa o que não é defeito gasta a confiança
+ * tão rápido quanto teste que deixa passar o que é.
+ */
+const schemaServidorAchatado = schemaServidor.replace(/\s+/g, ' ');
+
 function colunasServidor(tabela: string): string[] {
   const doCreate = colunasDoCorpo(corpoDaTabela(schemaServidor, tabela));
 
   // Soma o que as migrações acrescentaram depois do CREATE TABLE.
   const prefixo = `ALTER TABLE ${tabela} ADD COLUMN IF NOT EXISTS `;
-  const adicionadas = schemaServidor
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.startsWith(prefixo))
-    .map((l) => l.slice(prefixo.length).trim().split(/\s+/)[0].toLowerCase());
+  const adicionadas: string[] = [];
+
+  let pos = schemaServidorAchatado.indexOf(prefixo);
+  while (pos >= 0) {
+    const resto = schemaServidorAchatado.slice(pos + prefixo.length).trim();
+    const nome = resto.split(' ')[0].toLowerCase();
+    if (/^[a-z_][a-z_0-9]*$/.test(nome)) adicionadas.push(nome);
+    pos = schemaServidorAchatado.indexOf(prefixo, pos + prefixo.length);
+  }
 
   return [...new Set([...doCreate, ...adicionadas])];
 }

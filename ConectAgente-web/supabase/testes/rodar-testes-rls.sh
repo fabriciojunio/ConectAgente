@@ -98,6 +98,7 @@ for f in \
   "$RAIZ/ConectAgente-mobile/supabase/schema.sql" \
   "$RAIZ/ConectAgente-web/supabase/migration_web.sql" \
   "$RAIZ/ConectAgente-web/supabase/migration_registro.sql" \
+  "$RAIZ/ConectAgente-web/supabase/migration_risco.sql" \
   "$RAIZ/ConectAgente-web/supabase/migration_sync_mobile.sql" \
   "$RAIZ/ConectAgente-web/supabase/migration_prontuario_sync.sql" \
   "$AQUI/02-cenario.sql" \

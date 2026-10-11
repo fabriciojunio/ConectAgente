@@ -99,6 +99,8 @@ export interface Residencia {
   animais_info?: string;
   morador_responsavel_id?: string;
   sync_status: string;
+  /** Classificação de risco da família, definida pelo agente em campo. */
+  nivel_risco?: NivelVulnerabilidade | 'nenhum';
   deleted_at?: string;
   created_at: string;
   updated_at: string;

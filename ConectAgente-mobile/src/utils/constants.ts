@@ -220,3 +220,15 @@ export const ESTADOS_BRASIL = [
   'MA', 'MG', 'MS', 'MT', 'PA', 'PB', 'PE', 'PI', 'PR',
   'RJ', 'RN', 'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO',
 ];
+
+// Classificação de risco da família, usada na lista de residências para o
+// agente priorizar a visita. Os valores são os mesmos de
+// NivelVulnerabilidade, e o CHECK do servidor em migration_risco.sql aceita
+// exatamente estes cinco.
+export const RISCO_OPTIONS = [
+  { label: 'Sem classificação', value: 'nenhum' },
+  { label: 'Risco Baixo', value: 'baixo' },
+  { label: 'Risco Médio', value: 'medio' },
+  { label: 'Risco Alto', value: 'alto' },
+  { label: 'Risco Crítico', value: 'critico' },
+];
