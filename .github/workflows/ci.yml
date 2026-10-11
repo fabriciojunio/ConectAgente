@@ -110,12 +110,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Os runners do Ubuntu ja trazem o PostgreSQL instalado, com os binarios
-      # de servidor em /usr/lib/postgresql/*/bin. Os scripts sobem um cluster
-      # proprio numa porta propria e o destroem no fim, entao nada depende de
-      # servico externo nem de senha.
-      - name: Conferir o PostgreSQL disponivel
-        run: ls -d /usr/lib/postgresql/*/bin && /usr/lib/postgresql/*/bin/psql --version
+      # Os scripts sobem um cluster proprio numa porta propria e o destroem no
+      # fim, entao nada depende de servico externo nem de senha. Mas eles
+      # precisam dos binarios de SERVIDOR (initdb, pg_ctl), e nao so do
+      # cliente: a imagem do runner muda com o tempo e supor que estao la ja
+      # custou uma rodada vermelha.
+      - name: Garantir o PostgreSQL servidor
+        run: |
+          if ! ls -d /usr/lib/postgresql/*/bin/initdb >/dev/null 2>&1; then
+            echo "initdb nao encontrado, instalando o pacote de servidor"
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql
+          fi
+          PGBIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)
+          echo "usando $PGBIN"
+          "$PGBIN/initdb" --version
+          "$PGBIN/pg_ctl" --version
+          "$PGBIN/psql" --version
 
       # Estas tres suites existem porque os defeitos mais graves do projeto
       # nao apareciam em teste de unidade: cada lado estava coerente consigo
