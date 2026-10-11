@@ -12,7 +12,8 @@ const registroSchema = z.object({
   nome: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres').max(100),
   cpf: z.string().length(11, 'CPF deve ter 11 dígitos'),
   telefone: z.string().optional(),
-  cargo_pretendido: z.enum(['supervisor', 'outro'], {
+  // Tem que casar com o CHECK de solicitacoes_registro.cargo_pretendido.
+  cargo_pretendido: z.enum(['coordenador', 'gerente', 'outro'], {
     errorMap: () => ({ message: 'Selecione um cargo válido' }),
   }),
   cargo_outro: z.string().optional(),
@@ -35,7 +36,7 @@ export async function criarSolicitacao(formData: {
   nome: string;
   cpf: string;
   telefone?: string;
-  cargo_pretendido: 'supervisor' | 'outro';
+  cargo_pretendido: 'coordenador' | 'gerente' | 'outro';
   cargo_outro?: string;
   unidade_saude: string;
   area_atuacao: string;
@@ -176,10 +177,18 @@ export async function aprovarSolicitacao(
         telefone: solicitacao.telefone,
         area_atuacao: solicitacao.area_atuacao,
         unidade_saude: solicitacao.unidade_saude,
-        // Map requested cargo to valid DB roles: supervisor or agente
-        role: solicitacao.cargo_pretendido === 'agente' || solicitacao.cargo_pretendido === 'outro'
-          ? 'agente'
-          : 'supervisor',
+        // O papel precisa ser um dos quatro que o CHECK de agentes.role
+        // aceita: agente, coordenador, gerente ou admin. O codigo anterior
+        // gravava 'supervisor', que nao esta na lista, e toda aprovacao
+        // falhava com:
+        //   new row for relation "agentes" violates check constraint
+        //   "agentes_role_check"
+        // 'outro' vira 'agente', que e o menor privilegio; quem pediu
+        // coordenador ou gerente recebe o papel pedido. Admin continua
+        // fora: so outro admin concede.
+        role: solicitacao.cargo_pretendido === 'coordenador' ? 'coordenador'
+            : solicitacao.cargo_pretendido === 'gerente' ? 'gerente'
+            : 'agente',
         ativo: true,
       });
 

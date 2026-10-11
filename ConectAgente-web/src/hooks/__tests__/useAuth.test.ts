@@ -163,16 +163,19 @@ describe('useAuth', () => {
     });
 
     expect(result.current.isAdmin).toBe(true);
-    expect(result.current.isSupervisor).toBe(false);
+    expect(result.current.isGerente).toBe(false);
+    expect(result.current.podeVerTudo).toBe(true);
   });
 
-  it('isSupervisor returns true for supervisor role', async () => {
-    const mockSession = { user: { id: 'user-2', email: 'supervisor@test.com' } };
+  it('isGerente vale para o papel gerente, que existe no banco', async () => {
+    const mockSession = { user: { id: 'user-2', email: 'gerente@test.com' } };
     const mockProfile = {
       id: 'user-2',
-      nome: 'Supervisor User',
-      email: 'supervisor@test.com',
-      role: 'supervisor',
+      nome: 'Gerente User',
+      email: 'gerente@test.com',
+      // 'supervisor' nao existe no CHECK de agentes.role: os papeis
+      // sao agente, coordenador, gerente e admin.
+      role: 'gerente',
       unidade_saude: 'UBS',
       area_atuacao: 'Area 2',
     };
@@ -195,8 +198,9 @@ describe('useAuth', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(result.current.isSupervisor).toBe(true);
+    expect(result.current.isGerente).toBe(true);
     expect(result.current.isAdmin).toBe(false);
+    expect(result.current.podeVerTudo).toBe(true);
   });
 
   it('returns loading false and null user when no session', async () => {
@@ -213,7 +217,9 @@ describe('useAuth', () => {
 
     expect(result.current.user).toBeNull();
     expect(result.current.isAdmin).toBe(false);
-    expect(result.current.isSupervisor).toBe(false);
+    expect(result.current.isGerente).toBe(false);
+    expect(result.current.isCoordenador).toBe(false);
+    expect(result.current.podeVerTudo).toBe(false);
   });
 
   it('signIn calls supabase auth with credentials', async () => {

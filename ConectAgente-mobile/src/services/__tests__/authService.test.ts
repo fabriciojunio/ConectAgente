@@ -22,6 +22,23 @@ jest.mock('expo-crypto', () => ({
   CryptoDigestAlgorithm: { SHA256: 'SHA-256' },
 }));
 
+// O login agora abre sessao no Supabase, que e o que permite sincronizar.
+// Sem este mock, importar o authService instancia o cliente de verdade.
+const mockSignIn = jest.fn().mockResolvedValue({ data: {}, error: null });
+const mockSignOut = jest.fn().mockResolvedValue({ error: null });
+const mockGetSession = jest.fn().mockResolvedValue({ data: { session: null } });
+
+jest.mock('../../lib/supabase', () => ({
+  supabase: {
+    auth: {
+      signInWithPassword: (...args: unknown[]) => mockSignIn(...args),
+      signOut: () => mockSignOut(),
+      getSession: () => mockGetSession(),
+    },
+  },
+  supabaseConfigurado: true,
+}));
+
 jest.mock('../api', () => ({
   default: {
     post: jest.fn().mockRejectedValue(new Error('offline')),
@@ -131,5 +148,69 @@ describe('authService.renovarSessao', () => {
     // Verifica que salvou um timestamp futuro
     const [, valorSalvo] = mockedSecureStore.setItemAsync.mock.calls[0];
     expect(new Date(valorSalvo as string).getTime()).toBeGreaterThan(Date.now());
+  });
+});
+
+describe('authService - sessao no servidor', () => {
+  // Sem sessao no Supabase, `auth.uid()` e nulo e o RLS nega toda gravacao.
+  // Medido com o schema e as policies reais:
+  //   sem sessao: new row violates row-level security policy
+  //   com sessao: as oito tabelas aceitam
+  // Entao abrir a sessao no login nao e enfeite, e o que faz o dado sair do
+  // aparelho. Mas nao pode bloquear o login, senao o aplicativo deixa de
+  // funcionar offline, que e a razao de ele existir.
+
+  it('abre sessao no servidor usando o email do agente', async () => {
+    mockedAgenteRepo.autenticar.mockResolvedValue(agenteBase);
+
+    await authService.login('52998224725', 'senha123');
+
+    expect(mockSignIn).toHaveBeenCalledWith({
+      email: agenteBase.email,
+      password: 'senha123',
+    });
+  });
+
+  it('login funciona mesmo quando o servidor recusa', async () => {
+    // Agente sem usuario no Supabase Auth, ou aparelho offline.
+    mockSignIn.mockResolvedValueOnce({
+      data: {},
+      error: { message: 'Invalid login credentials' },
+    });
+    mockedAgenteRepo.autenticar.mockResolvedValue(agenteBase);
+
+    const sessao = await authService.login('52998224725', 'senha123');
+
+    expect(sessao.agente.id).toBe(agenteBase.id);
+  });
+
+  it('login funciona quando a rede cai no meio', async () => {
+    mockSignIn.mockRejectedValueOnce(new Error('Network request failed'));
+    mockedAgenteRepo.autenticar.mockResolvedValue(agenteBase);
+
+    const sessao = await authService.login('52998224725', 'senha123');
+
+    expect(sessao.agente.id).toBe(agenteBase.id);
+  });
+
+  it('logout encerra a sessao do servidor', async () => {
+    // Sem isto o aparelho ficaria com token valido depois do logout, e quem
+    // pegasse o aparelho leria pela API o dado do agente anterior.
+    await authService.logout();
+
+    expect(mockSignOut).toHaveBeenCalled();
+  });
+
+  it('temSessaoNoServidor reflete o que o cliente responde', async () => {
+    mockGetSession.mockResolvedValueOnce({ data: { session: null } });
+    expect(await authService.temSessaoNoServidor()).toBe(false);
+
+    mockGetSession.mockResolvedValueOnce({ data: { session: { access_token: 'x' } } });
+    expect(await authService.temSessaoNoServidor()).toBe(true);
+  });
+
+  it('temSessaoNoServidor devolve falso quando o cliente lanca', async () => {
+    mockGetSession.mockRejectedValueOnce(new Error('sem rede'));
+    expect(await authService.temSessaoNoServidor()).toBe(false);
   });
 });

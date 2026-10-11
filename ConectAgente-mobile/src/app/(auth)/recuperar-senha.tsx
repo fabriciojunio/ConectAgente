@@ -85,6 +85,17 @@ export default function RecuperarSenha() {
         return;
       }
       setEtapa('sucesso');
+    } catch (erro) {
+      // Sem este catch a exceção subia sem tratamento e a tela simplesmente
+      // não reagia. O caso real era pior do que parecia: a senha já tinha
+      // sido trocada antes da linha que falhava, então a pessoa tentava de
+      // novo com a senha antiga, que não valia mais, e ficava sem acesso.
+      console.error('Falha ao redefinir a senha:', erro);
+      Alert.alert(
+        'Erro',
+        'Houve uma falha ao concluir a troca. Tente entrar com a senha nova; ' +
+          'se não funcionar, procure a coordenação.'
+      );
     } finally {
       setIsLoading(false);
     }

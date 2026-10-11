@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-/** Routes that require admin or supervisor role */
+/** Rotas que exigem papel de gerente ou admin */
 const ADMIN_ROUTES = ['/admin', '/admin/usuarios'];
 
 /** Routes that do not require authentication */
@@ -13,7 +13,7 @@ const PUBLIC_ROUTES = ['/login', '/registro', '/demo'];
  *
  * - Redirects unauthenticated users to /login
  * - Redirects authenticated users from /login to /dashboard
- * - Restricts admin routes to supervisor/admin roles
+ * - Restringe as rotas administrativas a gerente e admin
  * - Sets security headers on all responses
  */
 export async function middleware(request: NextRequest) {
@@ -76,7 +76,11 @@ export async function middleware(request: NextRequest) {
       .eq('id', user.id)
       .maybeSingle();
 
-    if (!agente || !['admin', 'supervisor'].includes(agente.role)) {
+    // Mesma regra da policy de RLS `audit_log_select`, que libera para
+    // ('gerente', 'admin'). A lista anterior pedia 'supervisor', papel que o
+    // CHECK de agentes.role nao aceita: nenhum usuario real tinha esse papel,
+    // entao o portao redirecionava todo mundo, inclusive gerente.
+    if (!agente || !['admin', 'gerente'].includes(agente.role)) {
       return NextResponse.redirect(new URL('/', request.url));
     }
   }

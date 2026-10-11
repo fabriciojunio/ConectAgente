@@ -33,7 +33,13 @@ export const safeTextSchema = (maxLength: number = 500) =>
     .transform((val) => val.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ''));
 
 /** User role */
-export const userRoleSchema = z.enum(['agente', 'supervisor', 'admin']);
+// Tem que casar com o CHECK de agentes.role no banco.
+export const userRoleSchema = z.enum([
+  'agente',
+  'coordenador',
+  'gerente',
+  'admin',
+]);
 
 /**
  * Validates and sanitizes a UUID parameter.

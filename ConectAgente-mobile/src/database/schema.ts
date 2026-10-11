@@ -16,6 +16,13 @@ export const CREATE_TABLES_SQL = `
     area_atuacao TEXT NOT NULL,
     unidade_saude TEXT NOT NULL,
     ativo INTEGER NOT NULL DEFAULT 1,
+    -- Declarada aqui e tambem na lista de migracoes do database.ts. A
+    -- migracao continua existindo para quem ja tem o banco criado; em
+    -- instalacao nova ela falha com "duplicate column", que o database.ts
+    -- trata. Sem a declaracao aqui, o arquivo de schema mentia sobre o
+    -- schema, e o INSERT do agenteRepository citava uma coluna que o
+    -- CREATE TABLE nao tinha.
+    is_admin INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );

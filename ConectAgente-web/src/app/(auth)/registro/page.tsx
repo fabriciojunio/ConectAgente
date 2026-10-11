@@ -26,7 +26,11 @@ export default function RegistroPage() {
     nome: '',
     cpf: '',
     telefone: '',
-    cargo_pretendido: '' as 'supervisor' | 'outro' | '',
+    // O banco aceita apenas 'coordenador', 'gerente' e 'outro' em
+    // `solicitacoes_registro.cargo_pretendido`. O formulario oferecia
+    // 'supervisor', que nao existe em nenhum CHECK, e por isso todo
+    // cadastro publico era recusado pelo banco.
+    cargo_pretendido: '' as 'coordenador' | 'gerente' | 'outro' | '',
     cargo_outro: '',
     unidade_saude: '',
     area_atuacao: '',
@@ -92,7 +96,7 @@ export default function RegistroPage() {
         nome: formData.nome.trim(),
         cpf: cpfDigits,
         telefone: formData.telefone.replace(/\D/g, '') || undefined,
-        cargo_pretendido: cargoFinal as 'supervisor' | 'outro',
+        cargo_pretendido: cargoFinal as 'coordenador' | 'gerente' | 'outro',
         cargo_outro: cargoOutroTexto,
         unidade_saude: formData.unidade_saude.trim(),
         area_atuacao: formData.area_atuacao.trim(),
@@ -236,7 +240,8 @@ export default function RegistroPage() {
                   className="w-full px-4 py-2.5 border border-[#D1D9E6] rounded-lg text-[#0F1621] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/30 focus:border-[#1565C0] transition-all text-sm bg-white"
                 >
                   <option value="">Selecione o cargo</option>
-                  <option value="supervisor">Supervisor(a)</option>
+                  <option value="coordenador">Coordenador(a)</option>
+                  <option value="gerente">Gerente</option>
                   <option value="outro">Outro</option>
                 </select>
                 {formData.cargo_pretendido === 'outro' && (

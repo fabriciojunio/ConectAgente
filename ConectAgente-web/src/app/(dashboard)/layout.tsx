@@ -63,7 +63,9 @@ export default function DashboardLayout({
 
       <Sidebar
         currentPath={pathname}
-        userRole={user?.role ?? 'supervisor'}
+        // Sem papel conhecido, assume o menor privilégio. O padrão anterior
+        // era 'supervisor', papel que o banco nem aceita.
+        userRole={user?.role ?? 'agente'}
         userName={user?.nome ?? ''}
         userUnidade={user?.unidade_saude}
         onLogout={signOutAction}

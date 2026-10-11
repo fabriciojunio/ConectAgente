@@ -43,6 +43,16 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 
+// A sincronizacao agora exige sessao no servidor: sem ela o RLS nega toda
+// gravacao, e deixar a fila tentar queimaria as cinco tentativas de cada
+// item por uma causa que nao tem relacao com o dado.
+const mockTemSessao = jest.fn().mockResolvedValue(true);
+jest.mock('../authService', () => ({
+  authService: {
+    temSessaoNoServidor: () => mockTemSessao(),
+  },
+}));
+
 import { syncQueueRepository } from '../../database/repositories/syncQueueRepository';
 import { syncService } from '../syncService';
 
@@ -62,6 +72,7 @@ const itemSyncBase = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockTemSessao.mockResolvedValue(true);
   mockedQueue.marcarSucesso.mockResolvedValue(undefined);
   mockedQueue.marcarErro.mockResolvedValue(undefined);
   mockedQueue.limparSincronizados.mockResolvedValue(undefined);
@@ -125,5 +136,43 @@ describe('syncService.sincronizar', () => {
 
     expect(mockSupabaseUpsert).toHaveBeenCalledTimes(2);
     expect(mockedQueue.marcarSucesso).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('syncService.sincronizar - sem sessao no servidor', () => {
+  // Sem sessao, `auth.uid()` e nulo e toda policy de RLS nega a gravacao.
+  // Medido com o schema e as policies reais num PostgreSQL:
+  //   new row violates row-level security policy for table "residencias"
+  //
+  // O teste importante nao e que falha, e que falha SEM gastar tentativa:
+  // a fila marca o item como erro definitivo depois de cinco, e perder a
+  // coleta de um dia por falta de login seria o pior resultado possivel.
+
+  it('nao tenta enviar e avisa o motivo', async () => {
+    mockTemSessao.mockResolvedValue(false);
+    mockedQueue.listarPendentes.mockResolvedValue([itemSyncBase]);
+
+    await expect(syncService.sincronizar()).rejects.toThrow('Sem sessão no servidor');
+
+    expect(mockSupabaseUpsert).not.toHaveBeenCalled();
+  });
+
+  it('nao gasta tentativa da fila', async () => {
+    mockTemSessao.mockResolvedValue(false);
+    mockedQueue.listarPendentes.mockResolvedValue([itemSyncBase]);
+
+    await expect(syncService.sincronizar()).rejects.toThrow();
+
+    expect(mockedQueue.marcarErro).not.toHaveBeenCalled();
+    expect(mockedQueue.marcarSucesso).not.toHaveBeenCalled();
+  });
+
+  it('nao checa sessao quando a fila esta vazia', async () => {
+    // Nao faz sentido exigir login para nao fazer nada, e o aplicativo
+    // chama a sincronizacao em intervalo fixo.
+    mockedQueue.listarPendentes.mockResolvedValue([]);
+
+    await expect(syncService.sincronizar()).resolves.toBeUndefined();
+    expect(mockTemSessao).not.toHaveBeenCalled();
   });
 });

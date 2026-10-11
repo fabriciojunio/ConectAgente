@@ -40,21 +40,34 @@ describe('Sidebar', () => {
     expect(screen.getByText('Solicitações')).toBeInTheDocument();
   });
 
-  it('renders supervisor items but not admin-only items', () => {
-    render(<Sidebar {...defaultProps} userRole="supervisor" />);
+  it('gerente ve administracao, mas nao as telas so de admin', () => {
+    render(<Sidebar {...defaultProps} userRole="gerente" />);
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(screen.getByText('Visitas')).toBeInTheDocument();
     expect(screen.getByText('Administração')).toBeInTheDocument();
-    // Usuários is admin-only
     expect(screen.queryByText('Usuários')).not.toBeInTheDocument();
     expect(screen.queryByText('Solicitações')).not.toBeInTheDocument();
   });
 
-  it('hides all role-restricted items for agente', () => {
-    render(<Sidebar {...defaultProps} userRole="agente" />);
-    expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
-    expect(screen.queryByText('Agentes')).not.toBeInTheDocument();
+  it('coordenador ve as telas de dado, sem administracao', () => {
+    // O coordenador existe no banco e as policies de RLS dao a ele acesso a
+    // propria unidade de saude. Esconder o menu de quem tem permissao no
+    // banco era so confusao: antes nenhum papel real via item nenhum.
+    render(<Sidebar {...defaultProps} userRole="coordenador" />);
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Visitas')).toBeInTheDocument();
+    expect(screen.getByText('Monitoramento')).toBeInTheDocument();
+    expect(screen.queryByText('Administração')).not.toBeInTheDocument();
     expect(screen.queryByText('Usuários')).not.toBeInTheDocument();
+  });
+
+  it('agente ve as telas de dado, e o RLS limita o que aparece nelas', () => {
+    render(<Sidebar {...defaultProps} userRole="agente" />);
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Visitas')).toBeInTheDocument();
+    expect(screen.queryByText('Administração')).not.toBeInTheDocument();
+    expect(screen.queryByText('Usuários')).not.toBeInTheDocument();
+    expect(screen.queryByText('Solicitações')).not.toBeInTheDocument();
   });
 
   it('highlights active item based on currentPath', () => {
