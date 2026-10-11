@@ -22,6 +22,7 @@ jest.mock('expo-secure-store', () => ({
 import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 import {
+  sortearSenhaForte,
   hashSHA256,
   hashSenha,
   verificarSenha,
@@ -340,5 +341,54 @@ describe('clearEncryptionKeyCache', () => {
     await encryptField('segundo'); // deve reler do SecureStore
 
     expect(mockedSecureStore.getItemAsync).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('sortearSenhaForte', () => {
+  // Existe porque a senha do administrador era a constante `Admin@2025`,
+  // repetida no README publico e impressa na tela de configuracoes. Quem
+  // encontrasse uma instalacao no ar entrava como administrador e lia o
+  // prontuario de todos.
+  beforeEach(() => {
+    // Bytes variados: com tudo igual o embaralhamento nao teria o que mover
+    // e o teste de classes passaria por acidente.
+    (Crypto.getRandomBytesAsync as jest.Mock).mockImplementation(
+      async (n: number) =>
+        new Uint8Array(Array.from({ length: n }, (_, i) => (i * 37 + 11) % 256))
+    );
+  });
+
+  it('respeita o tamanho pedido', async () => {
+    expect((await sortearSenhaForte(16)).length).toBe(16);
+    expect((await sortearSenhaForte(24)).length).toBe(24);
+  });
+
+  it('tem ao menos uma maiuscula, uma minuscula, um numero e um simbolo', async () => {
+    // Sem isto a senha poderia ser recusada pela propria validacao do
+    // aplicativo, que exige as quatro classes.
+    const senha = await sortearSenhaForte(16);
+    expect(senha).toMatch(/[A-Z]/);
+    expect(senha).toMatch(/[a-z]/);
+    expect(senha).toMatch(/[0-9]/);
+    expect(senha).toMatch(/[^A-Za-z0-9]/);
+  });
+
+  it('nao usa caracteres que se confundem na leitura', async () => {
+    // Esta senha e lida de uma tela e digitada a mao: O e 0, l e 1 e I viram
+    // chamado de suporte.
+    const senha = await sortearSenhaForte(32);
+    expect(senha).not.toMatch(/[O0l1I]/);
+  });
+
+  it('muda a cada chamada', async () => {
+    let semente = 0;
+    (Crypto.getRandomBytesAsync as jest.Mock).mockImplementation(
+      async (n: number) =>
+        new Uint8Array(Array.from({ length: n }, (_, i) => (i * 37 + semente++) % 256))
+    );
+
+    const senhas = new Set<string>();
+    for (let i = 0; i < 5; i++) senhas.add(await sortearSenhaForte(16));
+    expect(senhas.size).toBe(5);
   });
 });

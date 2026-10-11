@@ -102,6 +102,10 @@ export const SECURE_KEYS = {
   AGENTE_ID: 'conectagente_agente_id',
   SESSION_EXPIRES: 'conectagente_session_expires',
   ENCRYPTION_KEY: 'conectagente_enc_key',
+  // Senha inicial do administrador, sorteada na primeira execucao e
+  // apagada quando ela e trocada. Fica aqui, e nao no codigo, porque
+  // senha fixa em repositorio publico e credencial publicada.
+  SENHA_ADMIN_INICIAL: 'conectagente_senha_admin_inicial',
 } as const;
 
 // ============================================================

@@ -24,6 +24,8 @@ jest.mock('expo-secure-store', () => ({
 }));
 
 import * as Crypto from 'expo-crypto';
+import * as SecureStore from 'expo-secure-store';
+import { SECURE_KEYS } from '../../../utils/constants';
 import { getDatabase } from '../../../database/database';
 import { agenteRepository, loginRateStatus, _resetLoginAttemptsForTesting } from '../agenteRepository';
 import { clearEncryptionKeyCache } from '../../../utils/encryption';
@@ -390,5 +392,87 @@ describe('agenteRepository.garantirAdminPadrao', () => {
       expect.stringContaining('INSERT INTO agentes'),
       expect.arrayContaining(['Administrador'])
     );
+  });
+
+  it('guarda a senha sorteada no cofre do sistema', async () => {
+    // A senha era a constante `Admin@2025`, publicada no README e impressa
+    // na tela de configuracoes, num repositorio publico. Agora e sorteada e
+    // guardada no SecureStore, que usa Keychain no iOS e Keystore no
+    // Android, para ser lida uma vez por quem instalou.
+    mockDb.getFirstAsync.mockResolvedValue({ count: 0 });
+
+    await agenteRepository.garantirAdminPadrao();
+
+    expect(SecureStore.setItemAsync).toHaveBeenCalledWith(
+      SECURE_KEYS.SENHA_ADMIN_INICIAL,
+      expect.any(String)
+    );
+  });
+
+  it('nao grava a senha em texto no banco, so o hash', async () => {
+    mockDb.getFirstAsync.mockResolvedValue({ count: 0 });
+
+    await agenteRepository.garantirAdminPadrao();
+
+    const senhaGuardada = (SecureStore.setItemAsync as jest.Mock).mock.calls
+      .find((c) => c[0] === SECURE_KEYS.SENHA_ADMIN_INICIAL)?.[1] as string;
+    const parametrosDoInsert = mockDb.runAsync.mock.calls[0][1] as unknown[];
+
+    expect(senhaGuardada).toBeTruthy();
+    expect(parametrosDoInsert).not.toContain(senhaGuardada);
+  });
+
+  it('nao usa mais a senha fixa antiga', async () => {
+    mockDb.getFirstAsync.mockResolvedValue({ count: 0 });
+
+    await agenteRepository.garantirAdminPadrao();
+
+    const senhaGuardada = (SecureStore.setItemAsync as jest.Mock).mock.calls
+      .find((c) => c[0] === SECURE_KEYS.SENHA_ADMIN_INICIAL)?.[1];
+    expect(senhaGuardada).not.toBe('Admin@2025');
+  });
+
+  it('nao guarda senha quando o admin ja existe', async () => {
+    mockDb.getFirstAsync.mockResolvedValue({ count: 1 });
+
+    await agenteRepository.garantirAdminPadrao();
+
+    expect(SecureStore.setItemAsync).not.toHaveBeenCalledWith(
+      SECURE_KEYS.SENHA_ADMIN_INICIAL,
+      expect.anything()
+    );
+  });
+});
+
+// ─── senha inicial do admin ──────────────────────────────────
+
+describe('agenteRepository - senha inicial do admin', () => {
+  it('devolve a senha guardada', async () => {
+    (SecureStore.getItemAsync as jest.Mock).mockResolvedValueOnce('S3nh4!Sorteada');
+
+    expect(await agenteRepository.obterSenhaInicialDoAdmin()).toBe('S3nh4!Sorteada');
+  });
+
+  it('devolve nulo quando o cofre falha, em vez de lancar', async () => {
+    // A tela de configuracoes nao pode quebrar porque o cofre nao respondeu.
+    (SecureStore.getItemAsync as jest.Mock).mockRejectedValueOnce(new Error('sem cofre'));
+
+    expect(await agenteRepository.obterSenhaInicialDoAdmin()).toBeNull();
+  });
+
+  it('esquecer apaga a chave do cofre', async () => {
+    await agenteRepository.esquecerSenhaInicialDoAdmin();
+
+    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith(
+      SECURE_KEYS.SENHA_ADMIN_INICIAL
+    );
+  });
+
+  it('esquecer nao lanca quando o cofre falha', async () => {
+    (SecureStore.deleteItemAsync as jest.Mock).mockRejectedValueOnce(new Error('x'));
+
+    await expect(
+      agenteRepository.esquecerSenhaInicialDoAdmin()
+    ).resolves.toBeUndefined();
   });
 });

@@ -26,14 +26,19 @@ export default function AdminConfiguracoes() {
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
   const [limite, setLimite] = useState(20);
   const [refreshing, setRefreshing] = useState(false);
+  // Senha sorteada na primeira execucao. Vem nula depois de trocada.
+  const [senhaInicial, setSenhaInicial] = useState<string | null>(null);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
 
   const carregar = useCallback(async () => {
-    const [s, log] = await Promise.all([
+    const [s, log, senha] = await Promise.all([
       agenteRepository.obterEstatisticasGlobais(),
       agenteRepository.listarAuditLog(limite),
+      agenteRepository.obterSenhaInicialDoAdmin(),
     ]);
     setStats(s);
     setAuditLog(log);
+    setSenhaInicial(senha);
   }, [limite]);
 
   useFocusEffect(useCallback(() => { carregar(); }, [carregar]));
@@ -64,9 +69,39 @@ export default function AdminConfiguracoes() {
 
   function handleResetAdmin() {
     Alert.alert(
-      'Redefinir Admin',
-      'Esta operação garante que as credenciais do administrador padrão existem no banco.\n\nCPF: 111.444.777-35\nSenha: Admin@2025',
-      [{ text: 'OK' }]
+      'Administrador padrão',
+      'A senha é sorteada na primeira execução do aplicativo e aparece aqui ' +
+        'uma única vez. Troque-a no primeiro acesso: depois da troca ela ' +
+        'deixa de ser exibida.\n\n' +
+        'Se ela já não aparece, use a recuperação por CPF e e-mail na tela ' +
+        'de entrada.',
+      [{ text: 'Entendi' }]
+    );
+  }
+
+  /**
+   * Apaga a senha inicial do cofre do sistema.
+   *
+   * Pede confirmação porque é irreversível: a senha não é guardada em
+   * nenhum outro lugar, só o hash dela fica no banco.
+   */
+  function handleEsconderSenha() {
+    Alert.alert(
+      'Ocultar senha inicial',
+      'Confirme que já anotou ou já trocou a senha. Depois disto ela não ' +
+        'poderá mais ser exibida.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Já anotei',
+          style: 'destructive',
+          onPress: async () => {
+            await agenteRepository.esquecerSenhaInicialDoAdmin();
+            setSenhaInicial(null);
+            setMostrarSenha(false);
+          },
+        },
+      ]
     );
   }
 
@@ -109,7 +144,29 @@ export default function AdminConfiguracoes() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.credLabel}>Administrador padrão</Text>
                 <Text style={styles.credValue}>CPF: 111.444.777-35</Text>
-                <Text style={styles.credValue}>Senha: Admin@2025</Text>
+                {senhaInicial ? (
+                  <>
+                    <Text style={styles.credValue}>
+                      Senha inicial: {mostrarSenha ? senhaInicial : '••••••••••••••••'}
+                    </Text>
+                    <View style={styles.credAcoes}>
+                      <TouchableOpacity onPress={() => setMostrarSenha((v) => !v)} hitSlop={8}>
+                        <Text style={styles.credAcao}>
+                          {mostrarSenha ? 'Ocultar' : 'Mostrar'}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={handleEsconderSenha} hitSlop={8}>
+                        <Text style={[styles.credAcao, styles.credAcaoForte]}>
+                          Já anotei, remover
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                ) : (
+                  <Text style={styles.credValue}>
+                    Senha já definida. Use a recuperação por CPF e e-mail se precisar.
+                  </Text>
+                )}
               </View>
               <TouchableOpacity onPress={handleResetAdmin} style={styles.infoBtn} hitSlop={8}>
                 <Ionicons name="information-circle-outline" size={20} color={COLORS.textLight} />
@@ -243,6 +300,9 @@ const styles = StyleSheet.create({
   credRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingVertical: SPACING.md },
   credLabel: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: COLORS.text, marginBottom: 2 },
   credValue: { fontSize: FONT_SIZE.sm, color: COLORS.textMedium, fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace' },
+  credAcoes: { flexDirection: 'row', gap: SPACING.md, marginTop: SPACING.xs },
+  credAcao: { fontSize: FONT_SIZE.sm, color: COLORS.primary, fontWeight: '600' },
+  credAcaoForte: { color: COLORS.error },
   infoBtn: { padding: 4 },
 
   // Audit Log
