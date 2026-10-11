@@ -92,7 +92,22 @@ export async function verificarSenha(senha: string, stored: string): Promise<boo
 // Segurança:
 //   • IV aleatório de 16 bytes por cifração → ciphertext diferente para o mesmo plaintext
 //   • Keystream derivado de SHA-256(key || iv_hex || counter) — PRF segura
-//   • Autenticidade garantida pela posse da chave no Keychain/Keystore
+//   • Chave no Keychain (iOS) ou Keystore (Android), fora do banco do app
+//
+// LIMITAÇÃO, e é importante: isto dá confidencialidade e NÃO dá autenticidade.
+// O comentário anterior dizia que a posse da chave garantiria autenticidade, o
+// que é equívoco. Cifra de fluxo sem MAC é maleável: inverter um bit do texto
+// cifrado inverte o bit correspondente do texto claro, sem que a decifração
+// perceba. Quem tiver acesso de escrita ao arquivo do banco local pode alterar
+// um valor cifrado de forma controlada.
+//
+// O que resolveria é um HMAC sobre (iv || ciphertext), conferido antes de
+// decifrar. Custa uma migração do formato armazenado, porque as linhas atuais
+// não têm o campo. Está registrado em SECURITY.md como limitação conhecida.
+//
+// A construção foi feita à mão porque o `expo-crypto` não expõe AES. SHA-256
+// como função pseudoaleatória em modo contador é razoável para o objetivo, com
+// IV único por cifração, que é respeitado aqui.
 //
 // Formato: "v2:<base64(iv[16] || ciphertext[n])>"
 // ============================================================

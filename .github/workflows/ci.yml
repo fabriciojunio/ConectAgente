@@ -9,10 +9,22 @@ on:
 permissions:
   contents: read
 
+# Cancela execucao anterior do mesmo ramo: ninguem precisa do resultado de um
+# commit que ja foi substituido.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test-mobile:
-    name: Testes App Mobile
+  # ---------------------------------------------------------------------------
+  # Aplicativo de campo
+  # ---------------------------------------------------------------------------
+  mobile:
+    name: Aplicativo (tipos, testes, pacote)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ConectAgente-mobile
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,16 +32,40 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: ConectAgente-mobile/package-lock.json
-      - name: Instalar dependencias
-        working-directory: ConectAgente-mobile
-        run: npm install --legacy-peer-deps
-      - name: Executar testes
-        working-directory: ConectAgente-mobile
-        run: npm run test:ci -- --passWithNoTests
 
-  test-web:
-    name: Testes Portal Web
+      # `npm ci` em vez de `npm install`, para o CI usar exatamente as versoes
+      # do package-lock. E sem `--legacy-peer-deps`: o conflito que obrigava a
+      # usar a opcao era o @types/react travado em 19.0.x contra o
+      # react-native 0.81.5, que exige ^19.1.0. Com o conflito resolvido, o CI
+      # volta a validar dependencia de par de verdade.
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Verificar tipos
+        run: npx tsc --noEmit
+
+      - name: Executar testes
+        run: npm run test:ci
+
+      # Empacota de verdade com o Metro. Pega o que teste de unidade nao pega:
+      # override de dependencia que quebra o bundler. Foi assim que image-size
+      # 2.x e uuid 11.x foram reprovados, com
+      # `TypeError: The "list" argument must be an instance of SharedArrayBuffer`.
+      - name: Empacotar para Android
+        run: npx expo export --platform android --output-dir ../.artefatos-mobile
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+
+  # ---------------------------------------------------------------------------
+  # Painel web
+  # ---------------------------------------------------------------------------
+  web:
+    name: Painel (tipos, lint, testes, build)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ConectAgente-web
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -37,32 +73,73 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: ConectAgente-web/package-lock.json
+
       - name: Instalar dependencias
-        working-directory: ConectAgente-web
-        run: npm install --legacy-peer-deps
+        run: npm ci
+
+      - name: Verificar tipos
+        run: npx tsc --noEmit
+
       - name: Lint
-        working-directory: ConectAgente-web
         run: npm run lint
+
       - name: Executar testes
-        working-directory: ConectAgente-web
         run: npm test -- --ci
 
-  build-web:
-    name: Build Portal Web
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: ConectAgente-web/package-lock.json
-      - name: Instalar dependencias
-        working-directory: ConectAgente-web
-        run: npm install --legacy-peer-deps
       - name: Build de producao
-        working-directory: ConectAgente-web
         run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+
+  # ---------------------------------------------------------------------------
+  # Banco de dados
+  # ---------------------------------------------------------------------------
+  banco:
+    name: Banco (permissao, sincronizacao, cadastro)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Os runners do Ubuntu ja trazem o PostgreSQL instalado, com os binarios
+      # de servidor em /usr/lib/postgresql/*/bin. Os scripts sobem um cluster
+      # proprio numa porta propria e o destroem no fim, entao nada depende de
+      # servico externo nem de senha.
+      - name: Conferir o PostgreSQL disponivel
+        run: ls -d /usr/lib/postgresql/*/bin && /usr/lib/postgresql/*/bin/psql --version
+
+      # Estas tres suites existem porque os defeitos mais graves do projeto
+      # nao apareciam em teste de unidade: cada lado estava coerente consigo
+      # mesmo e o erro morava na juncao. Sete tabelas sem RLS, 61 colunas que
+      # o aplicativo gravava e o servidor nao tinha, e cinco vocabularios
+      # diferentes para o campo de papel.
+      - name: Rodar as suites de banco
+        run: bash ConectAgente-web/supabase/testes/rodar-todos.sh
+
+  # ---------------------------------------------------------------------------
+  # Dependencias
+  # ---------------------------------------------------------------------------
+  dependencias:
+    name: Vulnerabilidade em producao
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # O que vai para producao tem que ficar em zero. A cadeia de
+      # desenvolvimento nao entra: braces, sprintf-js e node-forge nao tem
+      # versao corrigida publicada, e sao ferramenta que roda na maquina de
+      # quem desenvolve, nao codigo entregue.
+      - name: Painel web
+        working-directory: ConectAgente-web
+        run: npm audit --omit=dev --audit-level=low
+
+      # O aplicativo depende do Expo, que declara a propria cadeia de build
+      # como dependencia de execucao, entao `--omit=dev` nao separa os dois
+      # lados aqui. O limite fica em critico: nenhuma critica e tolerada, e as
+      # altas que sobram estao documentadas no commit das dependencias.
+      - name: Aplicativo de campo
+        working-directory: ConectAgente-mobile
+        run: npm audit --audit-level=critical
