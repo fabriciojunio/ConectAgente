@@ -1,8 +1,13 @@
 /**
  * Serviço de exportação de relatórios (CSV e Excel).
- * Usa biblioteca xlsx + expo-file-system + expo-sharing.
+ *
+ * Escreve com a API de arquivos do Expo SDK 54 (`File` e `Paths`). A API
+ * anterior foi removida: `documentDirectory` e `EncodingType` não existem
+ * mais, e `writeAsStringAsync` permanece apenas como stub que lança erro em
+ * tempo de execução. Quem abrisse a tela de relatórios e tocasse em exportar
+ * recebia TypeError antes de qualquer byte ser gravado.
  */
-import * as FileSystem from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { utils, write } from 'xlsx';
 import { Visita } from '../types';
@@ -39,10 +44,11 @@ export const exportService = {
       'Especialidade': v.especialidade_agendamento ?? '-',
     }));
 
+    const nome = `visitas_${dados.periodo}_${dados.data_referencia}`;
     if (formato === 'csv') {
-      await exportarCSV(linhas, `visitas_${dados.periodo}_${dados.data_referencia}`);
+      await exportarCSV(linhas, nome);
     } else {
-      await exportarExcel(linhas, `Visitas - ${traduzirPeriodo(dados.periodo)}`, `visitas_${dados.periodo}_${dados.data_referencia}`);
+      await exportarExcel(linhas, `Visitas - ${traduzirPeriodo(dados.periodo)}`, nome);
     }
   },
 
@@ -70,6 +76,36 @@ export const exportService = {
 // HELPERS INTERNOS
 // ============================================================
 
+/**
+ * Grava o arquivo na pasta de documentos e devolve a URI.
+ *
+ * `write` é síncrono na API nova. Um arquivo que já existe é apagado antes,
+ * porque `create` recusa sobrescrever e a pessoa pode exportar o mesmo
+ * período duas vezes seguidas.
+ */
+function gravar(nomeArquivo: string, conteudo: string | Uint8Array): string {
+  const arquivo = new File(Paths.document, nomeArquivo);
+  if (arquivo.exists) arquivo.delete();
+  arquivo.create();
+  arquivo.write(conteudo);
+  return arquivo.uri;
+}
+
+/**
+ * Neutraliza injeção de fórmula em planilha.
+ *
+ * Excel e LibreOffice executam o conteúdo de uma célula que começa com `=`,
+ * `+`, `-`, `@`, tab ou retorno de carro. Como as queixas e observações são
+ * texto livre digitado pelo agente em campo, um valor como
+ * `=HYPERLINK("http://...&"&A1)` vazaria a linha inteira para fora no momento
+ * em que alguém da secretaria abrisse o relatório. Prefixar com apóstrofo faz
+ * a planilha tratar como texto, e o apóstrofo não aparece na célula.
+ */
+function neutralizarFormula(valor: unknown): string {
+  const texto = String(valor ?? '');
+  return /^[=+\-@\t\r]/.test(texto) ? `'${texto}` : texto;
+}
+
 async function exportarCSV(
   dados: Record<string, unknown>[],
   nomeArquivo: string
@@ -79,18 +115,14 @@ async function exportarCSV(
   const headers = Object.keys(dados[0]).join(';');
   const rows = dados.map((row) =>
     Object.values(row)
-      .map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`)
+      .map((v) => `"${neutralizarFormula(v).replace(/"/g, '""')}"`)
       .join(';')
   );
   const csv = [headers, ...rows].join('\n');
-  const bom = '\uFEFF'; // BOM para Excel reconhecer UTF-8
+  const bom = '﻿'; // BOM para Excel reconhecer UTF-8
 
-  const path = `${FileSystem.documentDirectory}${nomeArquivo}.csv`;
-  await FileSystem.writeAsStringAsync(path, bom + csv, {
-    encoding: FileSystem.EncodingType.UTF8,
-  });
-
-  await compartilharArquivo(path, 'text/csv');
+  const uri = gravar(`${nomeArquivo}.csv`, bom + csv);
+  await compartilharArquivo(uri, 'text/csv');
 }
 
 async function exportarExcel(
@@ -100,24 +132,30 @@ async function exportarExcel(
 ): Promise<void> {
   if (dados.length === 0) throw new Error('Sem dados para exportar');
 
-  const ws = utils.json_to_sheet(dados);
+  const seguros = dados.map((row) =>
+    Object.fromEntries(Object.entries(row).map(([k, v]) => [k, neutralizarFormula(v)]))
+  );
+
+  const ws = utils.json_to_sheet(seguros);
   const wb = utils.book_new();
   utils.book_append_sheet(wb, ws, nomeAba);
 
-  const wbout = write(wb, { type: 'base64', bookType: 'xlsx' });
+  // `type: 'array'` devolve ArrayBuffer, que é o que a API nova grava como
+  // binário. O caminho antigo passava por base64 e dependia de EncodingType,
+  // que não existe mais.
+  const buffer = write(wb, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer;
 
-  const path = `${FileSystem.documentDirectory}${nomeArquivo}.xlsx`;
-  await FileSystem.writeAsStringAsync(path, wbout, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
-
-  await compartilharArquivo(path, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  const uri = gravar(`${nomeArquivo}.xlsx`, new Uint8Array(buffer));
+  await compartilharArquivo(
+    uri,
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  );
 }
 
-async function compartilharArquivo(path: string, mimeType: string): Promise<void> {
+async function compartilharArquivo(uri: string, mimeType: string): Promise<void> {
   const available = await Sharing.isAvailableAsync();
   if (!available) throw new Error('Compartilhamento não disponível neste dispositivo');
-  await Sharing.shareAsync(path, { mimeType, UTI: mimeType });
+  await Sharing.shareAsync(uri, { mimeType, UTI: mimeType });
 }
 
 function traduzirStatus(status: string): string {
