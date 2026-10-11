@@ -16,3 +16,9 @@ coverage/
 *.tsbuildinfo
 
 .github/java-upgrade/
+
+# Chave de assinatura do APK e a senha dela. Nunca vao para o repositorio:
+# quem tem a chave publica atualizacao em nome do aplicativo.
+chaves/
+*.keystore
+*.jks
