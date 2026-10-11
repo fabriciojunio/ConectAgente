@@ -18,6 +18,7 @@ import {
   FileText,
   Users,
 } from 'lucide-react';
+import { usePrimeiraCarga } from '@/hooks/usePrimeiraCarga';
 
 function SkeletonRows() {
   return (
@@ -48,9 +49,10 @@ export default function MonitoramentoPage() {
   const [cobertura, setCobertura] = useState<CoberturaMicroarea[]>(initCobertura ?? []);
   const [rankingMicroareas, setRankingMicroareas] = useState<Array<{ microarea: string; total_atraso: number }>>(initRanking?.microareas ?? []);
   const [rankingAgentes, setRankingAgentes] = useState<Array<{ agente_nome: string; total_atraso: number }>>(initRanking?.agentes ?? []);
+  const primeiraCarga = usePrimeiraCarga(initAtrasos != null);
 
   const fetchData = useCallback(async () => {
-    if (familiasAtraso.length === 0) setLoading(true);
+    if (primeiraCarga.ehAPrimeira()) setLoading(true);
     setError('');
     const done = { count: 0, total: 3 };
     const checkDone = () => { if (++done.count >= done.total) setLoading(false); };
@@ -61,7 +63,7 @@ export default function MonitoramentoPage() {
       .then((d) => { setRankingMicroareas(d.microareas ?? []); setRankingAgentes(d.agentes ?? []); }).catch(() => {}).finally(checkDone);
     withTimeout(getFamiliasEmAtraso(0, filters), [])
       .then(setFamiliasAtraso).catch((err) => { setError(err instanceof Error ? err.message : 'Erro ao carregar monitoramento'); }).finally(checkDone);
-  }, [filters]);
+  }, [filters, primeiraCarga]);
 
   useEffect(() => {
     fetchData();

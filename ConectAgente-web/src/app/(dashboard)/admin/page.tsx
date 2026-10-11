@@ -17,6 +17,7 @@ import {
   FileText,
   ChevronRight,
 } from 'lucide-react';
+import { usePrimeiraCarga } from '@/hooks/usePrimeiraCarga';
 
 function SkeletonRows() {
   return (
@@ -57,9 +58,10 @@ export default function AdminPage() {
   const [error, setError] = useState('');
   const [stats, setStats] = useState<SystemStats | null>(initStats);
   const [logs, setLogs] = useState<AuditLog[]>((initLogs?.data as AuditLog[]) ?? []);
+  const primeiraCarga = usePrimeiraCarga(initStats != null);
 
   useEffect(() => {
-    if (!stats) setLoading(true);
+    if (primeiraCarga.ehAPrimeira()) setLoading(true);
     setError('');
     const done = { count: 0, total: 2 };
     const checkDone = () => { if (++done.count >= done.total) setLoading(false); };
@@ -68,7 +70,7 @@ export default function AdminPage() {
       .then((d) => setLogs(d.data as AuditLog[])).catch(() => {}).finally(checkDone);
     withTimeout(getEstatisticasSistema(), { total_agentes: 0, total_familias: 0, total_visitas: 0, total_moradores: 0, agentes_ativos: 0, ultimo_sync: '' })
       .then(setStats).catch((err) => { setError(err instanceof Error ? err.message : 'Erro ao carregar dados administrativos'); }).finally(checkDone);
-  }, []);
+  }, [primeiraCarga]);
 
   // Role guard
   if (user && user.role !== 'admin' && user.role !== 'supervisor') {
