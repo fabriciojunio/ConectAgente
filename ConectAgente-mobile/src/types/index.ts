@@ -1,57 +1,83 @@
 // ============================================================
-// ENUMS
+// CONJUNTOS DE VALORES
 // ============================================================
+//
+// Objeto constante mais tipo de uniao, no lugar de `enum` do TypeScript.
+//
+// Motivo pratico: com `enum`, o literal equivalente nao e aceito onde o tipo
+// e esperado. `status: 'realizada'` dava erro mesmo valendo exatamente
+// `StatusVisita.REALIZADA`, e isso aparecia em formulario validado por Zod,
+// em fixture de teste e em tela. Eram quinze erros de tipo pela mesma causa,
+// e a saida mais usada era escrever `as` e apagar a conferencia.
+//
+// Com `as const` o acesso por membro continua igual (`StatusVisita.REALIZADA`)
+// e o literal passa a valer, sem perder a checagem. Os valores em tempo de
+// execucao sao os mesmos, entao nao ha mudanca de comportamento.
 
-export enum Sexo {
-  MASCULINO = 'masculino',
-  FEMININO = 'feminino',
-  OUTRO = 'outro',
-}
+export const Sexo = {
+  MASCULINO: 'masculino',
+  FEMININO: 'feminino',
+  OUTRO: 'outro',
+} as const;
 
-export enum TipoImovel {
-  PROPRIO = 'proprio',
-  ALUGADO = 'alugado',
-  CEDIDO = 'cedido',
-  OUTROS = 'outros',
-}
+export type Sexo = (typeof Sexo)[keyof typeof Sexo];
 
-export enum Escolaridade {
-  SEM_ESCOLARIDADE = 'sem_escolaridade',
-  FUNDAMENTAL_INCOMPLETO = 'fundamental_incompleto',
-  FUNDAMENTAL_COMPLETO = 'fundamental_completo',
-  MEDIO_INCOMPLETO = 'medio_incompleto',
-  MEDIO_COMPLETO = 'medio_completo',
-  SUPERIOR_INCOMPLETO = 'superior_incompleto',
-  SUPERIOR_COMPLETO = 'superior_completo',
-  POS_GRADUACAO = 'pos_graduacao',
-}
+export const TipoImovel = {
+  PROPRIO: 'proprio',
+  ALUGADO: 'alugado',
+  CEDIDO: 'cedido',
+  OUTROS: 'outros',
+} as const;
 
-export enum StatusVisita {
-  AGENDADA = 'agendada',
-  REALIZADA = 'realizada',
-  CANCELADA = 'cancelada',
-  NAO_ENCONTRADO = 'nao_encontrado',
-}
+export type TipoImovel = (typeof TipoImovel)[keyof typeof TipoImovel];
 
-export enum StatusSync {
-  PENDENTE = 'pendente',
-  SINCRONIZADO = 'sincronizado',
-  ERRO = 'erro',
-}
+export const Escolaridade = {
+  SEM_ESCOLARIDADE: 'sem_escolaridade',
+  FUNDAMENTAL_INCOMPLETO: 'fundamental_incompleto',
+  FUNDAMENTAL_COMPLETO: 'fundamental_completo',
+  MEDIO_INCOMPLETO: 'medio_incompleto',
+  MEDIO_COMPLETO: 'medio_completo',
+  SUPERIOR_INCOMPLETO: 'superior_incompleto',
+  SUPERIOR_COMPLETO: 'superior_completo',
+  POS_GRADUACAO: 'pos_graduacao',
+} as const;
 
-export enum OperacaoSync {
-  INSERT = 'insert',
-  UPDATE = 'update',
-  DELETE = 'delete',
-}
+export type Escolaridade = (typeof Escolaridade)[keyof typeof Escolaridade];
 
-export enum NivelVulnerabilidade {
-  NENHUM = 'nenhum',
-  BAIXO = 'baixo',
-  MEDIO = 'medio',
-  ALTO = 'alto',
-  CRITICO = 'critico',
-}
+export const StatusVisita = {
+  AGENDADA: 'agendada',
+  REALIZADA: 'realizada',
+  CANCELADA: 'cancelada',
+  NAO_ENCONTRADO: 'nao_encontrado',
+} as const;
+
+export type StatusVisita = (typeof StatusVisita)[keyof typeof StatusVisita];
+
+export const StatusSync = {
+  PENDENTE: 'pendente',
+  SINCRONIZADO: 'sincronizado',
+  ERRO: 'erro',
+} as const;
+
+export type StatusSync = (typeof StatusSync)[keyof typeof StatusSync];
+
+export const OperacaoSync = {
+  INSERT: 'insert',
+  UPDATE: 'update',
+  DELETE: 'delete',
+} as const;
+
+export type OperacaoSync = (typeof OperacaoSync)[keyof typeof OperacaoSync];
+
+export const NivelVulnerabilidade = {
+  NENHUM: 'nenhum',
+  BAIXO: 'baixo',
+  MEDIO: 'medio',
+  ALTO: 'alto',
+  CRITICO: 'critico',
+} as const;
+
+export type NivelVulnerabilidade = (typeof NivelVulnerabilidade)[keyof typeof NivelVulnerabilidade];
 
 // ============================================================
 // AGENTE (Usuário do sistema)
@@ -404,6 +430,24 @@ export interface VisitaFormData {
 // ============================================================
 // AGENDAMENTO
 // ============================================================
+
+/**
+ * Visita como as telas de listagem recebem.
+ *
+ * As consultas de `listarTodas` e `obterUltimasVisitas` fazem JOIN com
+ * residencias, moradores e agentes e devolvem o endereco e os nomes junto.
+ * O tipo declarado antes era `Visita & { agente_nome?: string }`, que
+ * escondia os outros quatro campos: a tela lia `v.logradouro` e funcionava,
+ * mas o compilador acusava propriedade inexistente. Declarar o que a consulta
+ * realmente devolve resolve sem precisar de `as`.
+ */
+export interface VisitaListada extends Visita {
+  agente_nome?: string;
+  morador_nome?: string;
+  logradouro?: string;
+  numero?: string;
+  bairro?: string;
+}
 
 export interface Agendamento {
   id: string;

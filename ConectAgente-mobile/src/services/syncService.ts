@@ -8,6 +8,31 @@
  *
  * O Supabase (free tier) suporta 500 MB de dados, sem limite
  * de requisições (fair use) — ideal para o volume de um ACS.
+ *
+ * ─────────────────────────────────────────────────────────────
+ * Sobre o identificador do registro
+ * ─────────────────────────────────────────────────────────────
+ * A versão anterior tirava o identificador do próprio payload
+ * (`payload.id`) e isso falhava de três formas diferentes, todas medidas
+ * contra um PostgreSQL de verdade com o schema real:
+ *
+ *   1. `visitas` e `agendamentos` enfileiram o objeto de entrada, que não
+ *      tem `id`. O servidor então gerava um UUID novo a cada envio, com dois
+ *      efeitos: o registro ficava com identificador diferente do local, e
+ *      cada retentativa criava uma linha duplicada, porque `onConflict: 'id'`
+ *      não tem como detectar conflito sem o id no payload.
+ *
+ *   2. O cancelamento de agendamento enfileira `{ status: 'cancelada' }`,
+ *      sem `id`. O `.eq('id', undefined)` não atualizava nada.
+ *
+ *   3. As cinco tabelas de prontuário são identificadas por `prontuario_id`,
+ *      não por `id`. Mesmo com o id certo no payload, o filtro apontava para
+ *      a coluna errada.
+ *
+ * A fila sempre soube o identificador correto: está em `registro_id`, que
+ * cada repositório preenche ao enfileirar. Passar esse valor resolve os três
+ * casos de uma vez e não depende do que cada repositório lembrou de incluir
+ * no payload.
  */
 import { syncQueueRepository } from '../database/repositories/syncQueueRepository';
 import { residenciaRepository } from '../database/repositories/residenciaRepository';
@@ -23,6 +48,58 @@ export interface SyncStatus {
   erro: string | null;
 }
 
+/**
+ * Coluna que identifica o registro em cada tabela.
+ *
+ * As tabelas de prontuário têm `id` próprio, mas quem as liga ao prontuário
+ * é `prontuario_id`, declarado UNIQUE no servidor. É por ele que o aplicativo
+ * grava e lê, e portanto é a chave de sincronização.
+ */
+const CHAVE_POR_TABELA: Partial<Record<SupabaseTable, string>> = {
+  prontuario_saude: 'prontuario_id',
+  prontuario_gestante: 'prontuario_id',
+  prontuario_puericultura: 'prontuario_id',
+  prontuario_mulher: 'prontuario_id',
+  prontuario_social: 'prontuario_id',
+};
+
+function chaveDa(tabela: SupabaseTable): string {
+  return CHAVE_POR_TABELA[tabela] ?? 'id';
+}
+
+/**
+ * Alvo de conflito do UPSERT, quando nao e a chave primaria.
+ *
+ * `metas_visitas` tem UNIQUE (agente_id, mes, ano) no servidor, e no
+ * aparelho o `INSERT OR REPLACE` gera um id novo a cada vez que o agente
+ * redefine a meta do mes. Conflitando por `id`, a segunda definicao do mesmo
+ * mes tentaria criar uma linha nova e bateria na chave unica composta. O
+ * alvo certo e o trio.
+ */
+const CONFLITO_POR_TABELA: Partial<Record<SupabaseTable, string>> = {
+  metas_visitas: 'agente_id,mes,ano',
+};
+
+function conflitoDa(tabela: SupabaseTable): string {
+  return CONFLITO_POR_TABELA[tabela] ?? chaveDa(tabela);
+}
+
+/**
+ * Tabelas em que o aplicativo salva por substituição e não por alteração.
+ *
+ * `salvarSaude` e as irmãs fazem insere-ou-atualiza no banco local. Mandar
+ * isso como UPDATE puro perdia dado em silêncio: se a linha ainda não existe
+ * no servidor, o UPDATE afeta zero linhas e o PostgREST não devolve erro.
+ * Como UPSERT, o primeiro envio cria e os seguintes atualizam.
+ */
+const SALVAS_POR_UPSERT = new Set<SupabaseTable>([
+  'prontuario_saude',
+  'prontuario_gestante',
+  'prontuario_puericultura',
+  'prontuario_mulher',
+  'prontuario_social',
+]);
+
 export const syncService = {
   /**
    * Processa a fila de sync e envia para o Supabase.
@@ -37,7 +114,12 @@ export const syncService = {
     for (const item of batch) {
       try {
         const payload = JSON.parse(item.payload);
-        await syncParaSupabase(item.tabela as SupabaseTable, item.operacao, payload);
+        await syncParaSupabase(
+          item.tabela as SupabaseTable,
+          item.operacao,
+          payload,
+          item.registro_id
+        );
 
         // Marcar como sincronizado no repositório local
         if (item.operacao === 'insert' || item.operacao === 'update') {
@@ -76,19 +158,33 @@ export const syncService = {
 async function syncParaSupabase(
   tabela: SupabaseTable,
   operacao: string,
-  payload: Record<string, unknown>
+  payload: Record<string, unknown>,
+  registroId: string
 ): Promise<void> {
+  const chave = chaveDa(tabela);
+
   switch (operacao) {
     case 'insert': {
-      const { error } = await supabase.from(tabela).upsert(payload, { onConflict: 'id' });
+      // O identificador entra à força: vem da fila, não do payload, para que
+      // o registro no servidor tenha o mesmo id do local e para que a
+      // retentativa atualize em vez de duplicar.
+      const comChave = { ...payload, [chave]: registroId };
+      const { error } = await supabase
+        .from(tabela)
+        .upsert(comChave, { onConflict: conflitoDa(tabela) });
       if (error) throw new Error(error.message);
       break;
     }
     case 'update': {
-      const { error } = await supabase
-        .from(tabela)
-        .update(payload)
-        .eq('id', payload.id as string);
+      if (SALVAS_POR_UPSERT.has(tabela)) {
+        const comChave = { ...payload, [chave]: registroId };
+        const { error } = await supabase
+          .from(tabela)
+          .upsert(comChave, { onConflict: conflitoDa(tabela) });
+        if (error) throw new Error(error.message);
+        break;
+      }
+      const { error } = await supabase.from(tabela).update(payload).eq(chave, registroId);
       if (error) throw new Error(error.message);
       break;
     }
@@ -96,7 +192,7 @@ async function syncParaSupabase(
       const { error } = await supabase
         .from(tabela)
         .update({ deleted_at: new Date().toISOString() })
-        .eq('id', payload.id as string);
+        .eq(chave, registroId);
       if (error) throw new Error(error.message);
       break;
     }

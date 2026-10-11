@@ -9,18 +9,28 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { visitaRepository } from '../../database/repositories/visitaRepository';
 import { agenteRepository } from '../../database/repositories/agenteRepository';
-import { Visita, StatusVisita } from '../../types';
+import { StatusVisita, VisitaListada } from '../../types';
 import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
 
-type VisitaExt = Visita & { agente_nome?: string };
+type VisitaExt = VisitaListada;
 
-const STATUS_OPTIONS: Array<StatusVisita | 'todas'> = ['todas', 'realizada', 'agendada', 'cancelada', 'nao_realizada'];
+// 'nao_realizada' nao existe em lugar nenhum: o schema aceita apenas
+// 'realizada', 'agendada', 'cancelada' e 'nao_encontrado'. O filtro
+// antigo nunca devolvia nada, e o status que existe de verdade nao
+// tinha nem filtro nem cor.
+const STATUS_OPTIONS: Array<StatusVisita | 'todas'> = [
+  'todas',
+  'realizada',
+  'agendada',
+  'cancelada',
+  'nao_encontrado',
+];
 
 const STATUS_COLORS: Record<StatusVisita, { bg: string; text: string }> = {
   realizada: { bg: COLORS.successLight, text: COLORS.success },
   agendada: { bg: COLORS.warningLight, text: COLORS.warning },
   cancelada: { bg: COLORS.errorLight, text: COLORS.error },
-  nao_realizada: { bg: '#F3E5F5', text: '#7B1FA2' },
+  nao_encontrado: { bg: '#F3E5F5', text: '#7B1FA2' },
 };
 
 export default function AdminVisitas() {

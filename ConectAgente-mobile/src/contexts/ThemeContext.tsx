@@ -42,7 +42,19 @@ const DARK = {
   inputBg: '#222840', tabBar: '#1A1F2E',
 };
 
-export type ThemeColors = typeof LIGHT;
+/**
+ * Paleta do tema.
+ *
+ * `primaryGradient` precisa ser alargado de proposito. Com `as const`, o tipo
+ * de LIGHT fixa os tres valores exatos do tema claro, e aí a paleta escura
+ * deixa de ser atribuivel: o compilador reclama que '#1565C0' nao e
+ * '#1976D2'. Trocar para `string[]` resolveria o erro mas perderia a
+ * aridade, que o LinearGradient exige (ele pede ao menos duas cores). Manter
+ * a tupla de tres com `string` dentro atende os dois lados.
+ */
+export type ThemeColors = Omit<typeof LIGHT, 'primaryGradient'> & {
+  primaryGradient: readonly [string, string, string];
+};
 
 interface ThemeContextData {
   mode: ThemeMode;

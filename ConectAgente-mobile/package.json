@@ -26,7 +26,6 @@
       "!src/**/*.d.ts",
       "!src/**/index.ts",
       "!src/app/**",
-      "!src/tasks/**",
       "!src/lib/**",
       "!src/contexts/**",
       "!src/components/forms/**",
