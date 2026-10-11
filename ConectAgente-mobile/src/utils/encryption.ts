@@ -241,3 +241,52 @@ export async function decryptSensitiveFields<T extends Record<string, unknown>>(
 export function clearEncryptionKeyCache(): void {
   _encryptionKey = null;
 }
+
+// ============================================================
+// SENHA INICIAL SORTEADA
+// ============================================================
+
+/**
+ * Sorteia uma senha forte para o primeiro acesso do administrador.
+ *
+ * Existe porque a senha do administrador era uma constante no codigo
+ * (`Admin@2025`), repetida no README e impressa na tela de configuracoes.
+ * Em repositorio publico isso e credencial publicada: quem encontrasse uma
+ * instalacao no ar entrava como administrador e lia o prontuario de todos.
+ *
+ * O alfabeto evita caracteres que se confundem na leitura (O e 0, l e 1),
+ * porque esta senha e lida de uma tela e digitada a mao.
+ */
+export async function sortearSenhaForte(tamanho = 16): Promise<string> {
+  const MAIUSCULAS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const MINUSCULAS = 'abcdefghijkmnopqrstuvwxyz';
+  const NUMEROS = '23456789';
+  const SIMBOLOS = '!@#$%&*?';
+  const TODOS = MAIUSCULAS + MINUSCULAS + NUMEROS + SIMBOLOS;
+
+  const bytes = await Crypto.getRandomBytesAsync(tamanho * 2);
+  let indice = 0;
+  const sortear = (alfabeto: string): string =>
+    alfabeto[bytes[indice++ % bytes.length] % alfabeto.length];
+
+  // Garante um de cada classe, para a senha passar em qualquer validacao.
+  const obrigatorios = [
+    sortear(MAIUSCULAS),
+    sortear(MINUSCULAS),
+    sortear(NUMEROS),
+    sortear(SIMBOLOS),
+  ];
+  const resto = Array.from({ length: Math.max(0, tamanho - obrigatorios.length) }, () =>
+    sortear(TODOS)
+  );
+
+  // Embaralha para os obrigatorios nao ficarem sempre nas quatro primeiras
+  // posicoes, o que reduziria o espaco de busca de quem souber da regra.
+  const chars = [...obrigatorios, ...resto];
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = bytes[(indice + i) % bytes.length] % (i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+
+  return chars.join('');
+}

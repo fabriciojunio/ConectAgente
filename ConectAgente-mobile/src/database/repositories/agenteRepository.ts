@@ -1,12 +1,18 @@
 import { getDatabase } from '../database';
 import { Agente } from '../../types';
 import { generateUUID, isoNow } from '../../utils/formatters';
-import { hashSenha, verificarSenha } from '../../utils/encryption';
+import * as SecureStore from 'expo-secure-store';
+import { hashSenha, verificarSenha, sortearSenhaForte } from '../../utils/encryption';
+import { SECURE_KEYS } from '../../utils/constants';
 
-// Credenciais do administrador padrão do sistema
-// AVISO: Em produção, troque a senha no primeiro login e remova essas constantes.
+// CPF do administrador padrão do sistema.
+//
+// A senha NÃO fica aqui. Antes era a constante `Admin@2025`, repetida no
+// README e impressa na tela de configurações, num repositório público: quem
+// encontrasse uma instalação no ar entrava como administrador e lia o
+// prontuário de todos. Agora ela é sorteada na primeira execução, guardada
+// no SecureStore e apagada quando é trocada.
 const ADMIN_CPF = '11144477735';
-const ADMIN_SENHA = 'Admin@2025';
 
 // ============================================================
 // RATE LIMITING — proteção contra força bruta
@@ -303,7 +309,10 @@ export const agenteRepository = {
 
   /**
    * Garante que o administrador padrão existe no banco.
-   * Chamado na inicialização do app — idempotente.
+   *
+   * Chamado na inicialização do app, idempotente. Na primeira execução
+   * sorteia a senha e a guarda no SecureStore, para a tela de configurações
+   * mostrá-la uma vez a quem instalou. Nas execuções seguintes não faz nada.
    */
   async garantirAdminPadrao(): Promise<void> {
     const db = await getDatabase();
@@ -313,7 +322,8 @@ export const agenteRepository = {
     );
     if ((row?.count ?? 0) > 0) return; // já existe
 
-    const senhaHash = await hashSenha(ADMIN_SENHA);
+    const senhaInicial = await sortearSenhaForte();
+    const senhaHash = await hashSenha(senhaInicial);
     const id = generateUUID();
     const now = isoNow();
 
@@ -324,6 +334,34 @@ export const agenteRepository = {
       [id, 'Administrador', ADMIN_CPF, 'admin@conectagente.local',
        senhaHash, null, 'Administração', 'Sistema', now, now]
     );
+
+    // Guardada para ser lida uma vez na tela de configurações. O SecureStore
+    // usa o Keychain no iOS e o Keystore no Android, então ela não fica em
+    // texto claro no armazenamento do aplicativo.
+    await SecureStore.setItemAsync(SECURE_KEYS.SENHA_ADMIN_INICIAL, senhaInicial);
+  },
+
+  /**
+   * Devolve a senha inicial do administrador, se ainda não foi trocada.
+   *
+   * Some depois da troca: `esquecerSenhaInicialDoAdmin` apaga a chave.
+   */
+  async obterSenhaInicialDoAdmin(): Promise<string | null> {
+    try {
+      return await SecureStore.getItemAsync(SECURE_KEYS.SENHA_ADMIN_INICIAL);
+    } catch {
+      return null;
+    }
+  },
+
+  /** Apaga a senha inicial guardada, depois que ela deixa de valer. */
+  async esquecerSenhaInicialDoAdmin(): Promise<void> {
+    try {
+      await SecureStore.deleteItemAsync(SECURE_KEYS.SENHA_ADMIN_INICIAL);
+    } catch {
+      // Nada a fazer: se não deu para apagar, a senha continua guardada no
+      // cofre do sistema, e não em texto claro.
+    }
   },
 };
 
