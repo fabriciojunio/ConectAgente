@@ -49,16 +49,43 @@ INITDB="$PGBIN/initdb"; PGCTL="$PGBIN/pg_ctl"; PSQL="$PGBIN/psql"
 
 encerrar() {
   "$PGCTL" -D "$PGDATA" stop -m immediate >/dev/null 2>&1 || true
-  rm -rf "$PGDATA" 2>/dev/null || true
+  rm -rf "$PGDATA" "$PGDATA".*.log 2>/dev/null || true
 }
 trap encerrar EXIT
 
 echo "==> criando cluster temporário em $PGDATA (porta $PORTA)"
 rm -rf "$PGDATA"; mkdir -p "$PGDATA"
-"$INITDB" -D "$PGDATA" -U postgres -A trust -E UTF8 --locale=C >/dev/null 2>&1
-"$PGCTL" -D "$PGDATA" -o "-p $PORTA -c listen_addresses=localhost" \
-         -l "$PGDATA/log.txt" start >/dev/null 2>&1
-sleep 3
+
+"$PSQL" --version || { echo "psql nao executa em $PGBIN"; exit 1; }
+
+# A saida do initdb e do pg_ctl nao e descartada de proposito. Quando isto
+# roda em integracao continua, o log e a unica coisa que existe para entender
+# a falha, e esconder o erro aqui custou uma rodada vermelha sem diagnostico.
+if ! "$INITDB" -D "$PGDATA" -U postgres -A trust -E UTF8 --locale=C \
+     > "$PGDATA.initdb.log" 2>&1; then
+  echo "FALHOU ao criar o cluster:"; tail -20 "$PGDATA.initdb.log"; exit 1
+fi
+
+if ! "$PGCTL" -D "$PGDATA" -o "-p $PORTA -c listen_addresses=localhost" \
+     -l "$PGDATA/log.txt" -w start > "$PGDATA.pgctl.log" 2>&1; then
+  echo "FALHOU ao subir o servidor:"; tail -20 "$PGDATA.pgctl.log"
+  [ -f "$PGDATA/log.txt" ] && tail -20 "$PGDATA/log.txt"
+  exit 1
+fi
+
+# `pg_ctl -w` ja espera, mas em maquina lenta a primeira conexao ainda pode
+# chegar antes de o servidor aceitar. Espera ate responder, com teto.
+pronto=0
+for _ in $(seq 1 30); do
+  if "$PSQL" -h localhost -p "$PORTA" -U postgres -d postgres \
+       -c "SELECT 1" >/dev/null 2>&1; then pronto=1; break; fi
+  sleep 1
+done
+if [ "$pronto" -ne 1 ]; then
+  echo "O servidor subiu mas nao aceitou conexao na porta $PORTA:"
+  [ -f "$PGDATA/log.txt" ] && tail -20 "$PGDATA/log.txt"
+  exit 1
+fi
 
 H="-h localhost -p $PORTA -U postgres"
 "$PSQL" $H -q -c "CREATE DATABASE conectagente_teste;" >/dev/null 2>&1
