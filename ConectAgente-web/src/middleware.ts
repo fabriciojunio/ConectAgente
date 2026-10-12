@@ -5,8 +5,29 @@ import { validarOrigem } from '@/lib/csrf';
 /** Rotas que exigem papel de gerente ou admin */
 const ADMIN_ROUTES = ['/admin', '/admin/usuarios'];
 
-/** Routes that do not require authentication */
+/** Rotas abertas, que redirecionam para a raiz quando ja ha sessao. */
 const PUBLIC_ROUTES = ['/login', '/registro', '/demo'];
+
+/**
+ * Rotas que ficam fora da logica de autenticacao por inteiro.
+ *
+ * Nao basta serem "publicas": a regra que manda quem ja esta logado de volta
+ * para a raiz tambem nao pode valer aqui. Medido antes da correcao, com o
+ * build de producao servindo:
+ *
+ *   GET /api/health   307  ->  /login?redirect=%2Fapi%2Fhealth
+ *   GET /robots.txt   307  ->  /login?redirect=%2Frobots.txt
+ *
+ * Um endpoint de saude que exige login nao serve para monitoramento, porque
+ * monitor nao faz login: o alerta diria que o sistema caiu toda vez que ele
+ * estivesse de pe. E robots.txt atras de login nao e lido por robo nenhum,
+ * o que anula justamente a instrucao de nao indexar um sistema com dado de
+ * saude.
+ *
+ * A resposta do /api/health ja e cuidadosa com o que mostra: nunca devolve
+ * mensagem do banco nem nome de variavel, so o estado.
+ */
+const ROTAS_SEM_AUTENTICACAO = ['/api/health', '/robots.txt', '/favicon.ico'];
 
 /**
  * Next.js middleware for authentication, role-based access control,
@@ -71,6 +92,12 @@ export async function middleware(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Sai antes de qualquer decisao de sessao, mas depois da barreira de CSRF
+  // e com os cabecalhos de seguranca que o next.config aplica.
+  if (ROTAS_SEM_AUTENTICACAO.some((rota) => pathname === rota)) {
+    return response;
+  }
 
   const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname === route);
   const isAdminRoute = ADMIN_ROUTES.some((route) => pathname.startsWith(route));
