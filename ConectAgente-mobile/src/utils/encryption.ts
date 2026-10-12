@@ -24,7 +24,7 @@ let _encryptionKey: string | null = null;
 /**
  * Retorna a chave de criptografia hex de 64 chars (256 bits).
  * Gera e persiste no SecureStore na primeira execução.
- * Cache em memória para performance — limpo no logout via clearEncryptionKeyCache().
+ * Cache em memória para performance, limpo no logout via clearEncryptionKeyCache().
  */
 async function getEncryptionKey(): Promise<string> {
   if (_encryptionKey) return _encryptionKey;
@@ -43,7 +43,7 @@ async function getEncryptionKey(): Promise<string> {
 }
 
 // ============================================================
-// HASH — SHA-256 simples (sem salt)
+// HASH: SHA-256 simples (sem salt)
 // ============================================================
 
 export async function hashSHA256(value: string): Promise<string> {
@@ -81,17 +81,17 @@ export async function verificarSenha(senha: string, stored: string): Promise<boo
     );
     return computed === hash;
   }
-  // Formato legado — migração automática ocorre em autenticar()
+  // Formato legado, migração automática ocorre em autenticar()
   const legacyHash = await hashSHA256(senha);
   return legacyHash === stored;
 }
 
 // ============================================================
-// CRIPTOGRAFIA SIMÉTRICA — SHA-256-CTR (stream cipher)
+// CRIPTOGRAFIA SIMÉTRICA: SHA-256-CTR (stream cipher)
 //
 // Segurança:
 //   • IV aleatório de 16 bytes por cifração → ciphertext diferente para o mesmo plaintext
-//   • Keystream derivado de SHA-256(key || iv_hex || counter) — PRF segura
+//   • Keystream derivado de SHA-256(key || iv_hex || counter), PRF segura
 //   • Chave no Keychain (iOS) ou Keystore (Android), fora do banco do app
 //
 // LIMITAÇÃO, e é importante: isto dá confidencialidade e NÃO dá autenticidade.
@@ -192,7 +192,7 @@ function xorDecryptLegacy(encoded: string, key: string): string {
 }
 
 // ============================================================
-// API PÚBLICA — encryptField / decryptField
+// API PÚBLICA: encryptField / decryptField
 // ============================================================
 
 /**
@@ -215,7 +215,7 @@ export async function decryptField(encrypted: string): Promise<string> {
   if (encrypted.startsWith('v2:')) {
     return ctrDecrypt(encrypted.slice(3), key);
   }
-  // Formato legado — descriptografa com XOR e deixa em plaintext até próxima gravação
+  // Formato legado, descriptografa com XOR e deixa em plaintext até próxima gravação
   return xorDecryptLegacy(encrypted, key);
 }
 

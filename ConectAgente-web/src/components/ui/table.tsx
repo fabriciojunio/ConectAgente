@@ -9,11 +9,11 @@ export interface TableProps extends React.TableHTMLAttributes<HTMLTableElement> 
 
 export function Table({ className, striped, children, ...props }: TableProps) {
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-gray-200">
+    <div className="w-full overflow-x-auto rounded-lg border border-[var(--borda-clara)]">
       <table
         className={cn(
           'w-full caption-bottom text-sm',
-          striped && '[&_tbody_tr:nth-child(even)]:bg-gray-50',
+          striped && '[&_tbody_tr:nth-child(even)]:bg-[var(--superficie-alt)]',
           className
         )}
         {...props}
@@ -27,7 +27,7 @@ export function Table({ className, striped, children, ...props }: TableProps) {
 export function TableHeader({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
   return (
     <thead
-      className={cn('bg-gray-50 border-b border-gray-200', className)}
+      className={cn('bg-[var(--superficie-alt)] border-b border-[var(--borda-clara)]', className)}
       {...props}
     />
   );
@@ -46,7 +46,7 @@ export function TableRow({ className, ...props }: React.HTMLAttributes<HTMLTable
   return (
     <tr
       className={cn(
-        'border-b border-gray-200 transition-colors hover:bg-gray-50',
+        'border-b border-[var(--borda-clara)] transition-colors hover:bg-[var(--superficie-alt)]',
         className
       )}
       {...props}
@@ -58,7 +58,7 @@ export function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTa
   return (
     <th
       className={cn(
-        'h-10 px-4 text-left align-middle text-xs font-semibold uppercase tracking-wider text-gray-600',
+        'h-10 px-4 text-left align-middle text-xs font-semibold uppercase tracking-wider text-[var(--texto-claro)]',
         className
       )}
       {...props}
@@ -69,7 +69,7 @@ export function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTa
 export function TableCell({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (
     <td
-      className={cn('px-4 py-3 align-middle text-sm text-gray-700', className)}
+      className={cn('px-4 py-3 align-middle text-sm text-[var(--texto-medio)]', className)}
       {...props}
     />
   );

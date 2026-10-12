@@ -149,7 +149,7 @@ export default function AdminDashboard() {
                 <View style={[styles.statusDot, { backgroundColor: v.status === 'realizada' ? COLORS.success : COLORS.warning }]} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.visitaEndereco} numberOfLines={1}>
-                    {v.logradouro}, {v.numero} — {v.bairro}
+                    {v.logradouro}, {v.numero} - {v.bairro}
                   </Text>
                   <Text style={styles.visitaInfo} numberOfLines={1}>
                     {(v as any).agente_nome ?? 'Agente'} · {new Date(v.data_visita).toLocaleDateString('pt-BR')}

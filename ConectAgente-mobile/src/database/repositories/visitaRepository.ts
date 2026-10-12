@@ -291,7 +291,7 @@ export const visitaRepository = {
     return row ? mapRow(row) : null;
   },
 
-  // ADMIN — lista visitas de todos os agentes
+  // ADMIN: lista visitas de todos os agentes
   async listarTodas(filtros?: {
     agente_id?: string;
     data_inicio?: string;

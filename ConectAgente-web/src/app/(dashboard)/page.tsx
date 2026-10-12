@@ -99,16 +99,16 @@ export default function DashboardPage() {
       <DashboardCards stats={stats} loading={loading} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-[var(--superficie)] rounded-xl border p-6">
           <h3 className="section-title">Visitas nos Últimos 30 Dias</h3>
           <VisitasLineChart data={visitasPeriodo} loading={loading} />
         </div>
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-[var(--superficie)] rounded-xl border p-6">
           <h3 className="section-title">Distribuição por Status</h3>
           <StatusPieChart
             data={[
-              { name: 'Realizadas', value: (stats?.visitas_mes ?? 0) - (stats?.visitas_pendentes ?? 0), color: '#1565C0' },
-              { name: 'Pendentes',  value: stats?.visitas_pendentes ?? 0, color: '#42A5F5' },
+              { name: 'Realizadas', value: (stats?.visitas_mes ?? 0) - (stats?.visitas_pendentes ?? 0), color: 'var(--primaria)' },
+              { name: 'Pendentes',  value: stats?.visitas_pendentes ?? 0, color: 'var(--primaria-clara)' },
             ]}
             loading={loading}
           />
@@ -116,22 +116,22 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-[var(--superficie)] rounded-xl border p-6">
           <h3 className="section-title">Top Agentes</h3>
           <AgentesBarChart data={visitasAgente} loading={loading} />
         </div>
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-[var(--superficie)] rounded-xl border p-6">
           <h3 className="section-title">Visitas por Bairro</h3>
           <HeatmapBairros data={visitasBairro} loading={loading} />
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-[var(--superficie)] rounded-xl border p-6">
           <h3 className="section-title">Visitas Recentes</h3>
           <RecentVisitas visitas={visitasRecentes} loading={loading} />
         </div>
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-[var(--superficie)] rounded-xl border p-6">
           <h3 className="section-title">Alertas de Atraso</h3>
           <AlertasAtraso alertas={alertas} loading={loading} />
         </div>

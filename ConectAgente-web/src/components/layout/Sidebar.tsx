@@ -82,18 +82,18 @@ export default function Sidebar({
 
       <aside
         className={cn(
-          'fixed top-0 left-0 h-full w-60 z-50 flex flex-col transition-transform duration-300 ease-in-out bg-white border-r border-[#E5EAF2]',
+          'fixed top-0 left-0 h-full w-60 z-50 flex flex-col transition-transform duration-300 ease-in-out bg-[var(--superficie)] border-r border-[var(--borda-clara)]',
           'lg:translate-x-0',
           isOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         {/* Logo area */}
-        <div className="h-14 px-4 flex items-center gap-3 border-b border-[#E5EAF2] flex-shrink-0">
+        <div className="h-14 px-4 flex items-center gap-3 border-b border-[var(--borda-clara)] flex-shrink-0">
           {/* Close button on mobile */}
           {onClose && (
             <button
               onClick={onClose}
-              className="absolute top-3 right-3 text-[#6B7280] hover:text-[#0F1621] lg:hidden p-1"
+              className="absolute top-3 right-3 text-[var(--texto-claro)] hover:text-[var(--texto)] lg:hidden p-1"
             >
               <X size={18} />
             </button>
@@ -107,11 +107,11 @@ export default function Sidebar({
             className="object-contain rounded-lg flex-shrink-0"
           />
           <div>
-            <h1 className="text-sm font-extrabold text-[#0D47A1] leading-tight">
+            <h1 className="text-sm font-extrabold text-[var(--primaria-escura)] leading-tight">
               ConectAgente
             </h1>
             {userUnidade && (
-              <p className="text-[10px] text-[#6B7280] font-medium truncate max-w-[140px]">
+              <p className="text-[10px] text-[var(--texto-claro)] font-medium truncate max-w-[140px]">
                 {userUnidade}
               </p>
             )}
@@ -143,12 +143,12 @@ export default function Sidebar({
                   className={cn(
                     'flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all',
                     isActive
-                      ? 'bg-[#1565C0] text-white'
-                      : 'text-[#374151] hover:bg-[#F0F4FA] hover:text-[#1565C0]'
+                      ? 'bg-[var(--primaria)] text-white'
+                      : 'text-[var(--texto-medio)] hover:bg-[var(--superficie-alt)] hover:text-[var(--primaria)]'
                   )}
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  <Icon size={18} className={isActive ? 'text-white' : 'text-[#6B7280]'} />
+                  <Icon size={18} className={isActive ? 'text-white' : 'text-[var(--texto-claro)]'} />
                   <span>{item.label}</span>
                 </Link>
               );
@@ -157,10 +157,10 @@ export default function Sidebar({
         </nav>
 
         {/* Logout at bottom */}
-        <div className="border-t border-[#E5EAF2] p-2">
+        <div className="border-t border-[var(--borda-clara)] p-2">
           <button
             onClick={onLogout}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium text-[#6B7280] hover:text-[#D32F2F] hover:bg-[#FFEBEE] transition-all w-full"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium text-[var(--texto-claro)] hover:text-[var(--erro)] hover:bg-[var(--erro-claro)] transition-all w-full"
             aria-label="Sair do sistema"
           >
             <LogOut size={18} />

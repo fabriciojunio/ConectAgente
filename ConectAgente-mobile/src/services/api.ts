@@ -1,5 +1,5 @@
 /**
- * Cliente HTTP — Axios configurado com:
+ * Cliente HTTP: Axios configurado com:
  * - Injeção automática de token JWT
  * - Refresh token automático
  * - Interceptor de erro 401 (logout)
@@ -20,7 +20,7 @@ export const api = axios.create({
 });
 
 // ============================================================
-// REQUEST INTERCEPTOR — injeta token JWT
+// REQUEST INTERCEPTOR: injeta token JWT
 // ============================================================
 
 api.interceptors.request.use(
@@ -35,7 +35,7 @@ api.interceptors.request.use(
 );
 
 // ============================================================
-// RESPONSE INTERCEPTOR — trata 401 e refresh token
+// RESPONSE INTERCEPTOR: trata 401 e refresh token
 // ============================================================
 
 let isRefreshing = false;
@@ -94,7 +94,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        // Limpar sessão — AuthContext vai detectar e redirecionar para login
+        // Limpar sessão, AuthContext vai detectar e redirecionar para login
         await SecureStore.deleteItemAsync(SECURE_KEYS.AUTH_TOKEN);
         await SecureStore.deleteItemAsync(SECURE_KEYS.REFRESH_TOKEN);
         return Promise.reject(refreshError);

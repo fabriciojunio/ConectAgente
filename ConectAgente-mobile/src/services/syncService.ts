@@ -7,7 +7,7 @@
  *   3. Supabase recebe os dados e distribui entre dispositivos
  *
  * O Supabase (free tier) suporta 500 MB de dados, sem limite
- * de requisições (fair use) — ideal para o volume de um ACS.
+ * de requisições (fair use), ideal para o volume de um ACS.
  *
  * ─────────────────────────────────────────────────────────────
  * Sobre o identificador do registro

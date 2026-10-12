@@ -36,7 +36,7 @@ export default function NovoMorador() {
   }, [residenciaParam]);
 
   const residenciaOptions = residencias.map((r) => ({
-    label: `${r.logradouro}, ${r.numero} — ${r.bairro}`,
+    label: `${r.logradouro}, ${r.numero}, ${r.bairro}`,
     value: r.id,
   }));
 
@@ -173,7 +173,7 @@ export default function NovoMorador() {
                   if (valid) {
                     setStep('saude');
                   } else {
-                    // errors may be stale in closure — re-read via trigger's side effects on formState
+                    // errors may be stale in closure, re-read via trigger's side effects on formState
                     const vals = getValues();
                     const msgs: string[] = [];
                     if (!vals.nome) msgs.push('• Nome: obrigatório');

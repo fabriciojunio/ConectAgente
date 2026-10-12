@@ -15,14 +15,14 @@ import { usePrimeiraCarga } from '@/hooks/usePrimeiraCarga';
 
 function SkeletonRows() {
   return (
-    <div className="bg-white rounded-xl border p-6">
-      <div className="h-5 bg-gray-200 rounded w-1/4 mb-4 animate-pulse" />
+    <div className="bg-[var(--superficie)] rounded-xl border p-6">
+      <div className="h-5 bg-[var(--borda-clara)] rounded w-1/4 mb-4 animate-pulse" />
       {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="flex gap-4 py-3 border-b last:border-0 animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/3" />
-          <div className="h-4 bg-gray-200 rounded w-1/6" />
-          <div className="h-4 bg-gray-200 rounded w-1/4" />
-          <div className="h-4 bg-gray-200 rounded flex-1" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/3" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/6" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/4" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded flex-1" />
         </div>
       ))}
     </div>
@@ -85,7 +85,7 @@ export default function TerritorialPage() {
         <>
           {/* Heatmap */}
           {bairros.length > 0 ? (
-            <div className="bg-white rounded-xl border p-6">
+            <div className="bg-[var(--superficie)] rounded-xl border p-6">
               <h3 className="section-title flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-primary-600" />
                 Mapa de Calor por Bairro
@@ -101,23 +101,23 @@ export default function TerritorialPage() {
 
           {/* Bairro Table */}
           {bairros.length > 0 && (
-            <div className="bg-white rounded-xl border p-6">
+            <div className="bg-[var(--superficie)] rounded-xl border p-6">
               <h3 className="section-title">Detalhamento por Bairro</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b bg-gray-50">
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Bairro</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Total Visitas</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Cobertura</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell min-w-[200px]">Progresso</th>
+                    <tr className="border-b bg-[var(--superficie-alt)]">
+                      <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Bairro</th>
+                      <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Total Visitas</th>
+                      <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Cobertura</th>
+                      <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden md:table-cell min-w-[200px]">Progresso</th>
                     </tr>
                   </thead>
                   <tbody>
                     {bairros
                       .sort((a, b) => b.total_visitas - a.total_visitas)
                       .map((bairro) => (
-                        <tr key={bairro.bairro} className="border-b last:border-0 hover:bg-gray-50">
+                        <tr key={bairro.bairro} className="border-b last:border-0 hover:bg-[var(--superficie-alt)]">
                           <td className="px-4 py-3 font-medium">{bairro.bairro}</td>
                           <td className="px-4 py-3">{bairro.total_visitas}</td>
                           <td className="px-4 py-3">
@@ -134,7 +134,7 @@ export default function TerritorialPage() {
                             </span>
                           </td>
                           <td className="px-4 py-3 hidden md:table-cell">
-                            <div className="w-full bg-gray-100 rounded-full h-2">
+                            <div className="w-full bg-[var(--superficie-alt)] rounded-full h-2">
                               <div
                                 className={`h-2 rounded-full transition-all ${
                                   bairro.cobertura_pct >= 80
@@ -157,7 +157,7 @@ export default function TerritorialPage() {
 
           {/* Coverage by Microarea */}
           {cobertura.length > 0 && (
-            <div className="bg-white rounded-xl border p-6">
+            <div className="bg-[var(--superficie)] rounded-xl border p-6">
               <h3 className="section-title">Ranking de Cobertura por Microárea</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {cobertura
@@ -178,7 +178,7 @@ export default function TerritorialPage() {
                           {Math.round(area.cobertura_pct)}%
                         </span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
+                      <div className="w-full bg-[var(--superficie-alt)] rounded-full h-2 mb-2">
                         <div
                           className={`h-2 rounded-full ${
                             area.cobertura_pct >= 80
@@ -190,7 +190,7 @@ export default function TerritorialPage() {
                           style={{ width: `${Math.min(area.cobertura_pct, 100)}%` }}
                         />
                       </div>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-[var(--texto-claro)]">
                         {area.familias_visitadas_30d} de {area.total_familias} famílias
                       </p>
                     </div>

@@ -35,7 +35,7 @@ export default function HeatmapBairros({ data, loading }: HeatmapBairrosProps) {
             ))}
           </div>
         ) : sorted.length === 0 ? (
-          <p className="py-12 text-center text-sm text-gray-500">
+          <p className="py-12 text-center text-sm text-[var(--texto-claro)]">
             Nenhum dado disponivel.
           </p>
         ) : (

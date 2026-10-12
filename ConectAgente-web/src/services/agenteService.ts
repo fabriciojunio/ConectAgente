@@ -47,7 +47,7 @@ export async function getAgentes(
       return demo;
     }
 
-    // Usa count queries com head:true (sem baixar dados) — muito mais rápido
+    // Usa count queries com head:true (sem baixar dados), muito mais rápido
     // que buscar todas as visitas e contar em memória
     const agenteIds = agentes.map((a) => a.id);
     const [totalRes, realizadasRes] = await Promise.all([

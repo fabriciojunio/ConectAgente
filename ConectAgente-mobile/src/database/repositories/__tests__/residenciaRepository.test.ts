@@ -146,7 +146,7 @@ describe('residenciaRepository.buscarPorId', () => {
 
 describe('residenciaRepository.atualizar', () => {
   it('atualiza campos fornecidos', async () => {
-    // atualizar retorna void — apenas verifica que runAsync foi chamado com UPDATE
+    // atualizar retorna void, apenas verifica que runAsync foi chamado com UPDATE
     await residenciaRepository.atualizar('res-uuid-456', { numero: '2000' }, 'agente-uuid-123');
 
     expect(mockDb.runAsync).toHaveBeenCalled();

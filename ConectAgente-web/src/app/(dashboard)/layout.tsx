@@ -58,7 +58,7 @@ export default function DashboardLayout({
   usePrefetch();
 
   return (
-    <div className="min-h-screen flex bg-[#F4F6FA]">
+    <div className="min-h-screen flex bg-[var(--fundo)]">
       <LoadingBar />
 
       <Sidebar

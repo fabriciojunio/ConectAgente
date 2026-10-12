@@ -34,7 +34,7 @@ export default function AgentesBarChart({ data, loading }: AgentesBarChartProps)
         {loading ? (
           <Skeleton className="h-72 w-full" />
         ) : top10.length === 0 ? (
-          <p className="py-12 text-center text-sm text-gray-500">
+          <p className="py-12 text-center text-sm text-[var(--texto-claro)]">
             Nenhum dado disponivel.
           </p>
         ) : (
@@ -45,18 +45,18 @@ export default function AgentesBarChart({ data, loading }: AgentesBarChartProps)
                 layout="vertical"
                 margin={{ top: 5, right: 20, left: 80, bottom: 5 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
-                <XAxis type="number" tick={{ fontSize: 12, fill: '#757575' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--borda)" />
+                <XAxis type="number" tick={{ fontSize: 12, fill: 'var(--texto-claro)' }} />
                 <YAxis
                   type="category"
                   dataKey="nome"
-                  tick={{ fontSize: 12, fill: '#757575' }}
+                  tick={{ fontSize: 12, fill: 'var(--texto-claro)' }}
                   width={75}
                 />
                 <Tooltip
                   contentStyle={{
                     borderRadius: '8px',
-                    border: '1px solid #E0E0E0',
+                    border: '1px solid var(--borda)',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
                   }}
                 />
@@ -65,14 +65,14 @@ export default function AgentesBarChart({ data, loading }: AgentesBarChartProps)
                   dataKey="realizadas"
                   name="Realizadas"
                   stackId="visits"
-                  fill="#4CAF50"
+                  fill="var(--sucesso)"
                   radius={[0, 0, 0, 0]}
                 />
                 <Bar
                   dataKey="pendentes"
                   name="Pendentes"
                   stackId="visits"
-                  fill="#FF9800"
+                  fill="var(--alerta)"
                   radius={[0, 4, 4, 0]}
                 />
               </BarChart>

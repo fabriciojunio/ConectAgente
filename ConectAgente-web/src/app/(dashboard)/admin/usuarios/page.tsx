@@ -19,13 +19,13 @@ import {
 
 function SkeletonRows() {
   return (
-    <div className="bg-white rounded-xl border overflow-hidden">
+    <div className="bg-[var(--superficie)] rounded-xl border overflow-hidden">
       {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="flex gap-4 px-4 py-3 border-b last:border-0 animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/4" />
-          <div className="h-4 bg-gray-200 rounded w-1/5" />
-          <div className="h-4 bg-gray-200 rounded w-1/6" />
-          <div className="h-4 bg-gray-200 rounded w-1/6" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/4" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/5" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/6" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/6" />
         </div>
       ))}
     </div>
@@ -149,13 +149,13 @@ export default function UsuariosPage() {
 
       {/* Search */}
       <div className="relative w-full sm:w-80">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--marcador)]" />
         <input
           type="text"
           placeholder="Buscar por nome ou CPF..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none"
+          className="w-full pl-10 pr-4 py-2 rounded-lg border border-[var(--borda)] text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none"
         />
       </div>
 
@@ -168,27 +168,27 @@ export default function UsuariosPage() {
           description="Não foram encontrados usuários com os filtros selecionados."
         />
       ) : (
-        <div className="bg-white rounded-xl border overflow-hidden">
+        <div className="bg-[var(--superficie)] rounded-xl border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-gray-50">
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Nome</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">CPF</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Email</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Unidade</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Perfil</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Ações</th>
+                <tr className="border-b bg-[var(--superficie-alt)]">
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Nome</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden md:table-cell">CPF</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden lg:table-cell">Email</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden lg:table-cell">Unidade</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Perfil</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Status</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredUsuarios.map((usuario) => {
                   return (
-                    <tr key={usuario.id} className="border-b last:border-0 hover:bg-gray-50">
+                    <tr key={usuario.id} className="border-b last:border-0 hover:bg-[var(--superficie-alt)]">
                       <td className="px-4 py-3 font-medium">{usuario.nome}</td>
                       <td className="px-4 py-3 hidden md:table-cell">{formatCPF(usuario.cpf)}</td>
-                      <td className="px-4 py-3 hidden lg:table-cell text-gray-500">
+                      <td className="px-4 py-3 hidden lg:table-cell text-[var(--texto-claro)]">
                         {usuario.email || '-'}
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell">{usuario.unidade_saude ?? '-'}</td>
@@ -196,7 +196,7 @@ export default function UsuariosPage() {
                         <select
                           value={usuario.role}
                           onChange={(e) => handleRoleChange(usuario, e.target.value as UserRole)}
-                          className="text-xs rounded-lg border border-gray-200 px-2 py-1 focus:border-primary-500 outline-none bg-white"
+                          className="text-xs rounded-lg border border-[var(--borda-clara)] px-2 py-1 focus:border-primary-500 outline-none bg-[var(--superficie)]"
                         >
                           {roleOptions.map((opt) => (
                             <option key={opt.value} value={opt.value}>
@@ -210,7 +210,7 @@ export default function UsuariosPage() {
                           className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             usuario.ativo
                               ? 'bg-green-100 text-green-700'
-                              : 'bg-gray-100 text-gray-600'
+                              : 'bg-[var(--superficie-alt)] text-[var(--texto-claro)]'
                           }`}
                         >
                           {usuario.ativo ? 'Ativo' : 'Inativo'}
@@ -234,8 +234,8 @@ export default function UsuariosPage() {
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t bg-gray-50">
-              <p className="text-sm text-gray-500">
+            <div className="flex items-center justify-between px-4 py-3 border-t bg-[var(--superficie-alt)]">
+              <p className="text-sm text-[var(--texto-claro)]">
                 Página {page} de {totalPages}
               </p>
               <div className="flex gap-2">
@@ -254,7 +254,7 @@ export default function UsuariosPage() {
       {/* Confirmation Dialog */}
       {confirmDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+          <div className="bg-[var(--superficie)] rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-yellow-500" />
@@ -262,12 +262,12 @@ export default function UsuariosPage() {
               </div>
               <button
                 onClick={() => setConfirmDialog(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-[var(--marcador)] hover:text-[var(--texto-claro)]"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-sm text-gray-600 mb-6">
+            <p className="text-sm text-[var(--texto-claro)] mb-6">
               {confirmDialog.type === 'role'
                 ? `Deseja alterar o perfil de "${confirmDialog.usuario.nome}" para "${
                     roleOptions.find((r) => r.value === confirmDialog.newRole)?.label ?? ''

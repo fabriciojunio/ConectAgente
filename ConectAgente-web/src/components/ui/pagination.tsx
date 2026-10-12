@@ -48,7 +48,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
       className={cn('flex items-center justify-between', className)}
       aria-label="Paginacao"
     >
-      <span className="text-sm text-gray-600">
+      <span className="text-sm text-[var(--texto-claro)]">
         Pagina {currentPage} de {totalPages}
       </span>
 
@@ -58,7 +58,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
           disabled={currentPage <= 1}
           className={cn(
             'inline-flex h-8 w-8 items-center justify-center rounded-md text-sm transition-colors',
-            'hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-50'
+            'hover:bg-[var(--superficie-alt)] disabled:pointer-events-none disabled:opacity-50'
           )}
           aria-label="Pagina anterior"
         >
@@ -69,7 +69,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
           page === 'ellipsis' ? (
             <span
               key={`ellipsis-${idx}`}
-              className="inline-flex h-8 w-8 items-center justify-center text-sm text-gray-400"
+              className="inline-flex h-8 w-8 items-center justify-center text-sm text-[var(--marcador)]"
               aria-hidden="true"
             >
               ...
@@ -82,7 +82,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
                 'inline-flex h-8 w-8 items-center justify-center rounded-md text-sm transition-colors',
                 page === currentPage
                   ? 'bg-primary-500 text-white font-medium'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  : 'text-[var(--texto-medio)] hover:bg-[var(--superficie-alt)]'
               )}
               aria-label={`Pagina ${page}`}
               aria-current={page === currentPage ? 'page' : undefined}
@@ -97,7 +97,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
           disabled={currentPage >= totalPages}
           className={cn(
             'inline-flex h-8 w-8 items-center justify-center rounded-md text-sm transition-colors',
-            'hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-50'
+            'hover:bg-[var(--superficie-alt)] disabled:pointer-events-none disabled:opacity-50'
           )}
           aria-label="Proxima pagina"
         >

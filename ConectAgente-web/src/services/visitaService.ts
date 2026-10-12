@@ -124,7 +124,7 @@ export async function getEstatisticasVisitas(filters?: GlobalFilters): Promise<{
   return enqueue(async () => {
     const supabase = createClient();
 
-    // Usa count queries com head:true (sem baixar dados) — muito mais rápido
+    // Usa count queries com head:true (sem baixar dados), muito mais rápido
     function buildQuery(status?: string) {
       let q = supabase.from('visitas').select('id', { count: 'exact', head: true });
       if (status) q = q.eq('status', status);

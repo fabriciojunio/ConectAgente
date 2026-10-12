@@ -35,7 +35,7 @@ export default function StatusPieChart({ data, loading }: StatusPieChartProps) {
         {loading ? (
           <Skeleton className="mx-auto h-64 w-64 rounded-full" />
         ) : data.length === 0 || total === 0 ? (
-          <p className="py-12 text-center text-sm text-gray-500">
+          <p className="py-12 text-center text-sm text-[var(--texto-claro)]">
             Nenhum dado disponivel.
           </p>
         ) : (
@@ -64,7 +64,7 @@ export default function StatusPieChart({ data, loading }: StatusPieChartProps) {
                   formatter={(value: number) => [value, 'Visitas']}
                   contentStyle={{
                     borderRadius: '8px',
-                    border: '1px solid #E0E0E0',
+                    border: '1px solid var(--borda)',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
                   }}
                 />

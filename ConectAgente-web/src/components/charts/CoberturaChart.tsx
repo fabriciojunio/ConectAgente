@@ -21,9 +21,9 @@ export interface CoberturaChartProps {
 }
 
 function getCoverageColor(pct: number): string {
-  if (pct >= 80) return '#4CAF50';
-  if (pct >= 50) return '#FF9800';
-  return '#F44336';
+  if (pct >= 80) return 'var(--sucesso)';
+  if (pct >= 50) return 'var(--alerta)';
+  return 'var(--erro)';
 }
 
 export default function CoberturaChart({ data, loading }: CoberturaChartProps) {
@@ -36,21 +36,21 @@ export default function CoberturaChart({ data, loading }: CoberturaChartProps) {
         {loading ? (
           <Skeleton className="h-72 w-full" />
         ) : data.length === 0 ? (
-          <p className="py-12 text-center text-sm text-gray-500">
+          <p className="py-12 text-center text-sm text-[var(--texto-claro)]">
             Nenhum dado disponivel.
           </p>
         ) : (
           <div className="h-72 w-full" role="img" aria-label="Grafico de cobertura por microarea">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--borda)" />
                 <XAxis
                   dataKey="microarea"
-                  tick={{ fontSize: 12, fill: '#757575' }}
+                  tick={{ fontSize: 12, fill: 'var(--texto-claro)' }}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 12, fill: '#757575' }}
+                  tick={{ fontSize: 12, fill: 'var(--texto-claro)' }}
                   tickLine={false}
                   axisLine={false}
                   domain={[0, 100]}
@@ -60,7 +60,7 @@ export default function CoberturaChart({ data, loading }: CoberturaChartProps) {
                   formatter={(value: number) => [`${value.toFixed(1)}%`, 'Cobertura']}
                   contentStyle={{
                     borderRadius: '8px',
-                    border: '1px solid #E0E0E0',
+                    border: '1px solid var(--borda)',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
                   }}
                 />

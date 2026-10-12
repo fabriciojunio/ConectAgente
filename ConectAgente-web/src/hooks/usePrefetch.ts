@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { cacheGet } from '@/lib/cache';
 import { enqueue } from '@/lib/requestQueue';
 
-// Service imports — cada chamada popula o cache automaticamente
+// Service imports, cada chamada popula o cache automaticamente
 import { getAgentes } from '@/services/agenteService';
 import { getFamilias, getFamiliasEmAtraso } from '@/services/familiaService';
 import { getVisitas, getEstatisticasVisitas } from '@/services/visitaService';
@@ -26,7 +26,7 @@ function prefetch(key: string, fn: () => Promise<unknown>): Promise<unknown> | n
 }
 
 /**
- * Estado global do prefetch — evita rodar 2x e permite
+ * Estado global do prefetch, evita rodar 2x e permite
  * que o componente de progresso leia o status.
  */
 let globalProgress = { loaded: 0, total: 0, done: false };

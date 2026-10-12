@@ -99,14 +99,14 @@ export default function RelatoriosPage() {
               className={`text-left rounded-xl border p-4 transition-all hover:shadow-md ${
                 selectedType === report.type
                   ? 'border-primary-500 ring-2 ring-primary-500/20 bg-primary-50/50'
-                  : 'border-gray-200 bg-white hover:border-gray-300'
+                  : 'border-[var(--borda-clara)] bg-[var(--superficie)] hover:border-[var(--borda)]'
               }`}
             >
               <div className={`p-2 rounded-lg w-fit ${report.color}`}>
                 <report.icon className="w-5 h-5" />
               </div>
-              <p className="text-sm font-semibold text-gray-900 mt-3">{report.label}</p>
-              <p className="text-xs text-gray-500 mt-1">{report.description}</p>
+              <p className="text-sm font-semibold text-[var(--texto)] mt-3">{report.label}</p>
+              <p className="text-xs text-[var(--texto-claro)] mt-1">{report.description}</p>
             </button>
           ))}
         </div>
@@ -128,7 +128,7 @@ export default function RelatoriosPage() {
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
                     selectedFormat === option.format
                       ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                      : 'border-[var(--borda-clara)] bg-[var(--superficie)] text-[var(--texto-medio)] hover:border-[var(--borda)]'
                   }`}
                 >
                   <option.icon className="w-4 h-4" />
@@ -154,14 +154,14 @@ export default function RelatoriosPage() {
 
           {/* Preview Table */}
           {previewData && previewData.length > 0 && (
-            <div className="bg-white rounded-xl border p-6">
+            <div className="bg-[var(--superficie)] rounded-xl border p-6">
               <h3 className="section-title">Pré-visualização</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b bg-gray-50">
+                    <tr className="border-b bg-[var(--superficie-alt)]">
                       {previewColumns.map((col) => (
-                        <th key={col} className="text-left px-4 py-3 font-medium text-gray-600">
+                        <th key={col} className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">
                           {col}
                         </th>
                       ))}
@@ -181,7 +181,7 @@ export default function RelatoriosPage() {
                 </table>
               </div>
               {previewData.length > 20 && (
-                <p className="text-xs text-gray-400 mt-3 text-center">
+                <p className="text-xs text-[var(--marcador)] mt-3 text-center">
                   Mostrando 20 de {previewData.length} registros. O arquivo completo será exportado.
                 </p>
               )}

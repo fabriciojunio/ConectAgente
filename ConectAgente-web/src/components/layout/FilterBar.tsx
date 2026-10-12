@@ -45,57 +45,57 @@ export function FilterBar({ variant = 'dashboard', className }: FilterBarProps) 
 
   return (
     <div
-      className={`bg-white border-b border-[#E5EAF2] px-6 py-3 flex flex-wrap items-end gap-3 ${className ?? ''}`}
+      className={`bg-[var(--superficie)] border-b border-[var(--borda-clara)] px-6 py-3 flex flex-wrap items-end gap-3 ${className ?? ''}`}
     >
-      <div className="flex items-center gap-2 text-[#6B7280] mr-1">
+      <div className="flex items-center gap-2 text-[var(--texto-claro)] mr-1">
         <SlidersHorizontal size={15} />
         <span className="text-xs font-medium">Filtros</span>
       </div>
 
       {fields.includes('periodo_inicio') && (
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium text-[#6B7280]">De</label>
+          <label className="text-[11px] font-medium text-[var(--texto-claro)]">De</label>
           <input
             type="date"
             value={filters.periodo_inicio ?? ''}
             onChange={(e) => setFilter('periodo_inicio', e.target.value || undefined)}
-            className="h-8 px-2 text-sm border border-[#D1D9E6] rounded-md text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/20 focus:border-[#1565C0]"
+            className="h-8 px-2 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/20 focus:border-[var(--primaria)]"
           />
         </div>
       )}
 
       {fields.includes('periodo_fim') && (
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium text-[#6B7280]">Até</label>
+          <label className="text-[11px] font-medium text-[var(--texto-claro)]">Até</label>
           <input
             type="date"
             value={filters.periodo_fim ?? ''}
             onChange={(e) => setFilter('periodo_fim', e.target.value || undefined)}
-            className="h-8 px-2 text-sm border border-[#D1D9E6] rounded-md text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/20 focus:border-[#1565C0]"
+            className="h-8 px-2 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/20 focus:border-[var(--primaria)]"
           />
         </div>
       )}
 
       {fields.includes('unidade_saude') && (
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium text-[#6B7280]">Unidade</label>
+          <label className="text-[11px] font-medium text-[var(--texto-claro)]">Unidade</label>
           <input
             type="text"
             placeholder="Todas"
             value={filters.unidade_saude ?? ''}
             onChange={(e) => setFilter('unidade_saude', e.target.value || undefined)}
-            className="h-8 px-2 text-sm border border-[#D1D9E6] rounded-md text-[#374151] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/20 focus:border-[#1565C0] w-40"
+            className="h-8 px-2 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/20 focus:border-[var(--primaria)] w-40"
           />
         </div>
       )}
 
       {fields.includes('status') && (
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium text-[#6B7280]">Status</label>
+          <label className="text-[11px] font-medium text-[var(--texto-claro)]">Status</label>
           <select
             value={filters.status ?? ''}
             onChange={(e) => setFilter('status', (e.target.value as never) || undefined)}
-            className="h-8 px-2 text-sm border border-[#D1D9E6] rounded-md text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/20 focus:border-[#1565C0] bg-white"
+            className="h-8 px-2 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/20 focus:border-[var(--primaria)] bg-[var(--superficie)]"
           >
             <option value="">Todos</option>
             {STATUS_OPTIONS.map((o) => (
@@ -110,7 +110,7 @@ export function FilterBar({ variant = 'dashboard', className }: FilterBarProps) 
       {hasActiveFilters && (
         <button
           onClick={resetFilters}
-          className="h-8 flex items-center gap-1.5 px-3 text-xs font-medium text-[#6B7280] hover:text-[#374151] border border-[#D1D9E6] rounded-md hover:bg-[#F4F6FA] transition-colors mt-auto"
+          className="h-8 flex items-center gap-1.5 px-3 text-xs font-medium text-[var(--texto-claro)] hover:text-[var(--texto-medio)] border border-[var(--borda)] rounded-md hover:bg-[var(--fundo)] transition-colors mt-auto"
         >
           <RotateCcw size={12} />
           Limpar

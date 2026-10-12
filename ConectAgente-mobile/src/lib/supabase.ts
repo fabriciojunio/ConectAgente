@@ -1,5 +1,5 @@
 /**
- * Cliente Supabase — backend gratuito e escalável.
+ * Cliente Supabase, backend gratuito e escalável.
  *
  * Supabase free tier:
  *   - 500 MB de banco de dados PostgreSQL

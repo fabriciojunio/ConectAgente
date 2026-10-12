@@ -40,7 +40,7 @@ const NAV_ITEMS = [
 
 export default function DemoPage() {
   return (
-    <div className="min-h-screen flex bg-[#F4F6FA]">
+    <div className="min-h-screen flex bg-[var(--fundo)]">
       <div
         style={{
           position: 'fixed',
@@ -48,7 +48,7 @@ export default function DemoPage() {
           left: 0,
           right: 0,
           zIndex: 50,
-          background: '#1565C0',
+          background: 'var(--primaria)',
           color: '#fff',
           textAlign: 'center',
           padding: '8px 16px',
@@ -56,7 +56,7 @@ export default function DemoPage() {
           fontWeight: 500,
         }}
       >
-        Modo Demonstração — dados simulados.{' '}
+        Modo Demonstração, dados simulados.{' '}
         <Link href="/login" className="underline font-semibold">
           Acessar sistema completo
         </Link>
@@ -64,7 +64,7 @@ export default function DemoPage() {
 
       {/* Sidebar */}
       <aside
-        className="hidden lg:flex flex-col bg-white border-r border-gray-200"
+        className="hidden lg:flex flex-col bg-[var(--superficie)] border-r border-[var(--borda-clara)]"
         style={{ width: 240, paddingTop: 40, flexShrink: 0 }}
       >
         <div className="px-4 pt-6 pb-4">
@@ -74,7 +74,7 @@ export default function DemoPage() {
                 width: 32,
                 height: 32,
                 borderRadius: 8,
-                background: '#1565C0',
+                background: 'var(--primaria)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -87,8 +87,8 @@ export default function DemoPage() {
               CA
             </div>
             <div>
-              <p style={{ fontWeight: 700, fontSize: 13, color: '#0D47A1', margin: 0 }}>ConectAgente</p>
-              <p style={{ fontSize: 10, color: '#9CA3AF', margin: 0 }}>Painel de Gestão</p>
+              <p style={{ fontWeight: 700, fontSize: 13, color: 'var(--primaria-escura)', margin: 0 }}>ConectAgente</p>
+              <p style={{ fontSize: 10, color: 'var(--marcador)', margin: 0 }}>Painel de Gestão</p>
             </div>
           </div>
 
@@ -104,8 +104,8 @@ export default function DemoPage() {
                   borderRadius: 8,
                   fontSize: 14,
                   cursor: 'default',
-                  background: item.active ? '#EEF2FF' : 'transparent',
-                  color: item.active ? '#1565C0' : '#6B7280',
+                  background: item.active ? 'var(--superficie-alt)' : 'transparent',
+                  color: item.active ? 'var(--primaria)' : 'var(--texto-claro)',
                   fontWeight: item.active ? 600 : 400,
                 }}
               >
@@ -123,7 +123,7 @@ export default function DemoPage() {
               alignItems: 'center',
               gap: 10,
               padding: '12px 0',
-              borderTop: '1px solid #E5E7EB',
+              borderTop: '1px solid var(--borda-clara)',
             }}
           >
             <div
@@ -131,11 +131,11 @@ export default function DemoPage() {
                 width: 32,
                 height: 32,
                 borderRadius: '50%',
-                background: '#EEF2FF',
+                background: 'var(--superficie-alt)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#1565C0',
+                color: 'var(--primaria)',
                 fontWeight: 700,
                 fontSize: 12,
                 flexShrink: 0,
@@ -144,8 +144,8 @@ export default function DemoPage() {
               D
             </div>
             <div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: 0 }}>Usuário Demo</p>
-              <p style={{ fontSize: 11, color: '#9CA3AF', margin: 0 }}>Supervisor</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--texto)', margin: 0 }}>Usuário Demo</p>
+              <p style={{ fontSize: 11, color: 'var(--marcador)', margin: 0 }}>Supervisor</p>
             </div>
           </div>
           <Link
@@ -156,7 +156,7 @@ export default function DemoPage() {
               gap: 8,
               padding: '8px 0',
               fontSize: 13,
-              color: '#6B7280',
+              color: 'var(--texto-claro)',
               textDecoration: 'none',
             }}
           >
@@ -171,7 +171,7 @@ export default function DemoPage() {
         <header
           style={{
             background: '#fff',
-            borderBottom: '1px solid #E5E7EB',
+            borderBottom: '1px solid var(--borda-clara)',
             padding: '16px 24px',
             display: 'flex',
             alignItems: 'center',
@@ -179,13 +179,13 @@ export default function DemoPage() {
           }}
         >
           <div>
-            <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#111827' }}>Dashboard</h1>
-            <p style={{ margin: 0, fontSize: 13, color: '#6B7280' }}>Visão geral das operações</p>
+            <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--texto)' }}>Dashboard</h1>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--texto-claro)' }}>Visão geral das operações</p>
           </div>
           <span
             style={{
-              background: '#EEF2FF',
-              color: '#1565C0',
+              background: 'var(--superficie-alt)',
+              color: 'var(--primaria)',
               fontSize: 12,
               fontWeight: 600,
               padding: '4px 12px',
@@ -201,8 +201,8 @@ export default function DemoPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 24 }}>
             {/* Visitas por semana */}
-            <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E5E7EB', padding: 24 }}>
-              <h3 style={{ margin: '0 0 16px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6B7280' }}>
+            <div style={{ background: '#fff', borderRadius: 12, border: '1px solid var(--borda-clara)', padding: 24 }}>
+              <h3 style={{ margin: '0 0 16px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--texto-claro)' }}>
                 Visitas por Semana (Mês Atual)
               </h3>
               {[
@@ -213,14 +213,14 @@ export default function DemoPage() {
               ].map(({ label, value }) => (
                 <div key={label} style={{ marginBottom: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
-                    <span style={{ color: '#6B7280' }}>{label}</span>
-                    <span style={{ fontWeight: 600, color: '#111827' }}>{value}</span>
+                    <span style={{ color: 'var(--texto-claro)' }}>{label}</span>
+                    <span style={{ fontWeight: 600, color: 'var(--texto)' }}>{value}</span>
                   </div>
-                  <div style={{ height: 8, background: '#F3F4F6', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ height: 8, background: 'var(--superficie-alt)', borderRadius: 4, overflow: 'hidden' }}>
                     <div
                       style={{
                         height: '100%',
-                        background: '#1565C0',
+                        background: 'var(--primaria)',
                         borderRadius: 4,
                         width: `${Math.round((value / 200) * 100)}%`,
                       }}
@@ -231,9 +231,9 @@ export default function DemoPage() {
             </div>
 
             {/* Top agentes */}
-            <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E5E7EB', padding: 24 }}>
-              <h3 style={{ margin: '0 0 16px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6B7280' }}>
-                Top Agentes — Visitas no Mês
+            <div style={{ background: '#fff', borderRadius: 12, border: '1px solid var(--borda-clara)', padding: 24 }}>
+              <h3 style={{ margin: '0 0 16px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--texto-claro)' }}>
+                Top Agentes, Visitas no Mês
               </h3>
               {[
                 { nome: 'Ana Silva', visitas: 48 },
@@ -248,11 +248,11 @@ export default function DemoPage() {
                       width: 28,
                       height: 28,
                       borderRadius: '50%',
-                      background: '#EEF2FF',
+                      background: 'var(--superficie-alt)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#1565C0',
+                      color: 'var(--primaria)',
                       fontWeight: 700,
                       fontSize: 11,
                       flexShrink: 0,
@@ -262,14 +262,14 @@ export default function DemoPage() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
-                      <span style={{ fontWeight: 500, color: '#374151' }}>{a.nome}</span>
-                      <span style={{ color: '#6B7280' }}>{a.visitas}</span>
+                      <span style={{ fontWeight: 500, color: 'var(--texto-medio)' }}>{a.nome}</span>
+                      <span style={{ color: 'var(--texto-claro)' }}>{a.visitas}</span>
                     </div>
-                    <div style={{ height: 6, background: '#F3F4F6', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ height: 6, background: 'var(--superficie-alt)', borderRadius: 3, overflow: 'hidden' }}>
                       <div
                         style={{
                           height: '100%',
-                          background: '#42A5F5',
+                          background: 'var(--primaria-clara)',
                           borderRadius: 3,
                           width: `${Math.round((a.visitas / 50) * 100)}%`,
                         }}
@@ -282,8 +282,8 @@ export default function DemoPage() {
           </div>
 
           {/* Visitas recentes */}
-          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #E5E7EB', padding: 24 }}>
-            <h3 style={{ margin: '0 0 16px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6B7280' }}>
+          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid var(--borda-clara)', padding: 24 }}>
+            <h3 style={{ margin: '0 0 16px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--texto-claro)' }}>
               Visitas Recentes
             </h3>
             {[
@@ -300,12 +300,12 @@ export default function DemoPage() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '12px 0',
-                  borderBottom: i < 4 ? '1px solid #F9FAFB' : 'none',
+                  borderBottom: i < 4 ? '1px solid var(--superficie-alt)' : 'none',
                 }}
               >
                 <div>
-                  <p style={{ margin: 0, fontSize: 14, fontWeight: 500, color: '#111827' }}>{v.familia}</p>
-                  <p style={{ margin: 0, fontSize: 12, color: '#9CA3AF' }}>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 500, color: 'var(--texto)' }}>{v.familia}</p>
+                  <p style={{ margin: 0, fontSize: 12, color: 'var(--marcador)' }}>
                     {v.agente} - {v.data}
                   </p>
                 </div>
@@ -315,8 +315,8 @@ export default function DemoPage() {
                     fontWeight: 500,
                     padding: '3px 10px',
                     borderRadius: 999,
-                    background: v.status === 'Realizada' ? '#F0FDF4' : '#FFFBEB',
-                    color: v.status === 'Realizada' ? '#15803D' : '#B45309',
+                    background: v.status === 'Realizada' ? 'var(--sucesso-claro)' : 'var(--alerta-claro)',
+                    color: v.status === 'Realizada' ? 'var(--sucesso)' : 'var(--alerta)',
                   }}
                 >
                   {v.status}

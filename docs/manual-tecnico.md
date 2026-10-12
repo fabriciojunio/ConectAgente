@@ -6,9 +6,9 @@ rodar o projeto, o ponto de entrada é o [README](../README.md).
 Dois assuntos saíram deste arquivo porque mudam com frequência e precisam ser
 lidos sozinhos:
 
-- **[seguranca.md](seguranca.md)** — o modelo de segurança e os defeitos
+- **[seguranca.md](seguranca.md)**, o modelo de segurança e os defeitos
   encontrados e corrigidos, com a mensagem que o banco devolveu em cada caso.
-- **[lgpd.md](lgpd.md)** — o que está implementado e o que apenas está escrito.
+- **[lgpd.md](lgpd.md)**, o que está implementado e o que apenas está escrito.
 
 ---
 

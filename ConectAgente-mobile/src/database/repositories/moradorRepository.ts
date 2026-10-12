@@ -178,7 +178,7 @@ export const moradorRepository = {
     return row?.count ?? 0;
   },
 
-  // ADMIN — sem filtro por agente_id
+  // ADMIN: sem filtro por agente_id
   async listarTodos(filtroAgenteId?: string): Promise<Array<Morador & { agente_nome?: string }>> {
     const db = await getDatabase();
     const sql = filtroAgenteId

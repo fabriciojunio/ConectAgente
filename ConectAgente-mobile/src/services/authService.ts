@@ -1,5 +1,5 @@
 /**
- * Serviço de autenticação — offline-first.
+ * Serviço de autenticação, offline-first.
  * Login funciona 100% offline via SQLite local.
  * Quando online, sincroniza com o servidor.
  */
@@ -19,7 +19,7 @@ export interface SessionData {
 
 export const authService = {
   /**
-   * Login — tenta local primeiro, depois sincroniza com servidor se online.
+   * Login, tenta local primeiro, depois sincroniza com servidor se online.
    */
   async login(cpf: string, senha: string): Promise<SessionData> {
     // 1. Autenticar localmente (funciona offline)
@@ -144,7 +144,7 @@ export const authService = {
   },
 
   /**
-   * Logout — limpa todos os dados de sessão.
+   * Logout, limpa todos os dados de sessão.
    */
   async logout(): Promise<void> {
     clearEncryptionKeyCache();
@@ -165,7 +165,7 @@ export const authService = {
   },
 
   /**
-   * Primeiro acesso — cadastro local do agente.
+   * Primeiro acesso, cadastro local do agente.
    */
   async cadastrarAgente(data: {
     nome: string;

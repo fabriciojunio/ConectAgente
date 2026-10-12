@@ -2,8 +2,8 @@
  * Cache hibrido: memoria + localStorage
  * Com suporte a "stale-while-revalidate":
  *
- * - cacheGet(key)       → dados frescos (< 10 min) — usado pelos services
- * - cacheGetStale(key)  → dados antigos (< 24h) — usado pelas paginas para exibir instantaneamente
+ * - cacheGet(key)       → dados frescos (< 10 min), usado pelos services
+ * - cacheGetStale(key)  → dados antigos (< 24h), usado pelas paginas para exibir instantaneamente
  * - cacheSet(key, data) → salva em memoria + localStorage
  *
  * Para evitar erro de hidratacao (SSR vs Client):
@@ -53,7 +53,7 @@ export function markHydrated() { _hydrated = true; }
 
 /**
  * Retorna dados FRESCOS (< 10 min).
- * Usado pelos services — se retorna null, o service faz request nova.
+ * Usado pelos services, se retorna null, o service faz request nova.
  * NAO tem guard de hidratacao (services podem rodar a qualquer momento).
  */
 export function cacheGet<T>(key: string, ttlMs = FRESH_TTL): T | null {

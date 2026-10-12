@@ -106,7 +106,16 @@ export const STATUS_LABELS: Record<StatusVisita, string> = {
 // Chart Colors
 // ---------------------------------------------------------------------------
 
-/** Color palette for recharts graphs */
+/**
+ * Paleta das séries dos gráficos.
+ *
+ * Estas ficam em hexadecimal de propósito, e não viram variável de tema como
+ * o resto do painel. A cor aqui codifica a categoria do dado, não a
+ * aparência: se ela mudasse entre o tema claro e o escuro, a mesma série
+ * trocaria de cor ao trocar o tema, e quem está lendo o gráfico perderia a
+ * referência. Todas são tom 600, que tem contraste suficiente nos dois
+ * fundos.
+ */
 export const COLORS = [
   '#2563eb', // blue-600
   '#16a34a', // green-600

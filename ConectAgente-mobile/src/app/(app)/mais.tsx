@@ -5,15 +5,33 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
-import { useTheme, ThemeColors } from '../../contexts/ThemeContext';
+import { useTheme, ThemeColors, ThemeMode } from '../../contexts/ThemeContext';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Card } from '../../components/ui/Card';
 import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
 import { BASE_LEGAL_LGPD } from '../../utils/lgpd';
 
+/**
+ * As tres opcoes que o ThemeContext ja suportava.
+ *
+ * O contexto tinha paleta clara, paleta escura e `setMode` desde o inicio, e
+ * nenhuma tela chamava `setMode`: dava para o aparelho mudar sozinho pelo
+ * tema do sistema, mas a pessoa nao tinha como escolher. Faltava so o
+ * controle.
+ */
+const OPCOES_TEMA: Array<{
+  valor: ThemeMode;
+  rotulo: string;
+  icone: React.ComponentProps<typeof Ionicons>['name'];
+}> = [
+  { valor: 'light', rotulo: 'Claro', icone: 'sunny-outline' },
+  { valor: 'dark', rotulo: 'Escuro', icone: 'moon-outline' },
+  { valor: 'system', rotulo: 'Sistema', icone: 'phone-portrait-outline' },
+];
+
 export default function Mais() {
   const { agente, logout } = useAuth();
-  const { colors } = useTheme();
+  const { colors, mode, setMode, isDark } = useTheme();
   const [photoUri, setPhotoUri] = useState<string | null>(null);
 
   useEffect(() => {
@@ -53,6 +71,55 @@ export default function Mais() {
           <MenuItem icon="search-outline" label="Buscar paciente" onPress={() => router.push({ pathname: '/(app)/busca', params: { backTo: '/(app)/mais' } })} colors={colors} />
           <MenuItem icon="document-text-outline" label="Relatórios" onPress={() => router.push({ pathname: '/(app)/relatorios', params: { backTo: '/(app)/mais' } })} colors={colors} />
           <MenuItem icon="bar-chart-outline" label="Controle de metas" onPress={() => router.push({ pathname: '/(app)/metas', params: { backTo: '/(app)/mais' } })} colors={colors} />
+        </Card>
+
+        {/* APARÊNCIA */}
+        <Card>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Aparência</Text>
+          <Text style={[styles.aparenciaAjuda, { color: colors.textLight }]}>
+            O tema escuro ajuda em visita no fim do dia e gasta menos bateria em
+            tela OLED.
+          </Text>
+          <View style={styles.temaLinha}>
+            {OPCOES_TEMA.map((opcao) => {
+              const selecionado = mode === opcao.valor;
+              return (
+                <TouchableOpacity
+                  key={opcao.valor}
+                  onPress={() => setMode(opcao.valor)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: selecionado }}
+                  accessibilityLabel={`Tema ${opcao.rotulo}`}
+                  style={[
+                    styles.temaBotao,
+                    {
+                      backgroundColor: selecionado ? colors.primaryLight : colors.surfaceAlt,
+                      borderColor: selecionado ? colors.primary : colors.borderLight,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={opcao.icone}
+                    size={20}
+                    color={selecionado ? colors.primary : colors.textLight}
+                  />
+                  <Text
+                    style={[
+                      styles.temaRotulo,
+                      { color: selecionado ? colors.primary : colors.textMedium },
+                    ]}
+                  >
+                    {opcao.rotulo}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <Text style={[styles.temaAtual, { color: colors.placeholder }]}>
+            {mode === 'system'
+              ? `Seguindo o aparelho, que está em ${isDark ? 'escuro' : 'claro'}`
+              : `Fixo em ${isDark ? 'escuro' : 'claro'}`}
+          </Text>
         </Card>
 
         {/* LGPD */}
@@ -123,6 +190,32 @@ const styles = StyleSheet.create({
   profileName: { fontSize: FONT_SIZE.lg, fontWeight: '700' },
   profileRole: { fontSize: FONT_SIZE.sm },
   profileUnit: { fontSize: FONT_SIZE.xs },
+  aparenciaAjuda: {
+    fontSize: FONT_SIZE.sm,
+    lineHeight: 18,
+    marginBottom: SPACING.md,
+  },
+  temaLinha: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  temaBotao: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: SPACING.md,
+    borderRadius: RADIUS.md,
+    borderWidth: 1.5,
+  },
+  temaRotulo: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: '600',
+  },
+  temaAtual: {
+    fontSize: FONT_SIZE.xs,
+    marginTop: SPACING.sm,
+    textAlign: 'center',
+  },
   sectionTitle: { fontSize: FONT_SIZE.md, fontWeight: '700', marginBottom: SPACING.sm },
   menuItem: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.md,

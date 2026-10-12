@@ -20,13 +20,13 @@ export function EmptyState({ icon, title, description, action, className }: Empt
       )}
     >
       {icon && (
-        <div className="mb-4 text-gray-400" aria-hidden="true">
+        <div className="mb-4 text-[var(--marcador)]" aria-hidden="true">
           {icon}
         </div>
       )}
-      <h3 className="text-lg font-medium text-gray-900">{title}</h3>
+      <h3 className="text-lg font-medium text-[var(--texto)]">{title}</h3>
       {description && (
-        <p className="mt-1 max-w-sm text-sm text-gray-500">{description}</p>
+        <p className="mt-1 max-w-sm text-sm text-[var(--texto-claro)]">{description}</p>
       )}
       {action && <div className="mt-6">{action}</div>}
     </div>

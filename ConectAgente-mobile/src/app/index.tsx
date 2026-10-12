@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 /**
- * Rota raiz — redireciona para login, app ou painel admin dependendo do estado de autenticação.
+ * Rota raiz, redireciona para login, app ou painel admin dependendo do estado de autenticação.
  */
 export default function Index() {
   const { isAuthenticated, isLoading, isAdmin } = useAuth();

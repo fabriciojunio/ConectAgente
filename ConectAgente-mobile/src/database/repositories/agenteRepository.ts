@@ -15,7 +15,7 @@ import { SECURE_KEYS } from '../../utils/constants';
 const ADMIN_CPF = '11144477735';
 
 // ============================================================
-// RATE LIMITING — proteção contra força bruta
+// RATE LIMITING: proteção contra força bruta
 // In-memory: persiste enquanto o processo estiver ativo.
 // ============================================================
 
@@ -29,7 +29,7 @@ function _isLocked(cpf: string): boolean {
   if (!entry) return false;
   if (entry.lockedUntil === 0) return false; // ainda acumulando falhas, sem bloqueio ativo
   if (entry.lockedUntil > Date.now()) return true;
-  _loginAttempts.delete(cpf); // bloqueio expirou — reseta contador
+  _loginAttempts.delete(cpf); // bloqueio expirou, reseta contador
   return false;
 }
 
@@ -46,7 +46,7 @@ function _clearFailures(cpf: string): void {
   _loginAttempts.delete(cpf);
 }
 
-/** Limpa todo o estado de rate limiting — USE APENAS EM TESTES. */
+/** Limpa todo o estado de rate limiting. USE APENAS EM TESTES. */
 export function _resetLoginAttemptsForTesting(): void {
   _loginAttempts.clear();
 }
@@ -95,7 +95,7 @@ export const agenteRepository = {
   },
 
   async autenticar(cpf: string, senha: string): Promise<Agente | null> {
-    // 1. Rate limiting — bloqueia após MAX_LOGIN_ATTEMPTS falhas
+    // 1. Rate limiting, bloqueia após MAX_LOGIN_ATTEMPTS falhas
     if (_isLocked(cpf)) {
       throw new Error('Conta temporariamente bloqueada. Tente novamente em 15 minutos.');
     }
@@ -117,7 +117,7 @@ export const agenteRepository = {
       return null;
     }
 
-    // 3. Login bem-sucedido — limpa contagem de falhas
+    // 3. Login bem-sucedido, limpa contagem de falhas
     _clearFailures(cpf);
 
     // 4. Migração automática: formato legado (sem salt) → formato novo
@@ -169,7 +169,7 @@ export const agenteRepository = {
 
   /**
    * Verifica identidade do agente pelo CPF + e-mail cadastrado.
-   * Retorna true se a combinação é válida (sem revelar qual campo é inválido — LGPD).
+   * Retorna true se a combinação é válida (sem revelar qual campo é inválido, LGPD).
    */
   async verificarIdentidade(cpf: string, email: string): Promise<boolean> {
     const db = await getDatabase();

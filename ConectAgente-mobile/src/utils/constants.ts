@@ -3,7 +3,7 @@
 // ============================================================
 
 export const COLORS = {
-  // Paleta principal — azul saúde pública
+  // Paleta principal, azul saúde pública
   primary: '#1565C0',
   primaryDark: '#0D47A1',
   primaryLight: '#42A5F5',

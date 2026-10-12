@@ -1,6 +1,6 @@
 /**
  * Conexão com banco de dados SQLite local (expo-sqlite v15).
- * Singleton pattern — uma única conexão por app.
+ * Singleton pattern, uma única conexão por app.
  */
 import * as SQLite from 'expo-sqlite';
 import { CREATE_TABLES_SQL } from './schema';
@@ -35,7 +35,7 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
         try {
           await db.execAsync(sql);
         } catch (err) {
-          // Ignora apenas "duplicate column" / "already exists" — outros erros são relançados
+          // Ignora apenas "duplicate column" / "already exists", outros erros são relançados
           const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
           if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
             throw err;
