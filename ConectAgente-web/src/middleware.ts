@@ -104,19 +104,16 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Set security headers
-  response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set('X-XSS-Protection', '1; mode=block');
-  response.headers.set(
-    'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=()',
-  );
-  response.headers.set(
-    'Strict-Transport-Security',
-    'max-age=31536000; includeSubDomains',
-  );
+  // Os cabecalhos de seguranca saem do `next.config.ts`, num lugar so.
+  //
+  // Eles estavam declarados aqui tambem, com valores diferentes: o HSTS daqui
+  // dizia 31536000 contra 63072000 do config, e o Permissions-Policy daqui
+  // nao travava `payment` nem `usb`. Como o middleware escreve depois, quem
+  // valia era o valor mais fraco, e o config dava a impressao de proteger
+  // mais do que protegia.
+  //
+  // Cabecalho de seguranca definido em dois lugares e cabecalho que ninguem
+  // sabe qual vale.
 
   return response;
 }
