@@ -30,6 +30,52 @@ const PUBLIC_ROUTES = ['/login', '/registro', '/demo'];
 const ROTAS_SEM_AUTENTICACAO = ['/api/health', '/robots.txt', '/favicon.ico'];
 
 /**
+ * Monta a politica de seguranca de conteudo com um nonce novo por requisicao.
+ *
+ * Por que trocar `'unsafe-inline'` por nonce. Com `'unsafe-inline'`, qualquer
+ * script que um atacante consiga injetar na pagina executa: a politica diz ao
+ * navegador que script embutido e aceitavel, e ele nao tem como distinguir o
+ * do Next do injetado. Isso transforma um XSS pequeno em leitura do prontuario
+ * de todos os pacientes, porque o script roda com a sessao de quem esta
+ * logado.
+ *
+ * Com nonce, so executa o script que carrega o valor sorteado nesta
+ * requisicao. O atacante nao tem como adivinhar: o valor muda a cada
+ * resposta e nunca aparece em lugar que ele consiga ler.
+ *
+ * `'strict-dynamic'` acompanha porque o Next carrega o resto do pacote a
+ * partir do script inicial. Sem ele, cada pedaco carregado dinamicamente
+ * seria bloqueado.
+ *
+ * O `style-src` continua com `'unsafe-inline'`: o Tailwind e o `next/font`
+ * injetam estilo embutido, e nao ha caminho de nonce para estilo no Next hoje.
+ * Estilo injetado tem superficie de ataque muito menor que script, e o resto
+ * da politica continua fechando o que importa.
+ */
+function montarCsp(nonce: string, desenvolvimento: boolean): string {
+  const script = desenvolvimento
+    ? // `unsafe-eval` e exigido pelo Fast Refresh, e so existe em
+      // desenvolvimento. `unsafe-inline` fica junto porque navegador que
+      // entende nonce ignora, e o que nao entende precisa dele.
+      `script-src 'self' 'unsafe-eval' 'unsafe-inline' 'nonce-${nonce}' 'strict-dynamic'`
+    : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`;
+
+  return [
+    "default-src 'self'",
+    script,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "img-src 'self' data: blob: https://*.supabase.co",
+    "font-src 'self' https://fonts.gstatic.com",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    ...(desenvolvimento ? [] : ['upgrade-insecure-requests']),
+  ].join('; ');
+}
+
+/**
  * Next.js middleware for authentication, role-based access control,
  * and security headers.
  *
@@ -49,6 +95,30 @@ export async function middleware(request: NextRequest) {
   // prontuario em nome de quem esta logado. O Next protege Server Action por
   // conta propria, mas nao cobre rota de API, e defesa que depende de uma
   // camada so some quando aquela camada muda.
+  // Nonce novo a cada requisicao. O Next le o cabecalho `x-nonce` e carimba
+  // os proprios scripts com ele, entao a politica pode recusar todo o resto.
+  //
+  // Calculado antes da barreira de CSRF de proposito: a resposta 403 tem
+  // corpo, e resposta com corpo sem politica e resposta sem protecao.
+  const nonce = crypto.randomUUID().replace(/-/g, '');
+  const csp = montarCsp(nonce, process.env.NODE_ENV === 'development');
+
+  const cabecalhosDaRequisicao = new Headers(request.headers);
+  cabecalhosDaRequisicao.set('x-nonce', nonce);
+  cabecalhosDaRequisicao.set('Content-Security-Policy', csp);
+
+  /**
+   * Carimba a politica em qualquer resposta que sai daqui.
+   *
+   * Existe porque havia tres caminhos de saida sem ela: o 403 do CSRF e os
+   * dois redirecionamentos de sessao. Cabecalho de seguranca que depende de
+   * qual `return` a requisicao pegou e cabecalho que falta em producao.
+   */
+  const comCsp = (resposta: NextResponse) => {
+    resposta.headers.set('Content-Security-Policy', csp);
+    return resposta;
+  };
+
   const csrf = validarOrigem(
     request.method,
     request.headers.get('origin'),
@@ -56,13 +126,12 @@ export async function middleware(request: NextRequest) {
     request.headers.get('host')
   );
   if (!csrf.permitido) {
-    return new NextResponse(csrf.motivo, { status: csrf.status });
+    return comCsp(new NextResponse(csrf.motivo, { status: csrf.status }));
   }
 
-  // Create a response that we can modify
-  let response = NextResponse.next({
-    request: { headers: request.headers },
-  });
+  let response = comCsp(
+    NextResponse.next({ request: { headers: cabecalhosDaRequisicao } })
+  );
 
   // Create Supabase client with cookie handling for middleware
   const supabase = createServerClient(
@@ -77,9 +146,13 @@ export async function middleware(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }: { name: string; value: string }) => {
             request.cookies.set(name, value);
           });
-          response = NextResponse.next({
-            request: { headers: request.headers },
-          });
+          // `cabecalhosDaRequisicao`, e nao `request.headers`: o nonce vive
+          // ali. Com o original, o Next renderiza sem carimbar os scripts e a
+          // politica sai de cena justamente na renovacao de token, ou seja no
+          // caminho de quem esta logado.
+          response = comCsp(
+            NextResponse.next({ request: { headers: cabecalhosDaRequisicao } })
+          );
           cookiesToSet.forEach(({ name, value, options }: { name: string; value: string; options?: Record<string, unknown> }) => {
             response.cookies.set(name, value, options);
           });
@@ -106,12 +179,12 @@ export async function middleware(request: NextRequest) {
   if (!user && !isPublicRoute) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
+    return comCsp(NextResponse.redirect(loginUrl));
   }
 
   // Redirect authenticated users away from login
   if (user && isPublicRoute) {
-    return NextResponse.redirect(new URL('/', request.url));
+    return comCsp(NextResponse.redirect(new URL('/', request.url)));
   }
 
   // Role-based access control for admin routes
@@ -127,7 +200,7 @@ export async function middleware(request: NextRequest) {
     // CHECK de agentes.role nao aceita: nenhum usuario real tinha esse papel,
     // entao o portao redirecionava todo mundo, inclusive gerente.
     if (!agente || !['admin', 'gerente'].includes(agente.role)) {
-      return NextResponse.redirect(new URL('/', request.url));
+      return comCsp(NextResponse.redirect(new URL('/', request.url)));
     }
   }
 
