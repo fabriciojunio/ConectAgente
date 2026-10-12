@@ -56,6 +56,21 @@ encerrar() {
 trap encerrar EXIT
 
 echo "==> criando cluster temporario em $PGDATA (porta $PORTA)"
+# No Linux, o PostgreSQL cria o socket em /var/run/postgresql, onde o usuario
+# comum nao escreve. Nos runners do GitHub isso derruba o servidor com
+#
+#   FATAL: could not create lock file "/var/run/postgresql/.s.PGSQL.NNNNN.lock":
+#          Permission denied
+#
+# Apontar o socket para o proprio diretorio de dados resolve. No Windows nao
+# ha socket Unix, e o caminho aqui e do MSYS (/c/tmp/...), que o PostgreSQL do
+# Windows nao entende: passar a opcao la derruba o servidor tambem. Por isso a
+# opcao so entra fora do Windows.
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) OPCAO_SOCKET="" ;;
+  *)                    OPCAO_SOCKET="-c unix_socket_directories=$PGDATA" ;;
+esac
+
 rm -rf "$PGDATA"; mkdir -p "$PGDATA"
 
 "$PSQL" --version || { echo "psql nao executa em $PGBIN"; exit 1; }
@@ -68,7 +83,7 @@ if ! "$INITDB" -D "$PGDATA" -U postgres -A trust -E UTF8 --locale=C \
   echo "FALHOU ao criar o cluster:"; tail -20 "$PGDATA.initdb.log"; exit 1
 fi
 
-if ! "$PGCTL" -D "$PGDATA" -o "-p $PORTA -c listen_addresses=localhost" \
+if ! "$PGCTL" -D "$PGDATA" -o "-p $PORTA -c listen_addresses=localhost $OPCAO_SOCKET" \
      -l "$PGDATA/log.txt" -w start > "$PGDATA.pgctl.log" 2>&1; then
   echo "FALHOU ao subir o servidor:"; tail -20 "$PGDATA.pgctl.log"
   [ -f "$PGDATA/log.txt" ] && tail -20 "$PGDATA/log.txt"
