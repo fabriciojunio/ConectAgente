@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { validarOrigem } from '@/lib/csrf';
 
 /** Rotas que exigem papel de gerente ou admin */
 const ADMIN_ROUTES = ['/admin', '/admin/usuarios'];
@@ -18,6 +19,24 @@ const PUBLIC_ROUTES = ['/login', '/registro', '/demo'];
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Barreira anti-CSRF antes de qualquer outra coisa.
+  //
+  // Server Action e rota de API sao endpoints HTTP, e o navegador manda o
+  // cookie de sessao em requisicao disparada de outro site. Sem conferir a
+  // origem, uma pagina maliciosa aberta noutra aba consegue escrever no
+  // prontuario em nome de quem esta logado. O Next protege Server Action por
+  // conta propria, mas nao cobre rota de API, e defesa que depende de uma
+  // camada so some quando aquela camada muda.
+  const csrf = validarOrigem(
+    request.method,
+    request.headers.get('origin'),
+    request.headers.get('referer'),
+    request.headers.get('host')
+  );
+  if (!csrf.permitido) {
+    return new NextResponse(csrf.motivo, { status: csrf.status });
+  }
 
   // Create a response that we can modify
   let response = NextResponse.next({
