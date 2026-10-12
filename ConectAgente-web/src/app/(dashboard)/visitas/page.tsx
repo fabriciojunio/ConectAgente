@@ -24,13 +24,13 @@ import {
 
 function SkeletonRows() {
   return (
-    <div className="bg-white rounded-xl border overflow-hidden">
+    <div className="bg-[var(--superficie)] rounded-xl border overflow-hidden">
       {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="flex gap-4 px-4 py-3 border-b last:border-0 animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/6" />
-          <div className="h-4 bg-gray-200 rounded w-1/4" />
-          <div className="h-4 bg-gray-200 rounded w-1/3" />
-          <div className="h-4 bg-gray-200 rounded w-1/5" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/6" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/4" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/3" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/5" />
         </div>
       ))}
     </div>
@@ -103,7 +103,7 @@ export default function VisitasPage() {
     : visitas;
 
   const statCards = [
-    { label: 'Total', value: estatisticas.total, icon: ClipboardList, color: 'text-gray-700' },
+    { label: 'Total', value: estatisticas.total, icon: ClipboardList, color: 'text-[var(--texto-medio)]' },
     { label: 'Realizadas', value: estatisticas.realizadas, icon: CheckCircle, color: 'text-green-600' },
     { label: 'Pendentes', value: estatisticas.agendadas, icon: Clock, color: 'text-yellow-600' },
     { label: 'Taxa de Conclusão', value: `${estatisticas.taxa_conclusao}%`, icon: TrendingUp, color: 'text-primary-600' },
@@ -121,14 +121,14 @@ export default function VisitasPage() {
       {/* Stats Cards */}
       <div className="card-grid">
         {statCards.map((stat) => (
-          <div key={stat.label} className="bg-white rounded-xl border p-4">
+          <div key={stat.label} className="bg-[var(--superficie)] rounded-xl border p-4">
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg bg-gray-50 ${stat.color}`}>
+              <div className={`p-2 rounded-lg bg-[var(--superficie-alt)] ${stat.color}`}>
                 <stat.icon className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">{stat.label}</p>
-                <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+                <p className="text-sm text-[var(--texto-claro)]">{stat.label}</p>
+                <p className="text-xl font-bold text-[var(--texto)]">{stat.value}</p>
               </div>
             </div>
           </div>
@@ -144,13 +144,13 @@ export default function VisitasPage() {
       {/* Search and Export */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--marcador)]" />
           <input
             type="text"
             placeholder="Buscar por agente, endereço ou bairro..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none"
+            className="w-full pl-10 pr-4 py-2 rounded-lg border border-[var(--borda)] text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none"
           />
         </div>
         <div className="flex gap-2">
@@ -174,18 +174,18 @@ export default function VisitasPage() {
           description="Não foram encontradas visitas com os filtros selecionados."
         />
       ) : (
-        <div className="bg-white rounded-xl border overflow-hidden">
+        <div className="bg-[var(--superficie)] rounded-xl border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-gray-50">
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Data</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Agente</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Endereço</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Bairro</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">Observações</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Ações</th>
+                <tr className="border-b bg-[var(--superficie-alt)]">
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Data</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Agente</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden md:table-cell">Endereço</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden lg:table-cell">Bairro</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Status</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden xl:table-cell">Observações</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -194,7 +194,7 @@ export default function VisitasPage() {
                   return (
                     <tr
                       key={visita.id}
-                      className="border-b last:border-0 hover:bg-gray-50 cursor-pointer transition-colors"
+                      className="border-b last:border-0 hover:bg-[var(--superficie-alt)] cursor-pointer transition-colors"
                       onClick={() => setSelectedVisita(visita)}
                     >
                       <td className="px-4 py-3 whitespace-nowrap">
@@ -237,8 +237,8 @@ export default function VisitasPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t bg-gray-50">
-              <p className="text-sm text-gray-500">
+            <div className="flex items-center justify-between px-4 py-3 border-t bg-[var(--superficie-alt)]">
+              <p className="text-sm text-[var(--texto-claro)]">
                 Página {page} de {totalPages}
               </p>
               <div className="flex gap-2">
@@ -267,12 +267,12 @@ export default function VisitasPage() {
       {/* Detail Dialog */}
       {selectedVisita && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-[var(--superficie)] rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b">
               <h2 className="text-lg font-semibold">Detalhes da Visita</h2>
               <button
                 onClick={() => setSelectedVisita(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-[var(--marcador)] hover:text-[var(--texto-claro)]"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -280,11 +280,11 @@ export default function VisitasPage() {
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-gray-500">Data</p>
+                  <p className="text-xs text-[var(--texto-claro)]">Data</p>
                   <p className="font-medium">{formatDate(selectedVisita.data_visita)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Status</p>
+                  <p className="text-xs text-[var(--texto-claro)]">Status</p>
                   <span
                     className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       statusConfig[selectedVisita.status]?.className ?? ''
@@ -294,16 +294,16 @@ export default function VisitasPage() {
                   </span>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Agente</p>
+                  <p className="text-xs text-[var(--texto-claro)]">Agente</p>
                   <p className="font-medium">{selectedVisita.agente?.nome ?? '-'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Morador</p>
+                  <p className="text-xs text-[var(--texto-claro)]">Morador</p>
                   <p className="font-medium">{selectedVisita.morador?.nome ?? '-'}</p>
                 </div>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Endereço</p>
+                <p className="text-xs text-[var(--texto-claro)]">Endereço</p>
                 <p className="font-medium">
                   {selectedVisita.residencia
                     ? `${selectedVisita.residencia.logradouro}, ${selectedVisita.residencia.numero} - ${selectedVisita.residencia.bairro}`
@@ -311,8 +311,8 @@ export default function VisitasPage() {
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Observações</p>
-                <p className="text-gray-700">{selectedVisita.observacoes || 'Sem observações'}</p>
+                <p className="text-xs text-[var(--texto-claro)]">Observações</p>
+                <p className="text-[var(--texto-medio)]">{selectedVisita.observacoes || 'Sem observações'}</p>
               </div>
             </div>
           </div>

@@ -13,7 +13,7 @@ describe('Card', () => {
     const card = container.firstChild as HTMLElement;
     expect(card.className).toContain('rounded-lg');
     expect(card.className).toContain('border');
-    expect(card.className).toContain('bg-white');
+    expect(card.className).toContain('bg-[var(--superficie)]');
   });
 
   it('applies custom className', () => {
@@ -61,7 +61,7 @@ describe('CardDescription', () => {
     render(<CardDescription>Desc</CardDescription>);
     const el = screen.getByText('Desc');
     expect(el.className).toContain('text-sm');
-    expect(el.className).toContain('text-gray-500');
+    expect(el.className).toContain('text-[var(--texto-claro)]');
   });
 });
 

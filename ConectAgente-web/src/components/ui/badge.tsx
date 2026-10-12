@@ -14,7 +14,7 @@ const badgeVariants = cva(
         warning: 'bg-warning-50 text-warning-700',
         danger: 'bg-danger-50 text-danger-700',
         info: 'bg-info-50 text-info-700',
-        outline: 'border border-gray-300 text-gray-700 bg-transparent',
+        outline: 'border border-[var(--borda)] text-[var(--texto-medio)] bg-transparent',
       },
     },
     defaultVariants: {

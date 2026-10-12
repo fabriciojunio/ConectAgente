@@ -152,7 +152,7 @@ export const residenciaRepository = {
     return rows.map(mapRowToResidencia);
   },
 
-  // ADMIN — sem filtro por agente_id
+  // ADMIN: sem filtro por agente_id
   async listarTodos(filtroAgenteId?: string): Promise<Array<Residencia & { agente_nome?: string }>> {
     const db = await getDatabase();
     const sql = filtroAgenteId

@@ -66,7 +66,7 @@ export default function RecentVisitas({ visitas, loading }: RecentVisitasProps) 
         {loading ? (
           <SkeletonTable rows={5} columns={5} />
         ) : recentVisitas.length === 0 ? (
-          <p className="py-8 text-center text-sm text-gray-500">
+          <p className="py-8 text-center text-sm text-[var(--texto-claro)]">
             Nenhuma visita recente encontrada.
           </p>
         ) : (

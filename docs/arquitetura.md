@@ -1,4 +1,4 @@
-# Arquitetura — ConectAgente
+# Arquitetura, ConectAgente
 
 ## Visão Geral
 
@@ -14,12 +14,12 @@ Sistema offline-first para Agentes Comunitários de Saúde (ACS) do SUS, com app
 ┌──────────────────────────────────────────────────────────────┐
 │              ConectAgente-mobile (React Native + Expo)       │
 │                                                              │
-│  src/app/      — Telas (Expo Router File-System)             │
-│  src/database/ — SQLite (drizzle-orm) — dados offline        │
-│  src/contexts/ — Auth, Network, Sync, Theme                  │
-│  src/hooks/    — useMoradores, useVisitas, useMetas          │
-│  src/services/ — Sync, Export, CEP, Notifications            │
-│  src/utils/    — encryption (AES-256), lgpd, formatters      │
+│  src/app/, Telas (Expo Router File-System)             │
+│  src/database/, SQLite (drizzle-orm), dados offline        │
+│  src/contexts/, Auth, Network, Sync, Theme                  │
+│  src/hooks/, useMoradores, useVisitas, useMetas          │
+│  src/services/, Sync, Export, CEP, Notifications            │
+│  src/utils/, encryption (AES-256), lgpd, formatters      │
 └──────────┬───────────────────────────────────────────────────┘
            │ HTTPS (quando online)
            │ Sync bidirecional via SyncContext
@@ -31,7 +31,7 @@ Sistema offline-first para Agentes Comunitários de Saúde (ACS) do SUS, com app
                │ Next.js API Routes
                ▼
 ┌──────────────────────────────────────────────────────────────┐
-│         ConectAgente-web (Next.js — Portal Admin)            │
+│         ConectAgente-web (Next.js, Portal Admin)            │
 │  Dashboard de equipe │ Gestão de agentes │ Relatórios        │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -41,7 +41,7 @@ Sistema offline-first para Agentes Comunitários de Saúde (ACS) do SUS, com app
 1. **SQLite local**: todos os dados são gravados localmente primeiro (drizzle-orm)
 2. **SyncQueue**: operações pendentes são enfileiradas quando offline
 3. **Background sync**: `backgroundSync.ts` executa via `expo-background-fetch`
-4. **Conflito**: estratégia "last-write-wins" com timestamp — campo `updatedAt`
+4. **Conflito**: estratégia "last-write-wins" com timestamp, campo `updatedAt`
 
 ## LGPD e Privacidade
 

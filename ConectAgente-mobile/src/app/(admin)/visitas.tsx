@@ -100,7 +100,7 @@ export default function AdminVisitas() {
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.endereco} numberOfLines={1}>
-            {item.logradouro ?? '—'}, {item.numero ?? ''}
+            {item.logradouro ?? '-'}, {item.numero ?? ''}
           </Text>
           <Text style={styles.sub} numberOfLines={1}>
             {item.agente_nome ?? 'Agente'} · {new Date(item.data_visita).toLocaleDateString('pt-BR')}
@@ -253,9 +253,9 @@ export default function AdminVisitas() {
                     );
                   })()}
 
-                  <InfoRow label="Endereço" value={`${selecionada.logradouro ?? '—'}, ${selecionada.numero ?? ''}`} />
-                  <InfoRow label="Bairro" value={selecionada.bairro ?? '—'} />
-                  <InfoRow label="Agente" value={selecionada.agente_nome ?? '—'} />
+                  <InfoRow label="Endereço" value={`${selecionada.logradouro ?? '-'}, ${selecionada.numero ?? ''}`} />
+                  <InfoRow label="Bairro" value={selecionada.bairro ?? '-'} />
+                  <InfoRow label="Agente" value={selecionada.agente_nome ?? '-'} />
                   <InfoRow label="Data" value={new Date(selecionada.data_visita).toLocaleDateString('pt-BR')} />
                   {selecionada.motivo_visita && <InfoRow label="Motivo" value={selecionada.motivo_visita} />}
                   {selecionada.queixas && <InfoRow label="Queixas" value={selecionada.queixas} />}

@@ -174,7 +174,7 @@ describe('agenteRepository.autenticar', () => {
 
 // ─── Rate Limiting ────────────────────────────────────────────
 
-describe('agenteRepository — rate limiting', () => {
+describe('agenteRepository: rate limiting', () => {
   const CPF_A = '11122233344';
   const CPF_B = '99988877766';
   const CPF_C = '55566677788';

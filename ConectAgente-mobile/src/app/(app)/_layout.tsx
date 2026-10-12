@@ -81,7 +81,7 @@ export default function AppLayout() {
           ),
         }}
       />
-      {/* Telas stack — ocultas do tab bar */}
+      {/* Telas stack, ocultas do tab bar */}
       <Tabs.Screen name="residencia/[id]" options={{ href: null }} />
       <Tabs.Screen name="residencia/nova" options={{ href: null }} />
       <Tabs.Screen name="morador/[id]" options={{ href: null }} />

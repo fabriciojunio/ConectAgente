@@ -1,5 +1,5 @@
 /**
- * Utilitários de formatação — CPF, CEP, datas, telefone, etc.
+ * Utilitários de formatação, CPF, CEP, datas, telefone, etc.
  */
 
 // ============================================================

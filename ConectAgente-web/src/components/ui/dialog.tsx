@@ -85,7 +85,7 @@ export function Dialog({ open, onClose, children, className }: DialogProps) {
         role="dialog"
         aria-modal="true"
         className={cn(
-          'relative z-50 w-full max-w-lg rounded-lg bg-white shadow-xl',
+          'relative z-50 w-full max-w-lg rounded-lg bg-[var(--superficie)] shadow-xl',
           'animate-in fade-in-0 zoom-in-95',
           'mx-4 max-h-[85vh] overflow-y-auto',
           className
@@ -93,7 +93,7 @@ export function Dialog({ open, onClose, children, className }: DialogProps) {
       >
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-sm text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="absolute right-4 top-4 rounded-sm text-[var(--marcador)] hover:text-[var(--texto-claro)] focus:outline-none focus:ring-2 focus:ring-primary-500"
           aria-label="Fechar"
         >
           <X className="h-4 w-4" />
@@ -117,7 +117,7 @@ export function DialogHeader({ className, ...props }: React.HTMLAttributes<HTMLD
 export function DialogTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h2
-      className={cn('text-lg font-semibold text-gray-900', className)}
+      className={cn('text-lg font-semibold text-[var(--texto)]', className)}
       {...props}
     />
   );
@@ -135,7 +135,7 @@ export function DialogContent({ className, ...props }: React.HTMLAttributes<HTML
 export function DialogFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('flex items-center justify-end gap-2 border-t border-gray-200 p-6', className)}
+      className={cn('flex items-center justify-end gap-2 border-t border-[var(--borda-clara)] p-6', className)}
       {...props}
     />
   );

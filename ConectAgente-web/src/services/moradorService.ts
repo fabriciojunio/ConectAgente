@@ -83,7 +83,7 @@ export async function getEstatisticasMoradores(): Promise<{
   return enqueue(async () => {
     const supabase = createClient();
 
-    // Usa count queries com head:true — muito mais rápido que baixar todas as linhas
+    // Usa count queries com head:true, muito mais rápido que baixar todas as linhas
     const base = () => supabase.from('moradores').select('id', { count: 'exact', head: true }).is('deleted_at', null);
 
     const [totalRes, hipRes, diabRes, gestRes, domRes, doencaRes] = await Promise.all([

@@ -16,7 +16,7 @@ interface UsePaginationReturn {
   setPerPage: (perPage: number) => void;
   /** Set the total number of items (recalculates totalPages) */
   setTotal: (total: number) => void;
-  /** Alias for setTotal — sets total_pages directly (total * perPage) */
+  /** Alias for setTotal, sets total_pages directly (total * perPage) */
   setTotalPages: (totalPages: number) => void;
   /** Offset for database queries (0-based, for use with Supabase .range()) */
   offset: number;

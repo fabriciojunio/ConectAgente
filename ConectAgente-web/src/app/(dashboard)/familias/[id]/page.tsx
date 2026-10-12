@@ -93,29 +93,29 @@ export default function FamiliaDetailPage() {
       </Link>
 
       {/* Residence Info Card */}
-      <div className="bg-white rounded-xl border p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+      <div className="bg-[var(--superficie)] rounded-xl border p-6">
+        <h2 className="text-lg font-semibold text-[var(--texto)] mb-4 flex items-center gap-2">
           <Home className="w-5 h-5 text-primary-600" />
           Informações da Residência
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <p className="text-xs text-gray-500 mb-1">Endereço</p>
+            <p className="text-xs text-[var(--texto-claro)] mb-1">Endereço</p>
             <p className="text-sm font-medium flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-gray-400" />
+              <MapPin className="w-3.5 h-3.5 text-[var(--marcador)]" />
               {familia.logradouro}, {familia.numero}
             </p>
           </div>
           <div>
-            <p className="text-xs text-gray-500 mb-1">Bairro</p>
+            <p className="text-xs text-[var(--texto-claro)] mb-1">Bairro</p>
             <p className="text-sm font-medium">{familia.bairro}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500 mb-1">Cidade</p>
+            <p className="text-xs text-[var(--texto-claro)] mb-1">Cidade</p>
             <p className="text-sm font-medium">{familia.cidade}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500 mb-1">Agente Responsável</p>
+            <p className="text-xs text-[var(--texto-claro)] mb-1">Agente Responsável</p>
             <p className="text-sm font-medium">{familia.agente?.nome ?? 'Não atribuído'}</p>
           </div>
         </div>
@@ -123,37 +123,37 @@ export default function FamiliaDetailPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border p-4 flex items-center gap-3">
+        <div className="bg-[var(--superficie)] rounded-xl border p-4 flex items-center gap-3">
           <div className="p-2 rounded-lg bg-primary-50 text-primary-600">
             <Calendar className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm text-gray-500">Total de Visitas</p>
+            <p className="text-sm text-[var(--texto-claro)]">Total de Visitas</p>
             <p className="text-xl font-bold">{historicoVisitas.length}</p>
           </div>
         </div>
-        <div className="bg-white rounded-xl border p-4 flex items-center gap-3">
+        <div className="bg-[var(--superficie)] rounded-xl border p-4 flex items-center gap-3">
           <div className="p-2 rounded-lg bg-green-50 text-green-600">
             <CheckCircle className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm text-gray-500">Última Visita</p>
+            <p className="text-sm text-[var(--texto-claro)]">Última Visita</p>
             <p className="text-xl font-bold">{ultimaVisita ? formatDate(ultimaVisita) : 'Nunca'}</p>
           </div>
         </div>
-        <div className="bg-white rounded-xl border p-4 flex items-center gap-3">
+        <div className="bg-[var(--superficie)] rounded-xl border p-4 flex items-center gap-3">
           <div className={`p-2 rounded-lg ${diasSemVisita && diasSemVisita > 30 ? 'bg-red-50 text-red-600' : 'bg-yellow-50 text-yellow-600'}`}>
             <Clock className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm text-gray-500">Dias sem Visita</p>
+            <p className="text-sm text-[var(--texto-claro)]">Dias sem Visita</p>
             <p className="text-xl font-bold">{diasSemVisita ?? '-'}</p>
           </div>
         </div>
       </div>
 
       {/* Moradores Table */}
-      <div className="bg-white rounded-xl border p-6">
+      <div className="bg-[var(--superficie)] rounded-xl border p-6">
         <h3 className="section-title flex items-center gap-2">
           <User className="w-5 h-5 text-primary-600" />
           Moradores
@@ -162,11 +162,11 @@ export default function FamiliaDetailPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-gray-50">
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Nome</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">CPF</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Data Nasc.</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Condições</th>
+                <tr className="border-b bg-[var(--superficie-alt)]">
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Nome</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden md:table-cell">CPF</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden lg:table-cell">Data Nasc.</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden lg:table-cell">Condições</th>
                 </tr>
               </thead>
               <tbody>
@@ -188,12 +188,12 @@ export default function FamiliaDetailPage() {
             </table>
           </div>
         ) : (
-          <p className="text-sm text-gray-500">Nenhum morador cadastrado.</p>
+          <p className="text-sm text-[var(--texto-claro)]">Nenhum morador cadastrado.</p>
         )}
       </div>
 
       {/* Visit History with Timeline */}
-      <div className="bg-white rounded-xl border p-6">
+      <div className="bg-[var(--superficie)] rounded-xl border p-6">
         <h3 className="section-title flex items-center gap-2">
           <Calendar className="w-5 h-5 text-primary-600" />
           Histórico de Visitas
@@ -211,7 +211,7 @@ export default function FamiliaDetailPage() {
                       <Icon className="w-4 h-4" />
                     </div>
                     {index < historicoVisitas.length - 1 && (
-                      <div className="w-0.5 flex-1 bg-gray-200 my-1" />
+                      <div className="w-0.5 flex-1 bg-[var(--borda-clara)] my-1" />
                     )}
                   </div>
                   {/* Content */}
@@ -223,7 +223,7 @@ export default function FamiliaDetailPage() {
                       </span>
                     </div>
                     {visita.observacoes && (
-                      <p className="text-sm text-gray-600">{visita.observacoes}</p>
+                      <p className="text-sm text-[var(--texto-claro)]">{visita.observacoes}</p>
                     )}
                   </div>
                 </div>
@@ -231,7 +231,7 @@ export default function FamiliaDetailPage() {
             })}
           </div>
         ) : (
-          <p className="text-sm text-gray-500">Nenhuma visita registrada.</p>
+          <p className="text-sm text-[var(--texto-claro)]">Nenhuma visita registrada.</p>
         )}
       </div>
     </div>

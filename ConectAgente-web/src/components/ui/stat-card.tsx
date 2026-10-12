@@ -55,14 +55,14 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'rounded-lg border border-gray-200 bg-white p-6 shadow-card transition-shadow hover:shadow-card-hover',
+        'rounded-lg border border-[var(--borda-clara)] bg-[var(--superficie)] p-6 shadow-card transition-shadow hover:shadow-card-hover',
         className
       )}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-500">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900">{value}</p>
+          <p className="text-sm font-medium text-[var(--texto-claro)]">{title}</p>
+          <p className="mt-2 text-3xl font-bold text-[var(--texto)]">{value}</p>
           {(subtitle || trend) && (
             <div className="mt-2 flex items-center gap-2">
               {trend && (
@@ -81,7 +81,7 @@ export function StatCard({
                 </span>
               )}
               {subtitle && (
-                <span className="text-xs text-gray-500">{subtitle}</span>
+                <span className="text-xs text-[var(--texto-claro)]">{subtitle}</span>
               )}
             </div>
           )}

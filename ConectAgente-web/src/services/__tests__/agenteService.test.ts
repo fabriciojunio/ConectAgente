@@ -117,7 +117,7 @@ describe('agenteService', () => {
 
       // First from() for agent
       chainable.single.mockResolvedValueOnce({ data: mockAgente, error: null });
-      // Second from() for visitas — the service calls from().select().eq()
+      // Second from() for visitas, the service calls from().select().eq()
       // Since from() returns chainable, and eq() returns chainable,
       // we need the second eq() call to resolve with visitas data.
       // But single was already called, so we need a separate chain.

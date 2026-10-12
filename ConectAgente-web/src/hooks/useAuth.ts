@@ -96,7 +96,7 @@ export function useAuth(): UseAuthReturn {
         }
 
         if (!data) {
-          // Profile not found — do not clear existing user state; just leave as-is
+          // Profile not found, do not clear existing user state; just leave as-is
           return;
         }
 
@@ -112,7 +112,7 @@ export function useAuth(): UseAuthReturn {
         setUser(profile);
       } catch (err) {
         console.error('Unexpected error fetching profile:', err);
-        // Do not clear user on network error — middleware already verified the session
+        // Do not clear user on network error, middleware already verified the session
       }
     },
     [supabase],
@@ -129,7 +129,7 @@ export function useAuth(): UseAuthReturn {
     // Get initial session
     const initAuth = async () => {
       try {
-        // getSession() reads from localStorage — instant, no network call.
+        // getSession() reads from localStorage, instant, no network call.
         // Use this to render the UI fast, then validate the JWT in the background.
         const { data: { session: cachedSession } } = await supabase.auth.getSession();
 
@@ -148,7 +148,7 @@ export function useAuth(): UseAuthReturn {
         }
       }
 
-      // JWT validation is handled by middleware on the server — no client-side clearing needed.
+      // JWT validation is handled by middleware on the server, no client-side clearing needed.
     };
 
     initAuth();
@@ -201,14 +201,14 @@ export function useAuth(): UseAuthReturn {
     // Clear state immediately so UI reacts at once
     setUser(null);
     setSession(null);
-    // Fire signOut but don't wait more than 3s — redirect regardless
+    // Fire signOut but don't wait more than 3s, redirect regardless
     try {
       await Promise.race([
         supabase.auth.signOut(),
         new Promise<void>((resolve) => setTimeout(resolve, 3000)),
       ]);
     } catch {
-      // ignore errors — redirect anyway
+      // ignore errors, redirect anyway
     }
     window.location.replace('/login');
   }, [supabase]);

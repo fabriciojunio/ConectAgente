@@ -127,7 +127,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left Panel - Login Form */}
-      <div className="w-full lg:w-[480px] xl:w-[520px] flex flex-col bg-white">
+      <div className="w-full lg:w-[480px] xl:w-[520px] flex flex-col bg-[var(--superficie)]">
         {/* Logo and branding */}
         <div className="px-8 pt-8 pb-4">
           <div className="flex items-center gap-3">
@@ -139,10 +139,10 @@ export default function LoginPage() {
               className="object-contain rounded-xl"
             />
             <div>
-              <h1 className="text-lg font-extrabold text-[#0D47A1] leading-tight">
+              <h1 className="text-lg font-extrabold text-[var(--primaria-escura)] leading-tight">
                 ConectAgente
               </h1>
-              <p className="text-[11px] text-[#6B7280] font-medium">
+              <p className="text-[11px] text-[var(--texto-claro)] font-medium">
                 Painel de Gestão
               </p>
             </div>
@@ -152,15 +152,15 @@ export default function LoginPage() {
         {/* Form section */}
         <div className="flex-1 flex flex-col justify-center px-8 py-8">
           <div className="max-w-[380px] w-full mx-auto">
-            <h2 className="text-2xl font-extrabold text-[#0F1621]">Entrar</h2>
-            <p className="text-sm text-[#6B7280] mt-1 mb-8">
+            <h2 className="text-2xl font-extrabold text-[var(--texto)]">Entrar</h2>
+            <p className="text-sm text-[var(--texto-claro)] mt-1 mb-8">
               Usar sua conta do sistema
             </p>
 
             <form onSubmit={handleLogin} className="space-y-5">
               {/* CPF Field */}
               <div>
-                <label className="block text-sm font-medium text-[#374151] mb-1.5">
+                <label className="block text-sm font-medium text-[var(--texto-medio)] mb-1.5">
                   CPF
                 </label>
                 <input
@@ -168,7 +168,7 @@ export default function LoginPage() {
                   value={cpf}
                   onChange={(e) => setCpf(formatCPF(e.target.value))}
                   placeholder="Digite seu CPF"
-                  className="w-full px-4 py-3 border border-[#D1D9E6] rounded-lg text-[#0F1621] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/30 focus:border-[#1565C0] transition-all bg-white"
+                  className="w-full px-4 py-3 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all bg-[var(--superficie)]"
                   inputMode="numeric"
                   autoComplete="off"
                 />
@@ -176,7 +176,7 @@ export default function LoginPage() {
 
               {/* Senha Field */}
               <div>
-                <label className="block text-sm font-medium text-[#374151] mb-1.5">
+                <label className="block text-sm font-medium text-[var(--texto-medio)] mb-1.5">
                   Senha
                 </label>
                 <div className="relative">
@@ -185,13 +185,13 @@ export default function LoginPage() {
                     value={senha}
                     onChange={(e) => setSenha(e.target.value)}
                     placeholder="Digite sua senha"
-                    className="w-full px-4 py-3 border border-[#D1D9E6] rounded-lg text-[#0F1621] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/30 focus:border-[#1565C0] transition-all pr-12 bg-white"
+                    className="w-full px-4 py-3 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all pr-12 bg-[var(--superficie)]"
                     autoComplete="current-password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280] transition-colors p-1"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--marcador)] hover:text-[var(--texto-claro)] transition-colors p-1"
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
@@ -202,14 +202,14 @@ export default function LoginPage() {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  className="w-4 h-4 rounded border-[#D1D9E6] text-[#1565C0] focus:ring-[#1565C0]/30"
+                  className="w-4 h-4 rounded border-[var(--borda)] text-[var(--primaria)] focus:ring-[var(--primaria)]/30"
                 />
-                <span className="text-sm text-[#6B7280]">Permanecer conectado</span>
+                <span className="text-sm text-[var(--texto-claro)]">Permanecer conectado</span>
               </label>
 
               {/* Error message */}
               {error && (
-                <div className="bg-[#FFEBEE] border border-[#D32F2F]/20 text-[#D32F2F] text-sm px-4 py-3 rounded-lg flex items-center gap-2">
+                <div className="bg-[var(--erro-claro)] border border-[var(--erro)]/20 text-[var(--erro)] text-sm px-4 py-3 rounded-lg flex items-center gap-2">
                   <Shield size={16} className="flex-shrink-0" />
                   {error}
                 </div>
@@ -219,7 +219,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-lg text-white font-semibold text-sm bg-[#1565C0] hover:bg-[#0D47A1] disabled:bg-[#9CA3AF] disabled:cursor-not-allowed transition-colors shadow-sm"
+                className="w-full py-3 rounded-lg text-white font-semibold text-sm bg-[var(--primaria)] hover:bg-[var(--primaria-escura)] disabled:bg-[var(--marcador)] disabled:cursor-not-allowed transition-colors shadow-sm"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -236,14 +236,14 @@ export default function LoginPage() {
 
               {/* Separador + Demo */}
               <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-[#E5EAF2]" />
-                <span className="text-xs text-[#9CA3AF]">ou</span>
-                <div className="flex-1 h-px bg-[#E5EAF2]" />
+                <div className="flex-1 h-px bg-[var(--borda-clara)]" />
+                <span className="text-xs text-[var(--marcador)]">ou</span>
+                <div className="flex-1 h-px bg-[var(--borda-clara)]" />
               </div>
 
               <Link
                 href="/demo"
-                className="w-full py-3 rounded-lg text-[#1565C0] font-semibold text-sm bg-[#EEF2FF] hover:bg-[#DBEAFE] transition-colors border border-[#BFDBFE] flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-lg text-[var(--primaria)] font-semibold text-sm bg-[var(--superficie-alt)] hover:bg-[var(--superficie-alt)] transition-colors border border-[var(--borda-clara)] flex items-center justify-center gap-2"
               >
                 <span className="text-base">👤</span>
                 <span>Acessar demonstração</span>
@@ -251,9 +251,9 @@ export default function LoginPage() {
 
               {/* Link para registro */}
               <div className="text-center">
-                <p className="text-sm text-[#6B7280]">
+                <p className="text-sm text-[var(--texto-claro)]">
                   Não tem acesso?{' '}
-                  <Link href="/registro" className="text-[#1565C0] hover:text-[#0D47A1] font-semibold">
+                  <Link href="/registro" className="text-[var(--primaria)] hover:text-[var(--primaria-escura)] font-semibold">
                     Solicitar cadastro
                   </Link>
                 </p>
@@ -263,11 +263,11 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <div className="px-8 py-4 border-t border-[#E5EAF2]">
-          <p className="text-[11px] text-[#9CA3AF] leading-relaxed">
+        <div className="px-8 py-4 border-t border-[var(--borda-clara)]">
+          <p className="text-[11px] text-[var(--marcador)] leading-relaxed">
             Plataforma ConectAgente &mdash; Gestão de Agentes Comunitários de Saúde
           </p>
-          <p className="text-[11px] text-[#9CA3AF]">
+          <p className="text-[11px] text-[var(--marcador)]">
             Em conformidade com a LGPD (Lei 13.709/2018)
           </p>
         </div>
@@ -277,7 +277,7 @@ export default function LoginPage() {
       <div
         className="hidden lg:flex flex-1 flex-col items-center justify-center relative overflow-hidden"
         style={{
-          background: 'linear-gradient(135deg, #0A3D8F 0%, #0D47A1 30%, #1565C0 60%, #1976D2 100%)',
+          background: 'linear-gradient(135deg, var(--primaria-escura) 0%, var(--primaria-escura) 30%, var(--primaria) 60%, var(--primaria) 100%)',
         }}
       >
         {/* Background pattern - health icons like Sicoob style */}
@@ -307,7 +307,7 @@ export default function LoginPage() {
             <p className="text-lg text-white/60 font-light italic mb-3">que uma ferramenta de gestão.</p>
             <h2 className="text-[42px] font-extrabold text-white tracking-tight leading-tight">
               Saúde que{' '}
-              <span className="text-[#64B5F6]">Conecta.</span>
+              <span className="text-[var(--primaria-clara)]">Conecta.</span>
             </h2>
           </div>
 

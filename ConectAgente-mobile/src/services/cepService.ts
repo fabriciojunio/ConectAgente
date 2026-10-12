@@ -30,7 +30,7 @@ export const cepService = {
 
   /**
    * Tenta buscar CEP e retorna null se offline ou não encontrado.
-   * Uso seguro — não propaga erros.
+   * Uso seguro, não propaga erros.
    */
   async buscarSeguro(cep: string): Promise<EnderecoViaCep | null> {
     try {

@@ -154,25 +154,25 @@ export default function AgenteDetailPage() {
       </Link>
 
       {/* Agent Info Card */}
-      <div className="bg-white rounded-xl border p-6">
+      <div className="bg-[var(--superficie)] rounded-xl border p-6">
         <div className="flex items-start gap-4">
           <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
             <User className="w-7 h-7 text-primary-600" />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
-              <h2 className="text-xl font-bold text-gray-900">{agente.nome}</h2>
+              <h2 className="text-xl font-bold text-[var(--texto)]">{agente.nome}</h2>
               <span
                 className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
                   agente.ativo !== false
                     ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-600'
+                    : 'bg-[var(--superficie-alt)] text-[var(--texto-claro)]'
                 }`}
               >
                 {agente.ativo !== false ? 'Ativo' : 'Inativo'}
               </span>
             </div>
-            <div className="flex flex-wrap gap-4 text-sm text-gray-500 mt-2">
+            <div className="flex flex-wrap gap-4 text-sm text-[var(--texto-claro)] mt-2">
               {agente.unidade_saude && (
                 <span className="flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5" />
@@ -193,14 +193,14 @@ export default function AgenteDetailPage() {
       {/* Performance Stats */}
       <div className="card-grid">
         {performanceCards.map((card) => (
-          <div key={card.label} className="bg-white rounded-xl border p-4">
+          <div key={card.label} className="bg-[var(--superficie)] rounded-xl border p-4">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${card.color}`}>
                 <card.icon className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">{card.label}</p>
-                <p className="text-xl font-bold text-gray-900">{card.value}</p>
+                <p className="text-sm text-[var(--texto-claro)]">{card.label}</p>
+                <p className="text-xl font-bold text-[var(--texto)]">{card.value}</p>
               </div>
             </div>
           </div>
@@ -209,7 +209,7 @@ export default function AgenteDetailPage() {
 
       {/* Visit Chart */}
       {performance?.visitas_por_dia && performance.visitas_por_dia.length > 0 && (
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-[var(--superficie)] rounded-xl border p-6">
           <h3 className="section-title">Visitas nos Últimos 30 Dias</h3>
           <VisitasLineChart
             data={performance.visitas_por_dia.map((v) => ({
@@ -226,16 +226,16 @@ export default function AgenteDetailPage() {
 
       {/* Assigned Families */}
       {agente.familias && agente.familias.length > 0 && (
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-[var(--superficie)] rounded-xl border p-6">
           <h3 className="section-title">Famílias Atribuídas</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-gray-50">
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Endereço</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Bairro</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Última Visita</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                <tr className="border-b bg-[var(--superficie-alt)]">
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Endereço</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Bairro</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Última Visita</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -246,7 +246,7 @@ export default function AgenteDetailPage() {
                   const criticidade = getNivelCriticidade(dias);
 
                   return (
-                    <tr key={familia.id} className="border-b last:border-0 hover:bg-gray-50">
+                    <tr key={familia.id} className="border-b last:border-0 hover:bg-[var(--superficie-alt)]">
                       <td className="px-4 py-3">
                         <Link href={`/familias/${familia.id}`} className="text-primary-600 hover:underline">
                           {familia.logradouro}, {familia.numero}
@@ -271,17 +271,17 @@ export default function AgenteDetailPage() {
       )}
 
       {/* Recent Visits */}
-      <div className="bg-white rounded-xl border p-6">
+      <div className="bg-[var(--superficie)] rounded-xl border p-6">
         <h3 className="section-title">Visitas Recentes</h3>
         {visitasRecentes.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-gray-50">
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Data</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Endereço</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Observações</th>
+                <tr className="border-b bg-[var(--superficie-alt)]">
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Data</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Endereço</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Status</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden md:table-cell">Observações</th>
                 </tr>
               </thead>
               <tbody>
@@ -321,13 +321,13 @@ export default function AgenteDetailPage() {
             </table>
           </div>
         ) : (
-          <p className="text-sm text-gray-500">Nenhuma visita registrada.</p>
+          <p className="text-sm text-[var(--texto-claro)]">Nenhuma visita registrada.</p>
         )}
       </div>
 
       {/* Families with delay */}
       {agente.familias && (
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-[var(--superficie)] rounded-xl border p-6">
           <h3 className="section-title flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-red-500" />
             Famílias com Atraso
@@ -338,16 +338,16 @@ export default function AgenteDetailPage() {
               return dias > 15;
             });
             if (familiasAtraso.length === 0) {
-              return <p className="text-sm text-gray-500">Nenhuma família com atraso de visita.</p>;
+              return <p className="text-sm text-[var(--texto-claro)]">Nenhuma família com atraso de visita.</p>;
             }
             return (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b bg-gray-50">
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Endereço</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Bairro</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Dias sem Visita</th>
+                    <tr className="border-b bg-[var(--superficie-alt)]">
+                      <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Endereço</th>
+                      <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Bairro</th>
+                      <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Dias sem Visita</th>
                     </tr>
                   </thead>
                   <tbody>

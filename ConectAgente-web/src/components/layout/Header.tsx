@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Menu, Bell, Search, ChevronDown, X, LogOut, Heart, Users, ClipboardList, Home } from 'lucide-react';
+import { SeletorTema } from './SeletorTema';
 
 interface HeaderProps {
   title: string;
@@ -30,7 +31,7 @@ function getInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-// Placeholder notifications — substituir por dados reais quando disponível
+// Placeholder notifications, substituir por dados reais quando disponível
 const MOCK_NOTIFICATIONS = [
   { id: 1, title: 'Solicitação pendente', body: 'Nova solicitação de cadastro aguarda aprovação.', time: 'Agora', read: false },
   { id: 2, title: 'Meta atingida', body: 'Agentes da Unidade 1 atingiram 80% das visitas.', time: '1h atrás', read: false },
@@ -68,7 +69,7 @@ export default function Header({ title, subtitle, userName, userRole, onMenuClic
     <header
       className="sticky top-0 z-30 h-14 flex items-center justify-between px-4 lg:px-6 shadow-sm"
       style={{
-        background: 'linear-gradient(90deg, #0D47A1 0%, #1565C0 50%, #1976D2 100%)',
+        background: 'linear-gradient(90deg, var(--primaria-escura) 0%, var(--primaria) 50%, var(--primaria) 100%)',
       }}
     >
       {/* Left: menu + title */}
@@ -102,6 +103,8 @@ export default function Header({ title, subtitle, userName, userRole, onMenuClic
 
       {/* Right: notifications + user */}
       <div className="flex items-center gap-2">
+        <SeletorTema />
+
         {/* Notification bell */}
         <div className="relative" ref={notifRef}>
           <button
@@ -111,19 +114,19 @@ export default function Header({ title, subtitle, userName, userRole, onMenuClic
           >
             <Bell size={18} />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-[#F44336] rounded-full border border-[#0D47A1]" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-[var(--erro)] rounded-full border border-[var(--primaria-escura)]" />
             )}
           </button>
 
           {/* Dropdown */}
           {notifOpen && (
-            <div className="absolute right-0 top-10 w-80 bg-white rounded-xl shadow-2xl border border-[#E5EAF2] z-50 overflow-hidden">
+            <div className="absolute right-0 top-10 w-80 bg-[var(--superficie)] rounded-xl shadow-2xl border border-[var(--borda-clara)] z-50 overflow-hidden">
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-[#E5EAF2]">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--borda-clara)]">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-[#0F1621]">Notificações</span>
+                  <span className="text-sm font-semibold text-[var(--texto)]">Notificações</span>
                   {unreadCount > 0 && (
-                    <span className="bg-[#1565C0] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    <span className="bg-[var(--primaria)] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                       {unreadCount}
                     </span>
                   )}
@@ -132,35 +135,35 @@ export default function Header({ title, subtitle, userName, userRole, onMenuClic
                   {unreadCount > 0 && (
                     <button
                       onClick={markAllRead}
-                      className="text-[11px] text-[#1565C0] hover:underline font-medium"
+                      className="text-[11px] text-[var(--primaria)] hover:underline font-medium"
                     >
                       Marcar todas
                     </button>
                   )}
-                  <button onClick={() => setNotifOpen(false)} className="text-[#9CA3AF] hover:text-[#374151]">
+                  <button onClick={() => setNotifOpen(false)} className="text-[var(--marcador)] hover:text-[var(--texto-medio)]">
                     <X size={14} />
                   </button>
                 </div>
               </div>
 
               {/* List */}
-              <div className="max-h-72 overflow-y-auto divide-y divide-[#F4F6FA]">
+              <div className="max-h-72 overflow-y-auto divide-y divide-[var(--fundo)]">
                 {notifications.length === 0 ? (
-                  <p className="text-sm text-[#9CA3AF] text-center py-8">Nenhuma notificação</p>
+                  <p className="text-sm text-[var(--marcador)] text-center py-8">Nenhuma notificação</p>
                 ) : (
                   notifications.map(n => (
                     <div
                       key={n.id}
-                      className={`px-4 py-3 hover:bg-[#F4F6FA] transition-colors cursor-pointer ${!n.read ? 'bg-[#EFF6FF]' : ''}`}
+                      className={`px-4 py-3 hover:bg-[var(--fundo)] transition-colors cursor-pointer ${!n.read ? 'bg-[var(--superficie-alt)]' : ''}`}
                       onClick={() => setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))}
                     >
                       <div className="flex items-start gap-2">
-                        {!n.read && <span className="w-2 h-2 rounded-full bg-[#1565C0] mt-1.5 flex-shrink-0" />}
+                        {!n.read && <span className="w-2 h-2 rounded-full bg-[var(--primaria)] mt-1.5 flex-shrink-0" />}
                         {n.read && <span className="w-2 h-2 flex-shrink-0" />}
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-[#0F1621]">{n.title}</p>
-                          <p className="text-xs text-[#6B7280] leading-snug mt-0.5">{n.body}</p>
-                          <p className="text-[10px] text-[#9CA3AF] mt-1">{n.time}</p>
+                          <p className="text-xs font-semibold text-[var(--texto)]">{n.title}</p>
+                          <p className="text-xs text-[var(--texto-claro)] leading-snug mt-0.5">{n.body}</p>
+                          <p className="text-[10px] text-[var(--marcador)] mt-1">{n.time}</p>
                         </div>
                       </div>
                     </div>
@@ -189,53 +192,53 @@ export default function Header({ title, subtitle, userName, userRole, onMenuClic
             </button>
 
             {userMenuOpen && (
-              <div className="absolute right-0 top-12 w-64 bg-white rounded-xl shadow-2xl border border-[#E5EAF2] z-50 overflow-hidden">
+              <div className="absolute right-0 top-12 w-64 bg-[var(--superficie)] rounded-xl shadow-2xl border border-[var(--borda-clara)] z-50 overflow-hidden">
                 {/* User info header */}
-                <div className="px-4 py-3 border-b border-[#E5EAF2] bg-[#F8FAFC]">
+                <div className="px-4 py-3 border-b border-[var(--borda-clara)] bg-[var(--superficie-alt)]">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#1565C0] flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-[var(--primaria)] flex items-center justify-center">
                       <span className="text-sm font-bold text-white">{getInitials(userName)}</span>
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-[#0F1621]">{userName}</p>
-                      <p className="text-xs text-[#6B7280]">{getRoleDisplay(userRole)}</p>
+                      <p className="text-sm font-semibold text-[var(--texto)]">{userName}</p>
+                      <p className="text-xs text-[var(--texto-claro)]">{getRoleDisplay(userRole)}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Quick navigation */}
-                <div className="py-1 border-b border-[#E5EAF2]">
-                  <p className="px-4 py-1.5 text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wider">Acesso Rápido</p>
+                <div className="py-1 border-b border-[var(--borda-clara)]">
+                  <p className="px-4 py-1.5 text-[10px] font-semibold text-[var(--marcador)] uppercase tracking-wider">Acesso Rápido</p>
                   <Link
                     href="/"
                     onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-[#374151] hover:bg-[#F0F4FA] transition-colors"
+                    className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--texto-medio)] hover:bg-[var(--superficie-alt)] transition-colors"
                   >
-                    <Home size={16} className="text-[#6B7280]" />
+                    <Home size={16} className="text-[var(--texto-claro)]" />
                     Dashboard
                   </Link>
                   <Link
                     href="/visitas"
                     onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-[#374151] hover:bg-[#F0F4FA] transition-colors"
+                    className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--texto-medio)] hover:bg-[var(--superficie-alt)] transition-colors"
                   >
-                    <ClipboardList size={16} className="text-[#6B7280]" />
+                    <ClipboardList size={16} className="text-[var(--texto-claro)]" />
                     Visitas
                   </Link>
                   <Link
                     href="/familias"
                     onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-[#374151] hover:bg-[#F0F4FA] transition-colors"
+                    className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--texto-medio)] hover:bg-[var(--superficie-alt)] transition-colors"
                   >
-                    <Users size={16} className="text-[#6B7280]" />
+                    <Users size={16} className="text-[var(--texto-claro)]" />
                     Famílias
                   </Link>
                   <Link
                     href="/moradores"
                     onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-[#374151] hover:bg-[#F0F4FA] transition-colors"
+                    className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--texto-medio)] hover:bg-[var(--superficie-alt)] transition-colors"
                   >
-                    <Heart size={16} className="text-[#6B7280]" />
+                    <Heart size={16} className="text-[var(--texto-claro)]" />
                     Pacientes / Moradores
                   </Link>
                 </div>
@@ -245,7 +248,7 @@ export default function Header({ title, subtitle, userName, userRole, onMenuClic
                   {onLogout && (
                     <button
                       onClick={() => { setUserMenuOpen(false); onLogout(); }}
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-[#D32F2F] hover:bg-[#FFEBEE] transition-colors w-full"
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--erro)] hover:bg-[var(--erro-claro)] transition-colors w-full"
                     >
                       <LogOut size={16} />
                       Sair do Sistema

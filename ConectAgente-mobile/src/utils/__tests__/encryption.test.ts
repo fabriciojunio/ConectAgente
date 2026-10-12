@@ -208,7 +208,7 @@ describe('encryptField / decryptField (SHA-256-CTR)', () => {
     expect(await decryptField('')).toBe('');
   });
 
-  it('usa IV aleatório — ciphertext diferente para mesma entrada', async () => {
+  it('usa IV aleatório, ciphertext diferente para mesma entrada', async () => {
     mockedCrypto.getRandomBytesAsync
       .mockResolvedValueOnce(new Uint8Array(16).fill(0x11) as any)
       .mockResolvedValueOnce(new Uint8Array(16).fill(0x22) as any);

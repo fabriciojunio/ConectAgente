@@ -73,7 +73,7 @@ export function criarConsentimento(params: {
 }
 
 // ============================================================
-// ANONIMIZAÇÃO (direito ao esquecimento — Art. 18, IV)
+// ANONIMIZAÇÃO (direito ao esquecimento, Art. 18, IV)
 // ============================================================
 
 export function anonimizarMorador(morador: Record<string, unknown>): Record<string, unknown> {
@@ -126,8 +126,8 @@ export function calcularDataExpiracao(tipo: 'saude' | 'geral'): string {
 // ============================================================
 // FINALIDADE
 // Base legal LGPD para este sistema:
-// Art. 7°, II — execução de políticas públicas pela administração pública
-// Art. 11, II, a — tutela da saúde nos dados sensíveis
+// Art. 7°, II: execução de políticas públicas pela administração pública
+// Art. 11, II, a, tutela da saúde nos dados sensíveis
 // ============================================================
 
 export const BASE_LEGAL_LGPD = {

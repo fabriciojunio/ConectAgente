@@ -1,5 +1,5 @@
 -- ===========================================================================
--- ConectAgente — fecha as tabelas que ficaram sem Row Level Security
+-- ConectAgente, fecha as tabelas que ficaram sem Row Level Security
 -- ===========================================================================
 --
 -- POR QUE ESTA MIGRACAO EXISTE

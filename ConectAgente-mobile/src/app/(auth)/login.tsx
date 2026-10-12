@@ -121,7 +121,7 @@ export default function Login() {
             />
           </View>
 
-          {/* FOOTER LGPD — fixo no fundo do formContainer */}
+          {/* FOOTER LGPD: fixo no fundo do formContainer */}
           <Text style={styles.lgpd}>
             Este sistema está em conformidade com a LGPD (Lei 13.709/2018).
             Os dados coletados são utilizados exclusivamente para fins de saúde pública.

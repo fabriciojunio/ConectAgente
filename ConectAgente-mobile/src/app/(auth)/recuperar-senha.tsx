@@ -59,7 +59,7 @@ export default function RecuperarSenha() {
       await new Promise((r) => setTimeout(r, 800));
 
       if (!ok) {
-        // Mensagem genérica — não revela qual campo é inválido (LGPD)
+        // Mensagem genérica, não revela qual campo é inválido (LGPD)
         Alert.alert(
           'Dados não encontrados',
           'CPF e e-mail não correspondem a nenhum agente cadastrado neste dispositivo.\n\nVerifique os dados e tente novamente.',
@@ -159,7 +159,7 @@ export default function RecuperarSenha() {
 
               <Text style={styles.lgpd}>
                 Os dados informados são usados exclusivamente para verificação de identidade
-                e não são compartilhados com terceiros (LGPD — Art. 7º, II).
+                e não são compartilhados com terceiros (LGPD: Art. 7º, II).
               </Text>
             </>
           )}
@@ -223,7 +223,7 @@ export default function RecuperarSenha() {
                 Sua senha foi alterada com sucesso. Você já pode entrar com a nova senha.
               </Text>
               <Text style={styles.auditText}>
-                Esta ação foi registrada nos logs do sistema (LGPD — Art. 37).
+                Esta ação foi registrada nos logs do sistema (LGPD: Art. 37).
               </Text>
               <Button
                 title="Ir para o login"

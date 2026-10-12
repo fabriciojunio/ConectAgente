@@ -32,28 +32,28 @@ export default function VisitasLineChart({ data, loading }: VisitasLineChartProp
             <Skeleton className="h-64 w-full" />
           </div>
         ) : data.length === 0 ? (
-          <p className="py-12 text-center text-sm text-gray-500">
+          <p className="py-12 text-center text-sm text-[var(--texto-claro)]">
             Nenhum dado disponivel para o periodo selecionado.
           </p>
         ) : (
           <div className="h-72 w-full" role="img" aria-label="Grafico de visitas por periodo">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E0E0E0" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--borda)" />
                 <XAxis
                   dataKey="data"
-                  tick={{ fontSize: 12, fill: '#757575' }}
+                  tick={{ fontSize: 12, fill: 'var(--texto-claro)' }}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 12, fill: '#757575' }}
+                  tick={{ fontSize: 12, fill: 'var(--texto-claro)' }}
                   tickLine={false}
                   axisLine={false}
                 />
                 <Tooltip
                   contentStyle={{
                     borderRadius: '8px',
-                    border: '1px solid #E0E0E0',
+                    border: '1px solid var(--borda)',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
                   }}
                 />
@@ -62,7 +62,7 @@ export default function VisitasLineChart({ data, loading }: VisitasLineChartProp
                   type="monotone"
                   dataKey="realizadas"
                   name="Realizadas"
-                  stroke="#4CAF50"
+                  stroke="var(--sucesso)"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   activeDot={{ r: 5 }}
@@ -71,7 +71,7 @@ export default function VisitasLineChart({ data, loading }: VisitasLineChartProp
                   type="monotone"
                   dataKey="canceladas"
                   name="Canceladas"
-                  stroke="#F44336"
+                  stroke="var(--erro)"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   activeDot={{ r: 5 }}
@@ -80,7 +80,7 @@ export default function VisitasLineChart({ data, loading }: VisitasLineChartProp
                   type="monotone"
                   dataKey="nao_encontrado"
                   name="Nao encontrado"
-                  stroke="#FF9800"
+                  stroke="var(--alerta)"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   activeDot={{ r: 5 }}

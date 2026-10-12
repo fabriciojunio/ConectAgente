@@ -120,22 +120,22 @@ export default function RegistroPage() {
   // Tela de sucesso
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F4F6FA] px-4">
-        <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-[#E8F5E9] rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle size={32} className="text-[#4CAF50]" />
+      <div className="min-h-screen flex items-center justify-center bg-[var(--fundo)] px-4">
+        <div className="bg-[var(--superficie)] rounded-xl shadow-lg p-8 max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-[var(--sucesso-claro)] rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle size={32} className="text-[var(--sucesso)]" />
           </div>
-          <h2 className="text-xl font-bold text-[#0F1621] mb-2">
+          <h2 className="text-xl font-bold text-[var(--texto)] mb-2">
             Solicitação Enviada!
           </h2>
-          <p className="text-sm text-[#6B7280] mb-6 leading-relaxed">
+          <p className="text-sm text-[var(--texto-claro)] mb-6 leading-relaxed">
             Sua solicitação de registro foi enviada com sucesso.
             Um administrador irá analisar e aprovar seu cadastro.
             Você receberá acesso assim que for aprovado.
           </p>
           <Link
             href="/login"
-            className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#1565C0] text-white rounded-lg text-sm font-semibold hover:bg-[#0D47A1] transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-[var(--primaria)] text-white rounded-lg text-sm font-semibold hover:bg-[var(--primaria-escura)] transition-colors"
           >
             <ArrowLeft size={16} />
             Voltar ao Login
@@ -148,7 +148,7 @@ export default function RegistroPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left Panel - Form */}
-      <div className="w-full lg:w-[560px] xl:w-[600px] flex flex-col bg-white">
+      <div className="w-full lg:w-[560px] xl:w-[600px] flex flex-col bg-[var(--superficie)]">
         {/* Header */}
         <div className="px-8 pt-6 pb-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -159,11 +159,11 @@ export default function RegistroPage() {
               height={40}
               className="object-contain rounded-lg"
             />
-            <h1 className="text-lg font-extrabold text-[#0D47A1]">ConectAgente</h1>
+            <h1 className="text-lg font-extrabold text-[var(--primaria-escura)]">ConectAgente</h1>
           </div>
           <Link
             href="/login"
-            className="text-sm text-[#1565C0] hover:text-[#0D47A1] font-medium flex items-center gap-1"
+            className="text-sm text-[var(--primaria)] hover:text-[var(--primaria-escura)] font-medium flex items-center gap-1"
           >
             <ArrowLeft size={16} />
             Voltar
@@ -173,15 +173,15 @@ export default function RegistroPage() {
         {/* Form */}
         <div className="flex-1 overflow-y-auto px-8 py-6">
           <div className="max-w-[480px] mx-auto">
-            <h2 className="text-2xl font-extrabold text-[#0F1621]">Solicitar Acesso</h2>
-            <p className="text-sm text-[#6B7280] mt-1 mb-6">
+            <h2 className="text-2xl font-extrabold text-[var(--texto)]">Solicitar Acesso</h2>
+            <p className="text-sm text-[var(--texto-claro)] mt-1 mb-6">
               Preencha seus dados. Sua solicitação será analisada por um administrador.
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Nome */}
               <div>
-                <label className="block text-sm font-medium text-[#374151] mb-1">
+                <label className="block text-sm font-medium text-[var(--texto-medio)] mb-1">
                   Nome completo *
                 </label>
                 <input
@@ -190,14 +190,14 @@ export default function RegistroPage() {
                   onChange={(e) => updateField('nome', e.target.value)}
                   placeholder="Seu nome completo"
                   required
-                  className="w-full px-4 py-2.5 border border-[#D1D9E6] rounded-lg text-[#0F1621] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/30 focus:border-[#1565C0] transition-all text-sm"
+                  className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm"
                 />
               </div>
 
               {/* CPF + Telefone */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#374151] mb-1">
+                  <label className="block text-sm font-medium text-[var(--texto-medio)] mb-1">
                     CPF *
                   </label>
                   <input
@@ -207,11 +207,11 @@ export default function RegistroPage() {
                     placeholder="000.000.000-00"
                     required
                     inputMode="numeric"
-                    className="w-full px-4 py-2.5 border border-[#D1D9E6] rounded-lg text-[#0F1621] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/30 focus:border-[#1565C0] transition-all text-sm"
+                    className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#374151] mb-1">
+                  <label className="block text-sm font-medium text-[var(--texto-medio)] mb-1">
                     Telefone
                   </label>
                   <input
@@ -220,14 +220,14 @@ export default function RegistroPage() {
                     onChange={(e) => updateField('telefone', formatPhone(e.target.value))}
                     placeholder="(00) 00000-0000"
                     inputMode="numeric"
-                    className="w-full px-4 py-2.5 border border-[#D1D9E6] rounded-lg text-[#0F1621] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/30 focus:border-[#1565C0] transition-all text-sm"
+                    className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm"
                   />
                 </div>
               </div>
 
               {/* Cargo pretendido */}
               <div>
-                <label className="block text-sm font-medium text-[#374151] mb-1">
+                <label className="block text-sm font-medium text-[var(--texto-medio)] mb-1">
                   Cargo pretendido *
                 </label>
                 <select
@@ -237,7 +237,7 @@ export default function RegistroPage() {
                     if (e.target.value !== 'outro') updateField('cargo_outro', '');
                   }}
                   required
-                  className="w-full px-4 py-2.5 border border-[#D1D9E6] rounded-lg text-[#0F1621] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/30 focus:border-[#1565C0] transition-all text-sm bg-white"
+                  className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm bg-[var(--superficie)]"
                 >
                   <option value="">Selecione o cargo</option>
                   <option value="coordenador">Coordenador(a)</option>
@@ -251,10 +251,10 @@ export default function RegistroPage() {
                     onChange={(e) => updateField('cargo_outro', e.target.value)}
                     placeholder="Informe qual cargo"
                     required
-                    className="w-full mt-2 px-4 py-2.5 border border-[#D1D9E6] rounded-lg text-[#0F1621] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/30 focus:border-[#1565C0] transition-all text-sm"
+                    className="w-full mt-2 px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm"
                   />
                 )}
-                <p className="text-[11px] text-[#9CA3AF] mt-1">
+                <p className="text-[11px] text-[var(--marcador)] mt-1">
                   Acesso de Administrador só pode ser concedido por outro admin.
                 </p>
               </div>
@@ -262,7 +262,7 @@ export default function RegistroPage() {
               {/* Unidade + Área */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#374151] mb-1">
+                  <label className="block text-sm font-medium text-[var(--texto-medio)] mb-1">
                     Unidade de Saúde *
                   </label>
                   <input
@@ -271,11 +271,11 @@ export default function RegistroPage() {
                     onChange={(e) => updateField('unidade_saude', e.target.value)}
                     placeholder="Ex: UBS Central"
                     required
-                    className="w-full px-4 py-2.5 border border-[#D1D9E6] rounded-lg text-[#0F1621] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/30 focus:border-[#1565C0] transition-all text-sm"
+                    className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#374151] mb-1">
+                  <label className="block text-sm font-medium text-[var(--texto-medio)] mb-1">
                     Área de Atuação *
                   </label>
                   <input
@@ -284,14 +284,14 @@ export default function RegistroPage() {
                     onChange={(e) => updateField('area_atuacao', e.target.value)}
                     placeholder="Ex: Área 01"
                     required
-                    className="w-full px-4 py-2.5 border border-[#D1D9E6] rounded-lg text-[#0F1621] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/30 focus:border-[#1565C0] transition-all text-sm"
+                    className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm"
                   />
                 </div>
               </div>
 
               {/* Justificativa */}
               <div>
-                <label className="block text-sm font-medium text-[#374151] mb-1">
+                <label className="block text-sm font-medium text-[var(--texto-medio)] mb-1">
                   Justificativa *
                 </label>
                 <textarea
@@ -301,9 +301,9 @@ export default function RegistroPage() {
                   required
                   rows={3}
                   maxLength={500}
-                  className="w-full px-4 py-2.5 border border-[#D1D9E6] rounded-lg text-[#0F1621] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/30 focus:border-[#1565C0] transition-all text-sm resize-none"
+                  className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm resize-none"
                 />
-                <p className="text-[11px] text-[#9CA3AF] text-right mt-0.5">
+                <p className="text-[11px] text-[var(--marcador)] text-right mt-0.5">
                   {formData.justificativa.length}/500
                 </p>
               </div>
@@ -311,7 +311,7 @@ export default function RegistroPage() {
               {/* Senha */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#374151] mb-1">
+                  <label className="block text-sm font-medium text-[var(--texto-medio)] mb-1">
                     Senha *
                   </label>
                   <div className="relative">
@@ -322,19 +322,19 @@ export default function RegistroPage() {
                       placeholder="Mín. 6 caracteres"
                       required
                       minLength={6}
-                      className="w-full px-4 py-2.5 border border-[#D1D9E6] rounded-lg text-[#0F1621] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/30 focus:border-[#1565C0] transition-all text-sm pr-10"
+                      className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm pr-10"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280]"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--marcador)] hover:text-[var(--texto-claro)]"
                     >
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#374151] mb-1">
+                  <label className="block text-sm font-medium text-[var(--texto-medio)] mb-1">
                     Confirmar Senha *
                   </label>
                   <input
@@ -344,14 +344,14 @@ export default function RegistroPage() {
                     placeholder="Repita a senha"
                     required
                     minLength={6}
-                    className="w-full px-4 py-2.5 border border-[#D1D9E6] rounded-lg text-[#0F1621] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/30 focus:border-[#1565C0] transition-all text-sm"
+                    className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm"
                   />
                 </div>
               </div>
 
               {/* Error */}
               {error && (
-                <div className="bg-[#FFEBEE] border border-[#D32F2F]/20 text-[#D32F2F] text-sm px-4 py-3 rounded-lg">
+                <div className="bg-[var(--erro-claro)] border border-[var(--erro)]/20 text-[var(--erro)] text-sm px-4 py-3 rounded-lg">
                   {error}
                 </div>
               )}
@@ -360,7 +360,7 @@ export default function RegistroPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-lg text-white font-semibold text-sm bg-[#1565C0] hover:bg-[#0D47A1] disabled:bg-[#9CA3AF] disabled:cursor-not-allowed transition-colors shadow-sm"
+                className="w-full py-3 rounded-lg text-white font-semibold text-sm bg-[var(--primaria)] hover:bg-[var(--primaria-escura)] disabled:bg-[var(--marcador)] disabled:cursor-not-allowed transition-colors shadow-sm"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -379,8 +379,8 @@ export default function RegistroPage() {
         </div>
 
         {/* Footer */}
-        <div className="px-8 py-3 border-t border-[#E5EAF2]">
-          <p className="text-[11px] text-[#9CA3AF]">
+        <div className="px-8 py-3 border-t border-[var(--borda-clara)]">
+          <p className="text-[11px] text-[var(--marcador)]">
             Em conformidade com a LGPD (Lei 13.709/2018)
           </p>
         </div>
@@ -390,7 +390,7 @@ export default function RegistroPage() {
       <div
         className="hidden lg:flex flex-1 flex-col items-center justify-center"
         style={{
-          background: 'linear-gradient(135deg, #0D47A1 0%, #1565C0 40%, #1976D2 70%, #42A5F5 100%)',
+          background: 'linear-gradient(135deg, var(--primaria-escura) 0%, var(--primaria) 40%, var(--primaria) 70%, var(--primaria-clara) 100%)',
         }}
       >
         <div className="text-center px-12 max-w-lg">

@@ -34,7 +34,7 @@ export function validarCEP(cep: string): boolean {
 }
 
 export function validarEmail(email: string): boolean {
-  // RFC 5322 simplificado: local@domain.tld — TLD mínimo 2 chars
+  // RFC 5322 simplificado: local@domain.tld, TLD mínimo 2 chars
   return /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(email.trim());
 }
 
@@ -86,7 +86,7 @@ export function validarDataNascimento(dataBR: string): boolean {
 }
 
 // ============================================================
-// SCHEMAS ZOD — FORMULÁRIOS
+// SCHEMAS ZOD: FORMULÁRIOS
 // ============================================================
 
 export const loginSchema = z.object({

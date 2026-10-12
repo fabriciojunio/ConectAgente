@@ -1,4 +1,4 @@
-# Guia de Contribuição — ConectAgente
+# Guia de Contribuição, ConectAgente
 
 ## Pré-requisitos
 
@@ -31,17 +31,22 @@ npm run dev
 ## Estrutura do Projeto
 
 ```
-ConectAgente-mobile/   — App React Native (Expo)
+ConectAgente-mobile/      aplicativo React Native com Expo
   src/
-    app/               — Telas (Expo Router)
-    components/        — Componentes reutilizáveis
-    contexts/          — Contextos React (Auth, Network, Sync)
-    database/          — SQLite + repositórios offline
-    hooks/             — Custom hooks
-    services/          — Integração Supabase e APIs externas
-    utils/             — Utilitários (LGPD, formatadores)
+    app/                  telas, roteadas pelo Expo Router
+    components/           componentes reutilizáveis
+    contexts/             contextos React: Auth, Network, Sync, Theme
+    database/             SQLite local e os repositórios offline
+    hooks/                hooks próprios
+    services/             integração com o Supabase e APIs externas
+    utils/                validação, criptografia, LGPD, formatação
 
-ConectAgente-web/      — Portal administrativo Next.js
+ConectAgente-web/         painel de gestão em Next.js
+  src/
+    app/                  rotas e Server Actions
+    services/             consultas ao Supabase, por domínio
+    lib/                  cache, fila de requisição, limite de taxa
+  supabase/               migrações e as suítes que rodam contra o banco
 ```
 
 ## Padrão de Commits

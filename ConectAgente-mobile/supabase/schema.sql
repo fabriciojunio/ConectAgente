@@ -1,5 +1,5 @@
 -- ============================================================
--- ConectAgente — Schema Supabase (PostgreSQL)
+-- ConectAgente, Schema Supabase (PostgreSQL)
 -- ============================================================
 -- Execute este script no SQL Editor do seu projeto Supabase:
 --   Dashboard → SQL Editor → New query → Cole e execute
@@ -254,7 +254,7 @@ CREATE INDEX IF NOT EXISTS idx_audit_agente ON audit_log(agente_id);
 CREATE INDEX IF NOT EXISTS idx_audit_tabela ON audit_log(tabela, registro_id);
 
 -- ─────────────────────────────────────────────
--- ROW LEVEL SECURITY — LGPD
+-- ROW LEVEL SECURITY: LGPD
 -- Cada agente só acessa seus próprios dados.
 -- ─────────────────────────────────────────────
 ALTER TABLE residencias ENABLE ROW LEVEL SECURITY;
@@ -264,7 +264,7 @@ ALTER TABLE agendamentos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE metas_visitas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE prontuarios ENABLE ROW LEVEL SECURITY;
 
--- Políticas RLS — agente_id deve corresponder ao usuário autenticado
+-- Políticas RLS: agente_id deve corresponder ao usuário autenticado
 CREATE POLICY "agente_residencias" ON residencias
   USING (agente_id::text = auth.uid()::text);
 

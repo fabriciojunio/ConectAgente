@@ -25,10 +25,10 @@ function SkeletonRows() {
     <div className="overflow-x-auto">
       {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="flex gap-4 px-4 py-3 border-b last:border-0 animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/3" />
-          <div className="h-4 bg-gray-200 rounded w-1/4" />
-          <div className="h-4 bg-gray-200 rounded w-1/5" />
-          <div className="h-4 bg-gray-200 rounded w-1/6" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/3" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/4" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/5" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/6" />
         </div>
       ))}
     </div>
@@ -123,14 +123,14 @@ export default function MonitoramentoPage() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {statCards.map((stat) => (
-          <div key={stat.label} className="bg-white rounded-xl border p-4">
+          <div key={stat.label} className="bg-[var(--superficie)] rounded-xl border p-4">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${stat.color}`}>
                 <stat.icon className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">{stat.label}</p>
-                <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+                <p className="text-sm text-[var(--texto-claro)]">{stat.label}</p>
+                <p className="text-xl font-bold text-[var(--texto)]">{stat.value}</p>
               </div>
             </div>
           </div>
@@ -141,22 +141,22 @@ export default function MonitoramentoPage() {
       <div className="card-grid">
         {distribuicaoCards.map((card) => (
           <div key={card.label} className={`rounded-xl p-4 ${card.className}`}>
-            <p className="text-sm font-medium text-gray-700">{card.label}</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{card.count}</p>
+            <p className="text-sm font-medium text-[var(--texto-medio)]">{card.label}</p>
+            <p className="text-2xl font-bold text-[var(--texto)] mt-1">{card.count}</p>
           </div>
         ))}
       </div>
 
       {/* Coverage Chart */}
       {cobertura.length > 0 && (
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-[var(--superficie)] rounded-xl border p-6">
           <h3 className="section-title">Cobertura por Microárea</h3>
           <CoberturaChart data={cobertura} loading={false} />
         </div>
       )}
 
       {/* Families in delay table */}
-      <div className="bg-white rounded-xl border p-6">
+      <div className="bg-[var(--superficie)] rounded-xl border p-6">
         <h3 className="section-title">Famílias em Atraso</h3>
         {loading && familiasAtraso.length === 0 ? (
           <SkeletonRows />
@@ -164,12 +164,12 @@ export default function MonitoramentoPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-gray-50">
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Família</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Bairro</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Agente</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Dias s/ Visita</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Criticidade</th>
+                <tr className="border-b bg-[var(--superficie-alt)]">
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Família</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden md:table-cell">Bairro</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden lg:table-cell">Agente</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Dias s/ Visita</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Criticidade</th>
                 </tr>
               </thead>
               <tbody>
@@ -177,7 +177,7 @@ export default function MonitoramentoPage() {
                   .sort((a, b) => b.dias_sem_visita - a.dias_sem_visita)
                   .slice(0, 50)
                   .map((familia) => (
-                    <tr key={familia.residencia_id} className="border-b last:border-0 hover:bg-gray-50">
+                    <tr key={familia.residencia_id} className="border-b last:border-0 hover:bg-[var(--superficie-alt)]">
                       <td className="px-4 py-3 font-medium">{familia.endereco}</td>
                       <td className="px-4 py-3 hidden md:table-cell">{familia.bairro}</td>
                       <td className="px-4 py-3 hidden lg:table-cell">{familia.agente_nome}</td>
@@ -210,7 +210,7 @@ export default function MonitoramentoPage() {
 
       {/* Rankings */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-[var(--superficie)] rounded-xl border p-6">
           <h3 className="section-title flex items-center gap-2">
             <MapPin className="w-5 h-5 text-yellow-500" />
             Microáreas com Mais Atraso
@@ -219,13 +219,13 @@ export default function MonitoramentoPage() {
             <div className="space-y-3">
               {rankingMicroareas.slice(0, 10).map((item, index) => (
                 <div key={item.microarea} className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-gray-400 w-6">{index + 1}.</span>
+                  <span className="text-sm font-bold text-[var(--marcador)] w-6">{index + 1}.</span>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-medium">{item.microarea}</span>
                       <span className="text-sm text-red-600 font-medium">{item.total_atraso}</span>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full h-1.5">
+                    <div className="w-full bg-[var(--superficie-alt)] rounded-full h-1.5">
                       <div
                         className="bg-red-500 h-1.5 rounded-full"
                         style={{
@@ -238,11 +238,11 @@ export default function MonitoramentoPage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500">Sem dados disponíveis.</p>
+            <p className="text-sm text-[var(--texto-claro)]">Sem dados disponíveis.</p>
           )}
         </div>
 
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-[var(--superficie)] rounded-xl border p-6">
           <h3 className="section-title flex items-center gap-2">
             <Users className="w-5 h-5 text-orange-500" />
             Agentes com Mais Famílias Atrasadas
@@ -251,13 +251,13 @@ export default function MonitoramentoPage() {
             <div className="space-y-3">
               {rankingAgentes.slice(0, 10).map((item, index) => (
                 <div key={item.agente_nome} className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-gray-400 w-6">{index + 1}.</span>
+                  <span className="text-sm font-bold text-[var(--marcador)] w-6">{index + 1}.</span>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-medium">{item.agente_nome}</span>
                       <span className="text-sm text-orange-600 font-medium">{item.total_atraso}</span>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full h-1.5">
+                    <div className="w-full bg-[var(--superficie-alt)] rounded-full h-1.5">
                       <div
                         className="bg-orange-500 h-1.5 rounded-full"
                         style={{
@@ -270,7 +270,7 @@ export default function MonitoramentoPage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500">Sem dados disponíveis.</p>
+            <p className="text-sm text-[var(--texto-claro)]">Sem dados disponíveis.</p>
           )}
         </div>
       </div>

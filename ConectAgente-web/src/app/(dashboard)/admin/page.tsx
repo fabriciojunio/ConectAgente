@@ -24,9 +24,9 @@ function SkeletonRows() {
     <>
       {Array.from({ length: 5 }).map((_, i) => (
         <div key={i} className="flex gap-4 px-4 py-3 border-b last:border-0 animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/4" />
-          <div className="h-4 bg-gray-200 rounded w-1/3" />
-          <div className="h-4 bg-gray-200 rounded w-1/5" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/4" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/3" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/5" />
         </div>
       ))}
     </>
@@ -109,7 +109,7 @@ export default function AdminPage() {
       description: 'Histórico de ações do sistema',
       href: '#logs',
       icon: FileText,
-      color: 'text-gray-600 bg-gray-100',
+      color: 'text-[var(--texto-claro)] bg-[var(--superficie-alt)]',
     },
   ];
 
@@ -133,14 +133,14 @@ export default function AdminPage() {
       {statCards.length > 0 && (
         <div className="card-grid">
           {statCards.map((stat) => (
-            <div key={stat.label} className="bg-white rounded-xl border p-4">
+            <div key={stat.label} className="bg-[var(--superficie)] rounded-xl border p-4">
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-lg ${stat.color}`}>
                   <stat.icon className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">{stat.label}</p>
-                  <p className="text-xl font-bold text-gray-900">{stat.value.toLocaleString('pt-BR')}</p>
+                  <p className="text-sm text-[var(--texto-claro)]">{stat.label}</p>
+                  <p className="text-xl font-bold text-[var(--texto)]">{stat.value.toLocaleString('pt-BR')}</p>
                 </div>
               </div>
             </div>
@@ -156,7 +156,7 @@ export default function AdminPage() {
             <Link
               key={link.label}
               href={link.href}
-              className="bg-white rounded-xl border p-5 hover:shadow-md hover:border-primary-200 transition-all group"
+              className="bg-[var(--superficie)] rounded-xl border p-5 hover:shadow-md hover:border-primary-200 transition-all group"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -164,11 +164,11 @@ export default function AdminPage() {
                     <link.icon className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">{link.label}</p>
-                    <p className="text-sm text-gray-500">{link.description}</p>
+                    <p className="font-semibold text-[var(--texto)]">{link.label}</p>
+                    <p className="text-sm text-[var(--texto-claro)]">{link.description}</p>
                   </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-primary-500 transition-colors" />
+                <ChevronRight className="w-5 h-5 text-[var(--marcador)] group-hover:text-primary-500 transition-colors" />
               </div>
             </Link>
           ))}
@@ -176,9 +176,9 @@ export default function AdminPage() {
       </div>
 
       {/* Audit Logs */}
-      <div className="bg-white rounded-xl border p-6" id="logs">
+      <div className="bg-[var(--superficie)] rounded-xl border p-6" id="logs">
         <h3 className="section-title flex items-center gap-2">
-          <FileText className="w-5 h-5 text-gray-500" />
+          <FileText className="w-5 h-5 text-[var(--texto-claro)]" />
           Logs de Auditoria Recentes
         </h3>
         {loading && logs.length === 0 ? (
@@ -187,10 +187,10 @@ export default function AdminPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-gray-50">
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Data/Hora</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Ação</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Tabela</th>
+                <tr className="border-b bg-[var(--superficie-alt)]">
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Data/Hora</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Ação</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden md:table-cell">Tabela</th>
                 </tr>
               </thead>
               <tbody>
@@ -198,11 +198,11 @@ export default function AdminPage() {
                   <tr key={log.id} className="border-b last:border-0">
                     <td className="px-4 py-3 whitespace-nowrap">{formatDate(log.created_at)}</td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                      <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--superficie-alt)] text-[var(--texto-medio)]">
                         {log.acao}
                       </span>
                     </td>
-                    <td className="px-4 py-3 hidden md:table-cell text-gray-500">
+                    <td className="px-4 py-3 hidden md:table-cell text-[var(--texto-claro)]">
                       {log.tabela}
                     </td>
                   </tr>
@@ -211,7 +211,7 @@ export default function AdminPage() {
             </table>
           </div>
         ) : (
-          <p className="text-sm text-gray-500">Nenhum log de auditoria encontrado.</p>
+          <p className="text-sm text-[var(--texto-claro)]">Nenhum log de auditoria encontrado.</p>
         )}
       </div>
     </div>

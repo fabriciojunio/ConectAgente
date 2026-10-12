@@ -22,13 +22,13 @@ import {
 
 function SkeletonRows() {
   return (
-    <div className="bg-white rounded-xl border overflow-hidden">
+    <div className="bg-[var(--superficie)] rounded-xl border overflow-hidden">
       {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="flex gap-4 px-4 py-3 border-b last:border-0 animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/4" />
-          <div className="h-4 bg-gray-200 rounded w-1/5" />
-          <div className="h-4 bg-gray-200 rounded w-1/6" />
-          <div className="h-4 bg-gray-200 rounded w-1/6" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/4" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/5" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/6" />
+          <div className="h-4 bg-[var(--borda-clara)] rounded w-1/6" />
         </div>
       ))}
     </div>
@@ -121,14 +121,14 @@ export default function MoradoresPage() {
       {/* Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {statCards.map((stat) => (
-          <div key={stat.label} className="bg-white rounded-xl border p-4">
+          <div key={stat.label} className="bg-[var(--superficie)] rounded-xl border p-4">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${stat.color}`}>
                 <stat.icon className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[11px] text-gray-500 leading-tight">{stat.label}</p>
-                <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+                <p className="text-[11px] text-[var(--texto-claro)] leading-tight">{stat.label}</p>
+                <p className="text-xl font-bold text-[var(--texto)]">{stat.value}</p>
               </div>
             </div>
           </div>
@@ -143,13 +143,13 @@ export default function MoradoresPage() {
 
       {/* Search */}
       <div className="relative w-full sm:w-80">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--marcador)]" />
         <input
           type="text"
           placeholder="Buscar por nome, CPF, SUS ou bairro..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none"
+          className="w-full pl-10 pr-4 py-2 rounded-lg border border-[var(--borda)] text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none"
         />
       </div>
 
@@ -162,17 +162,17 @@ export default function MoradoresPage() {
           description="Não foram encontrados moradores com os filtros selecionados."
         />
       ) : (
-        <div className="bg-white rounded-xl border overflow-hidden">
+        <div className="bg-[var(--superficie)] rounded-xl border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-gray-50">
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Nome</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">CPF</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Idade</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Bairro</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">Agente</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Condições</th>
+                <tr className="border-b bg-[var(--superficie-alt)]">
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Nome</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden md:table-cell">CPF</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden lg:table-cell">Idade</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden lg:table-cell">Bairro</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden xl:table-cell">Agente</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Condições</th>
                 </tr>
               </thead>
               <tbody>
@@ -188,7 +188,7 @@ export default function MoradoresPage() {
                   return (
                     <tr
                       key={morador.id}
-                      className="border-b last:border-0 hover:bg-gray-50 cursor-pointer transition-colors"
+                      className="border-b last:border-0 hover:bg-[var(--superficie-alt)] cursor-pointer transition-colors"
                       onClick={() => setSelectedMorador(morador)}
                     >
                       <td className="px-4 py-3">
@@ -201,7 +201,7 @@ export default function MoradoresPage() {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 hidden md:table-cell text-gray-500">
+                      <td className="px-4 py-3 hidden md:table-cell text-[var(--texto-claro)]">
                         {formatCPF(morador.cpf)}
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell">
@@ -229,7 +229,7 @@ export default function MoradoresPage() {
                               {c}
                             </span>
                           )) : (
-                            <span className="text-gray-400 text-xs">-</span>
+                            <span className="text-[var(--marcador)] text-xs">-</span>
                           )}
                         </div>
                       </td>
@@ -241,8 +241,8 @@ export default function MoradoresPage() {
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t bg-gray-50">
-              <p className="text-sm text-gray-500">
+            <div className="flex items-center justify-between px-4 py-3 border-t bg-[var(--superficie-alt)]">
+              <p className="text-sm text-[var(--texto-claro)]">
                 Pagina {page} de {totalPages}
               </p>
               <div className="flex gap-2">
@@ -261,12 +261,12 @@ export default function MoradoresPage() {
       {/* Detail Modal */}
       {selectedMorador && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-[var(--superficie)] rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b">
               <h2 className="text-lg font-semibold">Detalhes do Paciente</h2>
               <button
                 onClick={() => setSelectedMorador(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-[var(--marcador)] hover:text-[var(--texto-claro)]"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -274,45 +274,45 @@ export default function MoradoresPage() {
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-gray-500">Nome</p>
+                  <p className="text-xs text-[var(--texto-claro)]">Nome</p>
                   <p className="font-medium">{selectedMorador.nome}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">CPF</p>
+                  <p className="text-xs text-[var(--texto-claro)]">CPF</p>
                   <p className="font-medium">{formatCPF(selectedMorador.cpf)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Cartao SUS</p>
+                  <p className="text-xs text-[var(--texto-claro)]">Cartao SUS</p>
                   <p className="font-medium">{selectedMorador.cartao_sus || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Telefone</p>
+                  <p className="text-xs text-[var(--texto-claro)]">Telefone</p>
                   <p className="font-medium">{selectedMorador.telefone || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Data de Nascimento</p>
+                  <p className="text-xs text-[var(--texto-claro)]">Data de Nascimento</p>
                   <p className="font-medium">
                     {selectedMorador.data_nascimento ? formatDate(selectedMorador.data_nascimento) : '-'}
                     {selectedMorador.data_nascimento && ` (${calcularIdade(selectedMorador.data_nascimento)} anos)`}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Sexo</p>
+                  <p className="text-xs text-[var(--texto-claro)]">Sexo</p>
                   <p className="font-medium capitalize">{selectedMorador.sexo}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Escolaridade</p>
+                  <p className="text-xs text-[var(--texto-claro)]">Escolaridade</p>
                   <p className="font-medium">{selectedMorador.escolaridade || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Profissao</p>
+                  <p className="text-xs text-[var(--texto-claro)]">Profissao</p>
                   <p className="font-medium">{selectedMorador.profissao || '-'}</p>
                 </div>
               </div>
 
               {/* Endereco */}
               <div>
-                <p className="text-xs text-gray-500">Endereco</p>
+                <p className="text-xs text-[var(--texto-claro)]">Endereco</p>
                 <p className="font-medium">
                   {selectedMorador.residencia
                     ? `${selectedMorador.residencia.logradouro}, ${selectedMorador.residencia.numero} - ${selectedMorador.residencia.bairro}`
@@ -322,13 +322,13 @@ export default function MoradoresPage() {
 
               {/* Agente */}
               <div>
-                <p className="text-xs text-gray-500">Agente Responsavel</p>
+                <p className="text-xs text-[var(--texto-claro)]">Agente Responsavel</p>
                 <p className="font-medium">{selectedMorador.agente?.nome ?? '-'}</p>
               </div>
 
               {/* Condicoes de saude */}
               <div>
-                <p className="text-xs text-gray-500 mb-2">Condições de Saude</p>
+                <p className="text-xs text-[var(--texto-claro)] mb-2">Condições de Saude</p>
                 <div className="flex flex-wrap gap-2">
                   {selectedMorador.is_hipertenso && (
                     <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">Hipertenso</span>
@@ -346,7 +346,7 @@ export default function MoradoresPage() {
                     <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">{selectedMorador.doencas}</span>
                   )}
                   {!selectedMorador.is_hipertenso && !selectedMorador.is_diabetico && !selectedMorador.is_gestante && !selectedMorador.is_domiciliado && !selectedMorador.tem_doenca && (
-                    <span className="text-sm text-gray-400">Nenhuma condição registrada</span>
+                    <span className="text-sm text-[var(--marcador)]">Nenhuma condição registrada</span>
                   )}
                 </div>
               </div>

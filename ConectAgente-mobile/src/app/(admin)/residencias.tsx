@@ -154,7 +154,7 @@ export default function AdminResidencias() {
                   <InfoRow label="CEP" value={selecionada.cep} />
                   <InfoRow label="Tipo de imóvel" value={selecionada.tipo_imovel} />
                   <InfoRow label="Nº de cômodos" value={String(selecionada.num_comodos)} />
-                  <InfoRow label="Animais" value={selecionada.tem_animais ? `Sim${selecionada.animais_info ? ` — ${selecionada.animais_info}` : ''}` : 'Não'} />
+                  <InfoRow label="Animais" value={selecionada.tem_animais ? `Sim${selecionada.animais_info ? `, ${selecionada.animais_info}` : ''}` : 'Não'} />
                   {selecionada.agente_nome && <InfoRow label="Agente responsável" value={selecionada.agente_nome} />}
                   <InfoRow label="Cadastro" value={new Date(selecionada.created_at).toLocaleDateString('pt-BR')} />
 
