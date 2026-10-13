@@ -1,7 +1,7 @@
 import type { SQLiteBindValue } from 'expo-sqlite';
 import { getDatabase } from '../database';
 import { Visita, Agendamento, StatusVisita, StatusSync, EstatisticasVisitas, VisitaListada } from '../../types';
-import { generateUUID, isoNow } from '../../utils/formatters';
+import { apenasData, generateUUID, isoNow } from '../../utils/formatters';
 import { syncQueueRepository } from './syncQueueRepository';
 
 export const visitaRepository = {
@@ -129,13 +129,36 @@ export const visitaRepository = {
     return rows.map(mapRow);
   },
 
+  /**
+   * O painel do agente contava zero visita no dia em que ela foi feita.
+   *
+   * `visitas.data_visita` guarda só a data, no formato `2026-10-13`, porque é
+   * o que `parseDateBR` produz a partir do campo da tela. A consulta comparava
+   * esse valor com `new Date(ano, mes, dia).toISOString()`, que monta a
+   * meia-noite local e devolve em UTC: no fuso do Brasil sai
+   * `2026-10-13T03:00:00.000Z`.
+   *
+   * SQLite compara texto caractere a caractere. Os dez primeiros são iguais,
+   * aí a string da esquerda acaba e a mais curta é considerada menor, então
+   * `'2026-10-13' >= '2026-10-13T03:00:00.000Z'` dá falso e a visita de hoje
+   * fica de fora.
+   *
+   * O contador da semana escondia o defeito: contra `'2026-10-11T03:00...'` a
+   * comparação dá verdadeiro no dígito do dia, e o número aparecia certo. Foi
+   * assim que apareceu em uso real: "Hoje 0" ao lado de "Semana 1", com uma
+   * visita só, registrada minutos antes.
+   *
+   * Nenhuma exceção é levantada em caso nenhum. O número só vem menor.
+   */
   async estatisticas(agenteId: string): Promise<EstatisticasVisitas> {
     const db = await getDatabase();
     const hoje = new Date();
-    const inicioHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).toISOString();
-    const inicioSemana = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - hoje.getDay()).toISOString();
-    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString();
-    const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString();
+    const inicioHoje = apenasData(hoje);
+    const inicioSemana = apenasData(
+      new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - hoje.getDay())
+    );
+    const inicioMes = apenasData(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+    const fimMes = apenasData(new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0));
 
     const [total, agendadas, hoje_count, semana_count, mes_count, meta] = await Promise.all([
       db.getFirstAsync<{ count: number }>(
