@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { rateLimit } from '@/lib/rateLimit';
 import { z } from 'zod';
+import { registrarAcao } from '@/services/auditService';
 
 // ---------------------------------------------------------------------------
 // Schema de validação para o formulário de registro
@@ -273,6 +274,13 @@ export async function aprovarSolicitacao(
       })
       .eq('id', solicitacaoId);
 
+    // Aprovar um cadastro cria acesso ao prontuário de munícipes. É ato
+    // administrativo e precisa de rastro: quem aprovou, quando, qual
+    // solicitação. Não guarda dado pessoal do solicitante.
+    await registrarAcao('APROVAR_CADASTRO', 'solicitacoes_registro', solicitacaoId, undefined, {
+      aprovado_por: aprovadorId,
+    });
+
     return { success: true };
   } catch (err) {
     console.error('Erro ao aprovar solicitação:', err);
@@ -317,6 +325,12 @@ export async function rejeitarSolicitacao(
     if (error) {
       throw error;
     }
+
+    // Rejeitar também é ato administrativo: nega acesso a um colega e precisa
+    // ser atribuível a alguém.
+    await registrarAcao('REJEITAR_CADASTRO', 'solicitacoes_registro', solicitacaoId, undefined, {
+      rejeitado_por: aprovadorId,
+    });
 
     return { success: true };
   } catch (err) {
