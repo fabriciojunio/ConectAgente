@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl, Platform, Alert,
@@ -8,20 +8,28 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { agenteRepository } from '../../database/repositories/agenteRepository';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 type AuditEntry = Awaited<ReturnType<typeof agenteRepository.listarAuditLog>>[number];
 type GlobalStats = Awaited<ReturnType<typeof agenteRepository.obterEstatisticasGlobais>>;
 
-const ACAO_ICONS: Record<string, { icon: string; color: string }> = {
-  RESET_SENHA: { icon: 'key-outline', color: COLORS.warning },
-  INSERT: { icon: 'add-circle-outline', color: COLORS.success },
-  UPDATE: { icon: 'create-outline', color: COLORS.info },
-  DELETE: { icon: 'trash-outline', color: COLORS.error },
-  LOGIN: { icon: 'log-in-outline', color: COLORS.primary },
-};
+// Mapa de cor por acao da auditoria. Vira funcao da paleta porque as cores
+// mudam com o tema, e no nivel do modulo nao ha paleta para ler.
+const criarAcaoIcons = (
+  colors: ThemeColors
+): Record<string, { icon: string; color: string }> => ({
+  RESET_SENHA: { icon: 'key-outline', color: colors.warning },
+  INSERT: { icon: 'add-circle-outline', color: colors.success },
+  UPDATE: { icon: 'create-outline', color: colors.info },
+  DELETE: { icon: 'trash-outline', color: colors.error },
+  LOGIN: { icon: 'log-in-outline', color: colors.primary },
+});
 
 export default function AdminConfiguracoes() {
+  const { colors } = useTheme();
+  const ACAO_ICONS = useMemo(() => criarAcaoIcons(colors), [colors]);
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const [stats, setStats] = useState<GlobalStats | null>(null);
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
   const [limite, setLimite] = useState(20);
@@ -55,7 +63,7 @@ export default function AdminConfiguracoes() {
 
   function getIconProps(acao: string) {
     const key = Object.keys(ACAO_ICONS).find((k) => acao.toUpperCase().includes(k));
-    return key ? ACAO_ICONS[key] : { icon: 'ellipse-outline', color: COLORS.textLight };
+    return key ? ACAO_ICONS[key] : { icon: 'ellipse-outline', color: colors.textLight };
   }
 
   function formatDateTime(iso: string) {
@@ -112,7 +120,7 @@ export default function AdminConfiguracoes() {
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />
         }
       >
         {/* Header */}
@@ -126,12 +134,12 @@ export default function AdminConfiguracoes() {
           <Text style={styles.sectionTitle}>Visão geral do banco de dados</Text>
           <View style={styles.card}>
             <DBRow icon="people-outline" color="#7B1FA2" label="Agentes cadastrados" value={stats?.totalAgentes ?? 0} />
-            <DBRow icon="business-outline" color={COLORS.info} label="Residências" value={stats?.totalResidencias ?? 0} />
-            <DBRow icon="person-outline" color={COLORS.success} label="Moradores" value={stats?.totalMoradores ?? 0} />
-            <DBRow icon="clipboard-outline" color={COLORS.primary} label="Visitas este mês" value={stats?.totalVisitasMes ?? 0} />
-            <DBRow icon="today-outline" color={COLORS.warning} label="Visitas hoje" value={stats?.totalVisitasHoje ?? 0} />
-            <DBRow icon="sync-outline" color={COLORS.error} label="Pendentes de sync" value={stats?.visitasPendentesSync ?? 0} />
-            <DBRow icon="document-text-outline" color={COLORS.textMedium} label="Entradas no audit log" value={stats?.totalAuditLog ?? 0} last />
+            <DBRow icon="business-outline" color={colors.info} label="Residências" value={stats?.totalResidencias ?? 0} />
+            <DBRow icon="person-outline" color={colors.success} label="Moradores" value={stats?.totalMoradores ?? 0} />
+            <DBRow icon="clipboard-outline" color={colors.primary} label="Visitas este mês" value={stats?.totalVisitasMes ?? 0} />
+            <DBRow icon="today-outline" color={colors.warning} label="Visitas hoje" value={stats?.totalVisitasHoje ?? 0} />
+            <DBRow icon="sync-outline" color={colors.error} label="Pendentes de sync" value={stats?.visitasPendentesSync ?? 0} />
+            <DBRow icon="document-text-outline" color={colors.textMedium} label="Entradas no audit log" value={stats?.totalAuditLog ?? 0} last />
           </View>
         </View>
 
@@ -169,7 +177,7 @@ export default function AdminConfiguracoes() {
                 )}
               </View>
               <TouchableOpacity onPress={handleResetAdmin} style={styles.infoBtn} hitSlop={8}>
-                <Ionicons name="information-circle-outline" size={20} color={COLORS.textLight} />
+                <Ionicons name="information-circle-outline" size={20} color={colors.textLight} />
               </TouchableOpacity>
             </View>
           </View>
@@ -183,7 +191,7 @@ export default function AdminConfiguracoes() {
           </View>
           {auditLog.length === 0 ? (
             <View style={styles.emptyLog}>
-              <Ionicons name="document-text-outline" size={40} color={COLORS.disabled} />
+              <Ionicons name="document-text-outline" size={40} color={colors.disabled} />
               <Text style={styles.emptyLogText}>Nenhuma entrada no log</Text>
             </View>
           ) : (
@@ -209,7 +217,7 @@ export default function AdminConfiguracoes() {
                 );
               })}
               <TouchableOpacity style={styles.loadMoreBtn} onPress={carregarMais}>
-                <Ionicons name="chevron-down-outline" size={16} color={COLORS.primary} />
+                <Ionicons name="chevron-down-outline" size={16} color={colors.primary} />
                 <Text style={styles.loadMoreText}>Carregar mais</Text>
               </TouchableOpacity>
             </>
@@ -242,6 +250,8 @@ function DBRow({ icon, color, label, value, last }: {
   value: number;
   last?: boolean;
 }) {
+  const { colors } = useTheme();
+  const dr = useMemo(() => criarDr(colors), [colors]);
   return (
     <View style={[dr.row, !last && dr.border]}>
       <View style={[dr.iconWrap, { backgroundColor: color + '18' }]}>
@@ -252,15 +262,18 @@ function DBRow({ icon, color, label, value, last }: {
     </View>
   );
 }
-const dr = StyleSheet.create({
+const criarDr = (colors: ThemeColors) =>
+  StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingVertical: 10 },
-  border: { borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
+  border: { borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   iconWrap: { width: 32, height: 32, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center' },
-  label: { flex: 1, fontSize: FONT_SIZE.sm, color: COLORS.text },
+  label: { flex: 1, fontSize: FONT_SIZE.sm, color: colors.text },
   value: { fontSize: FONT_SIZE.md, fontWeight: '800' },
 });
 
 function AppRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
+  const { colors } = useTheme();
+  const ar = useMemo(() => criarAr(colors), [colors]);
   return (
     <View style={[ar.row, !last && ar.border]}>
       <Text style={ar.label}>{label}</Text>
@@ -268,28 +281,30 @@ function AppRow({ label, value, last }: { label: string; value: string; last?: b
     </View>
   );
 }
-const ar = StyleSheet.create({
+const criarAr = (colors: ThemeColors) =>
+  StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 },
-  border: { borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
-  label: { fontSize: FONT_SIZE.sm, color: COLORS.textLight },
-  value: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: COLORS.text },
+  border: { borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  label: { fontSize: FONT_SIZE.sm, color: colors.textLight },
+  value: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: colors.text },
 });
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.background },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
   scroll: { flex: 1 },
 
   header: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.md },
-  headerTitle: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: COLORS.text },
-  headerSub: { fontSize: FONT_SIZE.sm, color: COLORS.textLight, marginTop: 2 },
+  headerTitle: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: colors.text },
+  headerSub: { fontSize: FONT_SIZE.sm, color: colors.textLight, marginTop: 2 },
 
   section: { paddingHorizontal: SPACING.md, marginBottom: SPACING.md },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm },
-  sectionTitle: { fontSize: FONT_SIZE.md, fontWeight: '700', color: COLORS.text, marginBottom: SPACING.sm },
-  sectionCount: { fontSize: FONT_SIZE.sm, color: COLORS.textLight },
+  sectionTitle: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.text, marginBottom: SPACING.sm },
+  sectionCount: { fontSize: FONT_SIZE.sm, color: colors.textLight },
 
   card: {
-    backgroundColor: COLORS.card, borderRadius: RADIUS.md,
+    backgroundColor: colors.card, borderRadius: RADIUS.md,
     paddingHorizontal: SPACING.md,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4 },
@@ -298,20 +313,20 @@ const styles = StyleSheet.create({
   },
 
   credRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingVertical: SPACING.md },
-  credLabel: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: COLORS.text, marginBottom: 2 },
-  credValue: { fontSize: FONT_SIZE.sm, color: COLORS.textMedium, fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace' },
+  credLabel: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: colors.text, marginBottom: 2 },
+  credValue: { fontSize: FONT_SIZE.sm, color: colors.textMedium, fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace' },
   credAcoes: { flexDirection: 'row', gap: SPACING.md, marginTop: SPACING.xs },
-  credAcao: { fontSize: FONT_SIZE.sm, color: COLORS.primary, fontWeight: '600' },
-  credAcaoForte: { color: COLORS.error },
+  credAcao: { fontSize: FONT_SIZE.sm, color: colors.primary, fontWeight: '600' },
+  credAcaoForte: { color: colors.error },
   infoBtn: { padding: 4 },
 
   // Audit Log
   emptyLog: { alignItems: 'center', padding: SPACING.xl, gap: SPACING.sm },
-  emptyLogText: { fontSize: FONT_SIZE.md, color: COLORS.textLight },
+  emptyLogText: { fontSize: FONT_SIZE.md, color: colors.textLight },
 
   logEntry: {
     flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm,
-    backgroundColor: COLORS.card, borderRadius: RADIUS.md,
+    backgroundColor: colors.card, borderRadius: RADIUS.md,
     padding: SPACING.sm + 2, marginBottom: SPACING.xs,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3 },
@@ -320,17 +335,17 @@ const styles = StyleSheet.create({
   },
   logIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
   logTopRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginBottom: 2 },
-  logAcao: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: COLORS.text },
+  logAcao: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: colors.text },
   logTabela: {
-    fontSize: 10, color: COLORS.primary, fontWeight: '600',
-    backgroundColor: COLORS.surfaceAlt, paddingHorizontal: 6, paddingVertical: 2, borderRadius: RADIUS.full,
+    fontSize: 10, color: colors.primary, fontWeight: '600',
+    backgroundColor: colors.surfaceAlt, paddingHorizontal: 6, paddingVertical: 2, borderRadius: RADIUS.full,
   },
-  logAgente: { fontSize: FONT_SIZE.xs, color: COLORS.textMedium, marginBottom: 1 },
-  logData: { fontSize: 10, color: COLORS.textLight },
+  logAgente: { fontSize: FONT_SIZE.xs, color: colors.textMedium, marginBottom: 1 },
+  logData: { fontSize: 10, color: colors.textLight },
 
   loadMoreBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: SPACING.xs, paddingVertical: SPACING.sm, marginTop: SPACING.xs,
   },
-  loadMoreText: { fontSize: FONT_SIZE.sm, color: COLORS.primary, fontWeight: '600' },
+  loadMoreText: { fontSize: FONT_SIZE.sm, color: colors.primary, fontWeight: '600' },
 });

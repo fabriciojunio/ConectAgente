@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   TextInput, RefreshControl, Platform, Modal, ScrollView,
@@ -10,7 +10,8 @@ import { useFocusEffect } from 'expo-router';
 import { visitaRepository } from '../../database/repositories/visitaRepository';
 import { agenteRepository } from '../../database/repositories/agenteRepository';
 import { StatusVisita, VisitaListada } from '../../types';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 type VisitaExt = VisitaListada;
 
@@ -26,14 +27,22 @@ const STATUS_OPTIONS: Array<StatusVisita | 'todas'> = [
   'nao_encontrado',
 ];
 
-const STATUS_COLORS: Record<StatusVisita, { bg: string; text: string }> = {
-  realizada: { bg: COLORS.successLight, text: COLORS.success },
-  agendada: { bg: COLORS.warningLight, text: COLORS.warning },
-  cancelada: { bg: COLORS.errorLight, text: COLORS.error },
-  nao_encontrado: { bg: '#F3E5F5', text: '#7B1FA2' },
-};
+// O roxo de `nao_encontrado` estava escrito a mao e continuava claro no tema
+// escuro. Virou par neutro da paleta, que e o que o estado significa: nem
+// sucesso, nem erro.
+const criarStatusColors = (
+  colors: ThemeColors
+): Record<StatusVisita, { bg: string; text: string }> => ({
+  realizada: { bg: colors.successLight, text: colors.success },
+  agendada: { bg: colors.warningLight, text: colors.warning },
+  cancelada: { bg: colors.errorLight, text: colors.error },
+  nao_encontrado: { bg: colors.surfaceAlt, text: colors.textMedium },
+});
 
 export default function AdminVisitas() {
+  const { colors } = useTheme();
+  const STATUS_COLORS = useMemo(() => criarStatusColors(colors), [colors]);
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const [todas, setTodas] = useState<VisitaExt[]>([]);
   const [filtradas, setFiltradas] = useState<VisitaExt[]>([]);
   const [query, setQuery] = useState('');
@@ -92,11 +101,11 @@ export default function AdminVisitas() {
   }
 
   function renderItem({ item }: { item: VisitaExt }) {
-    const sc = item.status in STATUS_COLORS ? STATUS_COLORS[item.status as StatusVisita] : { bg: COLORS.background, text: COLORS.text };
+    const sc = item.status in STATUS_COLORS ? STATUS_COLORS[item.status as StatusVisita] : { bg: colors.background, text: colors.text };
     return (
       <TouchableOpacity style={styles.card} onPress={() => setSelecionada(item)} activeOpacity={0.75}>
         <View style={styles.iconWrap}>
-          <Ionicons name="clipboard-outline" size={18} color={COLORS.primary} />
+          <Ionicons name="clipboard-outline" size={18} color={colors.primary} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.endereco} numberOfLines={1}>
@@ -130,24 +139,24 @@ export default function AdminVisitas() {
           style={[styles.filtroBtn, filtroAtivo && styles.filtroBtnActive]}
           onPress={() => setShowFiltros(true)}
         >
-          <Ionicons name="filter-outline" size={18} color={filtroAtivo ? '#fff' : COLORS.primary} />
+          <Ionicons name="filter-outline" size={18} color={filtroAtivo ? '#fff' : colors.primary} />
           <Text style={[styles.filtroBtnText, filtroAtivo && { color: '#fff' }]}>Filtros</Text>
           {filtroAtivo && <View style={styles.filtroBadge} />}
         </TouchableOpacity>
       </View>
 
       <View style={styles.searchWrap}>
-        <Ionicons name="search-outline" size={18} color={COLORS.textLight} style={{ marginRight: SPACING.xs }} />
+        <Ionicons name="search-outline" size={18} color={colors.textLight} style={{ marginRight: SPACING.xs }} />
         <TextInput
           style={styles.searchInput}
           placeholder="Buscar por endereço ou agente..."
-          placeholderTextColor={COLORS.placeholder}
+          placeholderTextColor={colors.placeholder}
           value={query}
           onChangeText={onSearch}
         />
         {query.length > 0 && (
           <TouchableOpacity onPress={() => onSearch('')} hitSlop={8}>
-            <Ionicons name="close-circle" size={18} color={COLORS.textLight} />
+            <Ionicons name="close-circle" size={18} color={colors.textLight} />
           </TouchableOpacity>
         )}
       </View>
@@ -158,11 +167,11 @@ export default function AdminVisitas() {
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Ionicons name="clipboard-outline" size={48} color={COLORS.disabled} />
+            <Ionicons name="clipboard-outline" size={48} color={colors.disabled} />
             <Text style={styles.emptyText}>Nenhuma visita encontrada</Text>
           </View>
         }
@@ -175,7 +184,7 @@ export default function AdminVisitas() {
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>Filtros</Text>
               <TouchableOpacity onPress={() => setShowFiltros(false)} hitSlop={8}>
-                <Ionicons name="close" size={22} color={COLORS.textLight} />
+                <Ionicons name="close" size={22} color={colors.textLight} />
               </TouchableOpacity>
             </View>
 
@@ -200,7 +209,7 @@ export default function AdminVisitas() {
                 style={[styles.agenteOpt, !agenteFiltro && styles.agenteOptActive]}
                 onPress={() => aplicarAgente('')}
               >
-                <Text style={[styles.agenteOptText, !agenteFiltro && { color: COLORS.primary, fontWeight: '700' }]}>
+                <Text style={[styles.agenteOptText, !agenteFiltro && { color: colors.primary, fontWeight: '700' }]}>
                   Todos os agentes
                 </Text>
               </TouchableOpacity>
@@ -210,10 +219,10 @@ export default function AdminVisitas() {
                   style={[styles.agenteOpt, agenteFiltro === a.id && styles.agenteOptActive]}
                   onPress={() => aplicarAgente(a.id)}
                 >
-                  <Text style={[styles.agenteOptText, agenteFiltro === a.id && { color: COLORS.primary, fontWeight: '700' }]}>
+                  <Text style={[styles.agenteOptText, agenteFiltro === a.id && { color: colors.primary, fontWeight: '700' }]}>
                     {a.nome}
                   </Text>
-                  {agenteFiltro === a.id && <Ionicons name="checkmark" size={16} color={COLORS.primary} />}
+                  {agenteFiltro === a.id && <Ionicons name="checkmark" size={16} color={colors.primary} />}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -238,14 +247,14 @@ export default function AdminVisitas() {
                   <View style={styles.sheetHeader}>
                     <Text style={styles.sheetTitle}>Detalhes da Visita</Text>
                     <TouchableOpacity onPress={() => setSelecionada(null)} hitSlop={8}>
-                      <Ionicons name="close" size={22} color={COLORS.textLight} />
+                      <Ionicons name="close" size={22} color={colors.textLight} />
                     </TouchableOpacity>
                   </View>
 
                   {(() => {
                     const sc = selecionada.status in STATUS_COLORS
                       ? STATUS_COLORS[selecionada.status as StatusVisita]
-                      : { bg: COLORS.background, text: COLORS.text };
+                      : { bg: colors.background, text: colors.text };
                     return (
                       <View style={[styles.statusBanner, { backgroundColor: sc.bg }]}>
                         <Text style={[styles.statusBannerText, { color: sc.text }]}>{selecionada.status.toUpperCase()}</Text>
@@ -297,6 +306,8 @@ export default function AdminVisitas() {
 // ─── Helpers ─────────────────────────────────────────────────
 
 function InfoRow({ label, value }: { label: string; value: string }) {
+  const { colors } = useTheme();
+  const ir = useMemo(() => criarIr(colors), [colors]);
   return (
     <View style={ir.row}>
       <Text style={ir.label}>{label}</Text>
@@ -304,15 +315,18 @@ function InfoRow({ label, value }: { label: string; value: string }) {
     </View>
   );
 }
-const ir = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
-  label: { fontSize: FONT_SIZE.sm, color: COLORS.textLight, flex: 1 },
-  value: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: COLORS.text, maxWidth: '55%', textAlign: 'right' },
+const criarIr = (colors: ThemeColors) =>
+  StyleSheet.create({
+  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  label: { fontSize: FONT_SIZE.sm, color: colors.textLight, flex: 1 },
+  value: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: colors.text, maxWidth: '55%', textAlign: 'right' },
 });
 
 function CheckRow({ label, value }: { label: string; value?: boolean | null }) {
+  const { colors } = useTheme();
+  const cr = useMemo(() => criarCr(colors), [colors]);
   const icon = value == null ? 'remove-outline' : value ? 'checkmark-circle' : 'close-circle';
-  const color = value == null ? COLORS.textLight : value ? COLORS.success : COLORS.error;
+  const color = value == null ? colors.textLight : value ? colors.success : colors.error;
   return (
     <View style={cr.row}>
       <Ionicons name={icon} size={18} color={color} />
@@ -320,42 +334,44 @@ function CheckRow({ label, value }: { label: string; value?: boolean | null }) {
     </View>
   );
 }
-const cr = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
-  label: { fontSize: FONT_SIZE.sm, color: COLORS.text },
+const criarCr = (colors: ThemeColors) =>
+  StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  label: { fontSize: FONT_SIZE.sm, color: colors.text },
 });
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.background },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: SPACING.md, paddingVertical: SPACING.md },
-  headerTitle: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: COLORS.text },
-  headerCount: { fontSize: FONT_SIZE.sm, color: COLORS.textLight, marginTop: 2 },
+  headerTitle: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: colors.text },
+  headerCount: { fontSize: FONT_SIZE.sm, color: colors.textLight, marginTop: 2 },
 
   filtroBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    borderWidth: 1, borderColor: COLORS.primary, borderRadius: RADIUS.md,
+    borderWidth: 1, borderColor: colors.primary, borderRadius: RADIUS.md,
     paddingHorizontal: SPACING.sm, paddingVertical: 8,
   },
-  filtroBtnActive: { backgroundColor: COLORS.primary },
-  filtroBtnText: { fontSize: FONT_SIZE.sm, color: COLORS.primary, fontWeight: '600' },
+  filtroBtnActive: { backgroundColor: colors.primary },
+  filtroBtnText: { fontSize: FONT_SIZE.sm, color: colors.primary, fontWeight: '600' },
   filtroBadge: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff' },
 
   searchWrap: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: COLORS.card, marginHorizontal: SPACING.md,
+    backgroundColor: colors.card, marginHorizontal: SPACING.md,
     borderRadius: RADIUS.md, paddingHorizontal: SPACING.sm,
-    borderWidth: 1, borderColor: COLORS.borderLight, marginBottom: SPACING.sm,
+    borderWidth: 1, borderColor: colors.borderLight, marginBottom: SPACING.sm,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4 },
       android: { elevation: 2 },
     }),
   },
-  searchInput: { flex: 1, height: 44, fontSize: FONT_SIZE.md, color: COLORS.text },
+  searchInput: { flex: 1, height: 44, fontSize: FONT_SIZE.md, color: colors.text },
 
   list: { paddingHorizontal: SPACING.md, paddingBottom: SPACING.xl },
   card: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    backgroundColor: COLORS.card, borderRadius: RADIUS.md,
+    backgroundColor: colors.card, borderRadius: RADIUS.md,
     padding: SPACING.sm + 4, marginBottom: SPACING.sm,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4 },
@@ -364,53 +380,53 @@ const styles = StyleSheet.create({
   },
   iconWrap: {
     width: 40, height: 40, borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.surfaceAlt, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center',
   },
-  endereco: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: COLORS.text },
-  sub: { fontSize: FONT_SIZE.xs, color: COLORS.textLight, marginTop: 1 },
-  motivo: { fontSize: FONT_SIZE.xs, color: COLORS.textMedium, marginTop: 2 },
+  endereco: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: colors.text },
+  sub: { fontSize: FONT_SIZE.xs, color: colors.textLight, marginTop: 1 },
+  motivo: { fontSize: FONT_SIZE.xs, color: colors.textMedium, marginTop: 2 },
   statusChip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: RADIUS.full },
   statusText: { fontSize: 10, fontWeight: '700' },
 
   empty: { alignItems: 'center', paddingTop: 60, gap: SPACING.sm },
-  emptyText: { fontSize: FONT_SIZE.md, color: COLORS.textLight },
+  emptyText: { fontSize: FONT_SIZE.md, color: colors.textLight },
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: COLORS.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: SPACING.md, maxHeight: '88%',
   },
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md },
-  sheetTitle: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: COLORS.text },
+  sheetTitle: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: colors.text },
 
   statusBanner: {
     borderRadius: RADIUS.md, paddingVertical: SPACING.sm,
     alignItems: 'center', marginBottom: SPACING.sm,
   },
   statusBannerText: { fontSize: FONT_SIZE.md, fontWeight: '800', letterSpacing: 1 },
-  sectionTitle: { fontSize: FONT_SIZE.md, fontWeight: '700', color: COLORS.text, marginTop: SPACING.md, marginBottom: 4 },
+  sectionTitle: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.text, marginTop: SPACING.md, marginBottom: 4 },
 
   // Filtros
-  filterLabel: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: COLORS.text, marginBottom: SPACING.xs },
+  filterLabel: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: colors.text, marginBottom: SPACING.xs },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, marginBottom: SPACING.md },
   chip: {
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: RADIUS.full,
-    borderWidth: 1, borderColor: COLORS.border,
+    borderWidth: 1, borderColor: colors.border,
   },
-  chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  chipText: { fontSize: FONT_SIZE.sm, color: COLORS.text },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { fontSize: FONT_SIZE.sm, color: colors.text },
   chipTextActive: { color: '#fff', fontWeight: '700' },
 
   agenteOpt: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: SPACING.sm, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight,
+    paddingVertical: SPACING.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight,
   },
-  agenteOptActive: { backgroundColor: COLORS.surfaceAlt, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.xs },
-  agenteOptText: { fontSize: FONT_SIZE.sm, color: COLORS.text },
+  agenteOptActive: { backgroundColor: colors.surfaceAlt, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.xs },
+  agenteOptText: { fontSize: FONT_SIZE.sm, color: colors.text },
 
   clearBtn: {
-    marginTop: SPACING.md, borderWidth: 1, borderColor: COLORS.error, borderRadius: RADIUS.md,
+    marginTop: SPACING.md, borderWidth: 1, borderColor: colors.error, borderRadius: RADIUS.md,
     paddingVertical: SPACING.sm, alignItems: 'center',
   },
-  clearBtnText: { fontSize: FONT_SIZE.md, color: COLORS.error, fontWeight: '600' },
+  clearBtnText: { fontSize: FONT_SIZE.md, color: colors.error, fontWeight: '600' },
 });

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   TextInput, RefreshControl, Platform, Modal, ScrollView,
@@ -11,11 +11,14 @@ import { residenciaRepository } from '../../database/repositories/residenciaRepo
 import { moradorRepository } from '../../database/repositories/moradorRepository';
 import { visitaRepository } from '../../database/repositories/visitaRepository';
 import { Residencia, Morador, Visita } from '../../types';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 type ResidenciaExt = Residencia & { agente_nome?: string };
 
 export default function AdminResidencias() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const [todas, setTodas] = useState<ResidenciaExt[]>([]);
   const [filtradas, setFiltradas] = useState<ResidenciaExt[]>([]);
   const [query, setQuery] = useState('');
@@ -69,7 +72,7 @@ export default function AdminResidencias() {
     return (
       <TouchableOpacity style={styles.card} onPress={() => abrirDetalhes(item)} activeOpacity={0.75}>
         <View style={styles.iconWrap}>
-          <Ionicons name="home-outline" size={20} color={COLORS.info} />
+          <Ionicons name="home-outline" size={20} color={colors.info} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.endereco} numberOfLines={1}>
@@ -79,7 +82,7 @@ export default function AdminResidencias() {
           <Text style={styles.bairro} numberOfLines={1}>{item.bairro} · {item.cidade}/{item.estado}</Text>
           {item.agente_nome && (
             <View style={styles.agentePill}>
-              <Ionicons name="person-outline" size={10} color={COLORS.textLight} />
+              <Ionicons name="person-outline" size={10} color={colors.textLight} />
               <Text style={styles.agenteNome}>{item.agente_nome}</Text>
             </View>
           )}
@@ -87,7 +90,7 @@ export default function AdminResidencias() {
         <View style={styles.tipoBadge}>
           <Text style={styles.tipoText}>{item.tipo_imovel}</Text>
         </View>
-        <Ionicons name="chevron-forward" size={16} color={COLORS.textLight} />
+        <Ionicons name="chevron-forward" size={16} color={colors.textLight} />
       </TouchableOpacity>
     );
   }
@@ -101,18 +104,18 @@ export default function AdminResidencias() {
       </View>
 
       <View style={styles.searchWrap}>
-        <Ionicons name="search-outline" size={18} color={COLORS.textLight} style={{ marginRight: SPACING.xs }} />
+        <Ionicons name="search-outline" size={18} color={colors.textLight} style={{ marginRight: SPACING.xs }} />
         <TextInput
           style={styles.searchInput}
           placeholder="Buscar por endereço, bairro ou agente..."
-          placeholderTextColor={COLORS.placeholder}
+          placeholderTextColor={colors.placeholder}
           value={query}
           onChangeText={onSearch}
           returnKeyType="search"
         />
         {query.length > 0 && (
           <TouchableOpacity onPress={() => onSearch('')} hitSlop={8}>
-            <Ionicons name="close-circle" size={18} color={COLORS.textLight} />
+            <Ionicons name="close-circle" size={18} color={colors.textLight} />
           </TouchableOpacity>
         )}
       </View>
@@ -123,11 +126,11 @@ export default function AdminResidencias() {
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.info]} tintColor={COLORS.info} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.info]} tintColor={colors.info} />
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Ionicons name="business-outline" size={48} color={COLORS.disabled} />
+            <Ionicons name="business-outline" size={48} color={colors.disabled} />
             <Text style={styles.emptyText}>Nenhuma residência encontrada</Text>
           </View>
         }
@@ -145,7 +148,7 @@ export default function AdminResidencias() {
                       {selecionada.logradouro}, {selecionada.numero}
                     </Text>
                     <TouchableOpacity onPress={() => setSelecionada(null)} hitSlop={8}>
-                      <Ionicons name="close" size={22} color={COLORS.textLight} />
+                      <Ionicons name="close" size={22} color={colors.textLight} />
                     </TouchableOpacity>
                   </View>
 
@@ -166,7 +169,7 @@ export default function AdminResidencias() {
                     moradores.map((m) => (
                       <View key={m.id} style={styles.moradorRow}>
                         <View style={styles.moradorIcon}>
-                          <Ionicons name="person-outline" size={16} color={COLORS.primary} />
+                          <Ionicons name="person-outline" size={16} color={colors.primary} />
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.moradorNome}>{m.nome}</Text>
@@ -186,10 +189,10 @@ export default function AdminResidencias() {
                   ) : (
                     visitas.map((v) => (
                       <View key={v.id} style={styles.visitaRow}>
-                        <View style={[styles.statusDot, { backgroundColor: v.status === 'realizada' ? COLORS.success : COLORS.warning }]} />
+                        <View style={[styles.statusDot, { backgroundColor: v.status === 'realizada' ? colors.success : colors.warning }]} />
                         <Text style={styles.visitaData}>{new Date(v.data_visita).toLocaleDateString('pt-BR')}</Text>
-                        <View style={[styles.statusChip, { backgroundColor: v.status === 'realizada' ? COLORS.successLight : COLORS.warningLight }]}>
-                          <Text style={[styles.statusText, { color: v.status === 'realizada' ? COLORS.success : COLORS.warning }]}>{v.status}</Text>
+                        <View style={[styles.statusChip, { backgroundColor: v.status === 'realizada' ? colors.successLight : colors.warningLight }]}>
+                          <Text style={[styles.statusText, { color: v.status === 'realizada' ? colors.success : colors.warning }]}>{v.status}</Text>
                         </View>
                       </View>
                     ))
@@ -207,6 +210,8 @@ export default function AdminResidencias() {
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
+  const { colors } = useTheme();
+  const ir = useMemo(() => criarIr(colors), [colors]);
   return (
     <View style={ir.row}>
       <Text style={ir.label}>{label}</Text>
@@ -214,34 +219,36 @@ function InfoRow({ label, value }: { label: string; value: string }) {
     </View>
   );
 }
-const ir = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
-  label: { fontSize: FONT_SIZE.sm, color: COLORS.textLight },
-  value: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: COLORS.text, maxWidth: '60%', textAlign: 'right' },
+const criarIr = (colors: ThemeColors) =>
+  StyleSheet.create({
+  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  label: { fontSize: FONT_SIZE.sm, color: colors.textLight },
+  value: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: colors.text, maxWidth: '60%', textAlign: 'right' },
 });
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.background },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.md },
-  headerTitle: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: COLORS.text },
-  headerCount: { fontSize: FONT_SIZE.sm, color: COLORS.textLight, marginTop: 2 },
+  headerTitle: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: colors.text },
+  headerCount: { fontSize: FONT_SIZE.sm, color: colors.textLight, marginTop: 2 },
 
   searchWrap: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: COLORS.card, marginHorizontal: SPACING.md,
+    backgroundColor: colors.card, marginHorizontal: SPACING.md,
     borderRadius: RADIUS.md, paddingHorizontal: SPACING.sm,
-    borderWidth: 1, borderColor: COLORS.borderLight, marginBottom: SPACING.sm,
+    borderWidth: 1, borderColor: colors.borderLight, marginBottom: SPACING.sm,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4 },
       android: { elevation: 2 },
     }),
   },
-  searchInput: { flex: 1, height: 44, fontSize: FONT_SIZE.md, color: COLORS.text },
+  searchInput: { flex: 1, height: 44, fontSize: FONT_SIZE.md, color: colors.text },
 
   list: { paddingHorizontal: SPACING.md, paddingBottom: SPACING.xl },
   card: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    backgroundColor: COLORS.card, borderRadius: RADIUS.md,
+    backgroundColor: colors.card, borderRadius: RADIUS.md,
     padding: SPACING.sm + 4, marginBottom: SPACING.sm,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4 },
@@ -250,49 +257,49 @@ const styles = StyleSheet.create({
   },
   iconWrap: {
     width: 40, height: 40, borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.infoLight, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.infoLight, alignItems: 'center', justifyContent: 'center',
   },
-  endereco: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: COLORS.text },
-  bairro: { fontSize: FONT_SIZE.xs, color: COLORS.textLight, marginTop: 1 },
+  endereco: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: colors.text },
+  bairro: { fontSize: FONT_SIZE.xs, color: colors.textLight, marginTop: 1 },
   agentePill: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 3 },
-  agenteNome: { fontSize: 10, color: COLORS.textLight },
+  agenteNome: { fontSize: 10, color: colors.textLight },
   tipoBadge: {
-    backgroundColor: COLORS.infoLight, borderRadius: RADIUS.full,
+    backgroundColor: colors.infoLight, borderRadius: RADIUS.full,
     paddingHorizontal: 8, paddingVertical: 3,
   },
-  tipoText: { fontSize: 10, color: COLORS.info, fontWeight: '600' },
+  tipoText: { fontSize: 10, color: colors.info, fontWeight: '600' },
 
   empty: { alignItems: 'center', paddingTop: 60, gap: SPACING.sm },
-  emptyText: { fontSize: FONT_SIZE.md, color: COLORS.textLight },
+  emptyText: { fontSize: FONT_SIZE.md, color: colors.textLight },
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: COLORS.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: SPACING.md, maxHeight: '85%',
   },
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.md },
-  sheetTitle: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: COLORS.text, flex: 1, paddingRight: SPACING.sm },
+  sheetTitle: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: colors.text, flex: 1, paddingRight: SPACING.sm },
 
-  sectionTitle: { fontSize: FONT_SIZE.md, fontWeight: '700', color: COLORS.text, marginTop: SPACING.md, marginBottom: SPACING.sm },
-  emptySection: { fontSize: FONT_SIZE.sm, color: COLORS.textLight, fontStyle: 'italic' },
+  sectionTitle: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.text, marginTop: SPACING.md, marginBottom: SPACING.sm },
+  emptySection: { fontSize: FONT_SIZE.sm, color: colors.textLight, fontStyle: 'italic' },
 
   moradorRow: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    paddingVertical: SPACING.xs, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight,
+    paddingVertical: SPACING.xs, borderBottomWidth: 1, borderBottomColor: colors.borderLight,
   },
   moradorIcon: {
     width: 32, height: 32, borderRadius: 16,
-    backgroundColor: COLORS.surfaceAlt, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center',
   },
-  moradorNome: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: COLORS.text },
-  moradorInfo: { fontSize: FONT_SIZE.xs, color: COLORS.textLight, marginTop: 1 },
+  moradorNome: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: colors.text },
+  moradorInfo: { fontSize: FONT_SIZE.xs, color: colors.textLight, marginTop: 1 },
 
   visitaRow: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    paddingVertical: SPACING.xs, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight,
+    paddingVertical: SPACING.xs, borderBottomWidth: 1, borderBottomColor: colors.borderLight,
   },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
-  visitaData: { flex: 1, fontSize: FONT_SIZE.sm, color: COLORS.text },
+  visitaData: { flex: 1, fontSize: FONT_SIZE.sm, color: colors.text },
   statusChip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: RADIUS.full },
   statusText: { fontSize: 10, fontWeight: '700' },
 });

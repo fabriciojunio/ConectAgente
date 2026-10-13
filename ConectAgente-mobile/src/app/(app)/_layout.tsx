@@ -1,7 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
-import { COLORS } from '../../utils/constants';
 import { useTheme } from '../../contexts/ThemeContext';
 
 export default function AppLayout() {

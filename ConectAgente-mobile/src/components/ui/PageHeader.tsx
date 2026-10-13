@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { COLORS, FONT_SIZE, SPACING, RADIUS } from '../../utils/constants';
+import { FONT_SIZE, SPACING } from '../../utils/constants';
+import { useTheme } from '../../contexts/ThemeContext';
 import { SyncIndicator } from './SyncIndicator';
 
 interface PageHeaderProps {
@@ -17,6 +18,10 @@ interface PageHeaderProps {
 export function PageHeader({
   title, subtitle, showBack = false, backTo, showSync = false, rightAction,
 }: PageHeaderProps) {
+  // O cabecalho ficava branco no modo escuro, em todas as 16 telas que o usam,
+  // porque lia a paleta fixa em vez do tema.
+  const { colors } = useTheme();
+
   function handleBack() {
     if (backTo) {
       router.push(backTo as any);
@@ -26,30 +31,43 @@ export function PageHeader({
   }
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.card,
+          borderBottomColor: colors.borderLight,
+          shadowColor: colors.cardShadow,
+        },
+      ]}
+    >
       <View style={styles.row}>
         {showBack && (
           <TouchableOpacity onPress={handleBack} style={styles.backButton} hitSlop={8}>
-            <View style={styles.backCircle}>
-              <Ionicons name="chevron-back" size={20} color={COLORS.primary} />
+            <View style={[styles.backCircle, { backgroundColor: colors.surfaceAlt }]}>
+              <Ionicons name="chevron-back" size={20} color={colors.primary} />
             </View>
           </TouchableOpacity>
         )}
 
         <View style={styles.titleContainer}>
-          <Text style={styles.title} numberOfLines={1}>{title}</Text>
-          {subtitle && <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>}
+          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{title}</Text>
+          {subtitle && (
+            <Text style={[styles.subtitle, { color: colors.textLight }]} numberOfLines={1}>
+              {subtitle}
+            </Text>
+          )}
         </View>
 
         <View style={styles.actions}>
           {showSync && <SyncIndicator />}
           {rightAction && (
             <TouchableOpacity onPress={rightAction.onPress} style={styles.actionButton} hitSlop={8}>
-              <View style={styles.actionCircle}>
-                <Ionicons name={rightAction.icon} size={20} color={COLORS.primary} />
+              <View style={[styles.actionCircle, { backgroundColor: colors.surfaceAlt }]}>
+                <Ionicons name={rightAction.icon} size={20} color={colors.primary} />
               </View>
               {rightAction.label && (
-                <Text style={styles.actionLabel}>{rightAction.label}</Text>
+                <Text style={[styles.actionLabel, { color: colors.primary }]}>{rightAction.label}</Text>
               )}
             </TouchableOpacity>
           )}
@@ -61,14 +79,11 @@ export function PageHeader({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.white,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm + 2,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
     ...Platform.select({
       ios: {
-        shadowColor: COLORS.primary,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.06,
         shadowRadius: 6,
@@ -89,7 +104,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -99,12 +113,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FONT_SIZE.xl,
     fontWeight: '700',
-    color: COLORS.text,
     letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textLight,
     marginTop: 1,
   },
   actions: {
@@ -121,13 +133,11 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: COLORS.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
   actionLabel: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.primary,
     fontWeight: '600',
   },
 });

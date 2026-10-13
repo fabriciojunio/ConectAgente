@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, Image, StyleSheet, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
@@ -13,10 +13,13 @@ import { FormField } from '../../components/forms/FormField';
 import { Button } from '../../components/button';
 import { loginSchema, LoginFormData } from '../../utils/validators';
 import { formatCPF, stripCPF } from '../../utils/formatters';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
 import { agenteRepository } from '../../database/repositories/agenteRepository';
+import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 export default function Login() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const insets = useSafeAreaInsets();
@@ -61,7 +64,7 @@ export default function Login() {
       >
         {/* LOGO */}
         <LinearGradient
-          colors={COLORS.primaryGradient}
+          colors={colors.primaryGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.logoArea, { paddingTop: insets.top + SPACING.md }]}
@@ -132,10 +135,11 @@ export default function Login() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
   },
   logoArea: {
     alignItems: 'center',
@@ -147,7 +151,7 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 22,
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.xs,
@@ -164,7 +168,7 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: FONT_SIZE.xxl,
     fontWeight: '800',
-    color: COLORS.white,
+    color: colors.white,
     letterSpacing: -0.5,
   },
   appSubtitle: {
@@ -173,7 +177,7 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
     borderTopLeftRadius: RADIUS.xl,
     borderTopRightRadius: RADIUS.xl,
     paddingHorizontal: SPACING.lg,
@@ -202,11 +206,11 @@ const styles = StyleSheet.create({
   formTitle: {
     fontSize: FONT_SIZE.xl,
     fontWeight: '800',
-    color: COLORS.primary,
+    color: colors.primary,
   },
   formSubtitle: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.textLight,
+    color: colors.textLight,
     marginBottom: SPACING.sm,
   },
   form: {
@@ -218,7 +222,7 @@ const styles = StyleSheet.create({
   },
   lgpd: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.placeholder,
+    color: colors.placeholder,
     textAlign: 'center',
     paddingTop: SPACING.sm,
     // Empurra so o rodape para o fundo, sem esticar o que vem antes.

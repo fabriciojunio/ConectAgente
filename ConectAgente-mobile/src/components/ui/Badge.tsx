@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, FONT_SIZE, SPACING, RADIUS } from '../../utils/constants';
+import { FONT_SIZE, SPACING, RADIUS } from '../../utils/constants';
+import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 type BadgeVariant = 'hipertenso' | 'diabetico' | 'gestante' | 'puericultura' | 'success' | 'warning' | 'error' | 'info' | 'medio';
 
@@ -9,23 +10,31 @@ interface BadgeProps {
   variant?: BadgeVariant;
 }
 
-const VARIANT_COLORS: Record<BadgeVariant, { bg: string; text: string }> = {
-  hipertenso: { bg: '#fef2f2', text: COLORS.hipertenso },
-  diabetico: { bg: '#f5f3ff', text: COLORS.diabetico },
-  gestante: { bg: '#fdf2f8', text: COLORS.gestante },
-  puericultura: { bg: '#f0fdf4', text: COLORS.puericultura },
-  success: { bg: COLORS.successLight, text: COLORS.success },
-  warning: { bg: COLORS.warningLight, text: COLORS.warning },
-  error: { bg: COLORS.errorLight, text: COLORS.error },
-  info: { bg: COLORS.infoLight, text: COLORS.info },
-  medio: { bg: '#fefbe8', text: '#a16207' },
-};
+// Os fundos das quatro condicoes clinicas e o do `medio` estavam escritos a
+// mao em pastel. No tema escuro a etiqueta continuava clara, com texto claro
+// em cima, e nao dava para ler. Agora saem da paleta, que tem a versao
+// translucida para o tema escuro.
+const criarVariantColors = (
+  colors: ThemeColors
+): Record<BadgeVariant, { bg: string; text: string }> => ({
+  hipertenso: { bg: colors.hipertensoLight, text: colors.hipertenso },
+  diabetico: { bg: colors.diabeticoLight, text: colors.diabetico },
+  gestante: { bg: colors.gestanteLight, text: colors.gestante },
+  puericultura: { bg: colors.puericulturaLight, text: colors.puericultura },
+  success: { bg: colors.successLight, text: colors.success },
+  warning: { bg: colors.warningLight, text: colors.warning },
+  error: { bg: colors.errorLight, text: colors.error },
+  info: { bg: colors.infoLight, text: colors.info },
+  medio: { bg: colors.warningLight, text: colors.warning },
+});
 
 export function Badge({ label, variant = 'info' }: BadgeProps) {
-  const colors = VARIANT_COLORS[variant];
+  const { colors } = useTheme();
+  const variantes = useMemo(() => criarVariantColors(colors), [colors]);
+  const cor = variantes[variant];
   return (
-    <View style={[styles.badge, { backgroundColor: colors.bg }]}>
-      <Text style={[styles.text, { color: colors.text }]}>{label}</Text>
+    <View style={[styles.badge, { backgroundColor: cor.bg }]}>
+      <Text style={[styles.text, { color: cor.text }]}>{label}</Text>
     </View>
   );
 }

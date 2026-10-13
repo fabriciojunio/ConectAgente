@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { TextInput, TextInputProps, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, RADIUS, SPACING, FONT_SIZE } from '../../utils/constants';
+import { RADIUS, SPACING, FONT_SIZE } from '../../utils/constants';
+import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 interface InputProps extends TextInputProps {
   secureToggle?: boolean;
 }
 
 export function Input({ secureToggle, secureTextEntry, style, ...rest }: InputProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const [showPassword, setShowPassword] = useState(false);
 
   if (secureToggle) {
@@ -16,14 +19,14 @@ export function Input({ secureToggle, secureTextEntry, style, ...rest }: InputPr
         <TextInput
           style={styles.inputInner}
           secureTextEntry={!showPassword}
-          placeholderTextColor={COLORS.placeholder}
+          placeholderTextColor={colors.placeholder}
           {...rest}
         />
         <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eye}>
           <Ionicons
             name={showPassword ? 'eye-off-outline' : 'eye-outline'}
             size={20}
-            color={COLORS.textLight}
+            color={colors.textLight}
           />
         </TouchableOpacity>
       </View>
@@ -34,39 +37,40 @@ export function Input({ secureToggle, secureTextEntry, style, ...rest }: InputPr
     <TextInput
       style={[styles.input, style]}
       secureTextEntry={secureTextEntry}
-      placeholderTextColor={COLORS.placeholder}
+      placeholderTextColor={colors.placeholder}
       {...rest}
     />
   );
 }
 
-const styles = StyleSheet.create({
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   input: {
     width: '100%',
     height: 52,
     borderRadius: RADIUS.sm,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     paddingHorizontal: SPACING.sm,
     fontSize: FONT_SIZE.md,
-    color: COLORS.text,
-    backgroundColor: COLORS.white,
+    color: colors.text,
+    backgroundColor: colors.white,
   },
   wrapper: {
     width: '100%',
     height: 52,
     borderRadius: RADIUS.sm,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
     paddingHorizontal: SPACING.sm,
   },
   inputInner: {
     flex: 1,
     fontSize: FONT_SIZE.md,
-    color: COLORS.text,
+    color: colors.text,
   },
   eye: {
     padding: 4,

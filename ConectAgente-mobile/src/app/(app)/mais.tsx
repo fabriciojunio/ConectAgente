@@ -93,7 +93,20 @@ export default function Mais() {
                   style={[
                     styles.temaBotao,
                     {
-                      backgroundColor: selecionado ? colors.primaryLight : colors.surfaceAlt,
+                      // Selecionado pinta o fundo com `primary` e o conteudo
+                      // com `white`, e nao o contrario.
+                      //
+                      // Antes era fundo `primaryLight` com texto `primary`. No
+                      // tema claro isso da azul escuro sobre azul medio e passa
+                      // batido. No escuro os dois sao azul claro, #4FC3F7 sobre
+                      // #81D4FA, e o rotulo da opcao escolhida some. Era a
+                      // unica opcao marcada da tela, justamente a que precisa
+                      // ser lida.
+                      //
+                      // `white` resolve nos dois porque e invertido no tema
+                      // escuro: branco sobre azul escuro no claro, azul-marinho
+                      // sobre azul claro no escuro.
+                      backgroundColor: selecionado ? colors.primary : colors.surfaceAlt,
                       borderColor: selecionado ? colors.primary : colors.borderLight,
                     },
                   ]}
@@ -101,12 +114,12 @@ export default function Mais() {
                   <Ionicons
                     name={opcao.icone}
                     size={20}
-                    color={selecionado ? colors.primary : colors.textLight}
+                    color={selecionado ? colors.white : colors.textLight}
                   />
                   <Text
                     style={[
                       styles.temaRotulo,
-                      { color: selecionado ? colors.primary : colors.textMedium },
+                      { color: selecionado ? colors.white : colors.textMedium },
                     ]}
                   >
                     {opcao.rotulo}

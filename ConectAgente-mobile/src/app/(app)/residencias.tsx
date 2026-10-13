@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, RefreshControl, Alert, Platform,
 } from 'react-native';
@@ -13,10 +13,13 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { moradorRepository } from '../../database/repositories/moradorRepository';
 import { useAuth } from '../../contexts/AuthContext';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
 import { formatCEP } from '../../utils/formatters';
+import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 export default function Residencias() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const { residencias, isLoading, carregar, excluir } = useResidencias();
   const { agente } = useAuth();
   const [busca, setBusca] = useState('');
@@ -84,17 +87,17 @@ export default function Residencias() {
 
       {/* BUSCA */}
       <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={18} color={COLORS.textLight} />
+        <Ionicons name="search-outline" size={18} color={colors.textLight} />
         <TextInput
           style={styles.searchInput}
           placeholder="Buscar por endereço ou bairro..."
           value={busca}
           onChangeText={setBusca}
-          placeholderTextColor={COLORS.placeholder}
+          placeholderTextColor={colors.placeholder}
         />
         {busca.length > 0 && (
           <TouchableOpacity onPress={() => setBusca('')}>
-            <Ionicons name="close-circle" size={18} color={COLORS.textLight} />
+            <Ionicons name="close-circle" size={18} color={colors.textLight} />
           </TouchableOpacity>
         )}
       </View>
@@ -130,7 +133,7 @@ export default function Residencias() {
         style={styles.fab}
         onPress={() => router.push('/(app)/residencia/nova')}
       >
-        <Ionicons name="add" size={28} color={COLORS.white} />
+        <Ionicons name="add" size={28} color={colors.white} />
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -142,20 +145,22 @@ function ResidenciaCard({ residencia, responsavelNome, onPress, onLongPress }: {
   onPress: () => void;
   onLongPress: () => void;
 }) {
-  const syncColor = residencia.status_sync === 'sincronizado' ? COLORS.success : COLORS.warning;
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
+  const syncColor = residencia.status_sync === 'sincronizado' ? colors.success : colors.warning;
 
   const obterRiscoFlagProps = (risco?: string) => {
     switch (risco) {
       case 'critico':
-        return { icon: 'flag' as const, color: COLORS.error, bg: COLORS.errorLight };
+        return { icon: 'flag' as const, color: colors.error, bg: colors.errorLight };
       case 'alto':
-        return { icon: 'flag' as const, color: COLORS.warning, bg: COLORS.warningLight };
+        return { icon: 'flag' as const, color: colors.warning, bg: colors.warningLight };
       case 'medio':
-        return { icon: 'flag' as const, color: '#a16207', bg: '#fefbe8' };
+        return { icon: 'flag' as const, color: colors.warning, bg: colors.warningLight };
       case 'baixo':
-        return { icon: 'flag' as const, color: COLORS.success, bg: COLORS.successLight };
+        return { icon: 'flag' as const, color: colors.success, bg: colors.successLight };
       default:
-        return { icon: 'home-outline' as const, color: COLORS.primary, bg: COLORS.infoLight };
+        return { icon: 'home-outline' as const, color: colors.primary, bg: colors.infoLight };
     }
   };
 
@@ -179,19 +184,19 @@ function ResidenciaCard({ residencia, responsavelNome, onPress, onLongPress }: {
             <Text style={styles.cardCep}>CEP: {formatCEP(residencia.cep)}</Text>
             {responsavelNome && (
               <View style={styles.responsavelRow}>
-                <Ionicons name="person-outline" size={12} color={COLORS.primary} />
+                <Ionicons name="person-outline" size={12} color={colors.primary} />
                 <Text style={styles.responsavelText}>Resp.: {responsavelNome}</Text>
               </View>
             )}
           </View>
           <View style={styles.cardActions}>
             <View style={[styles.syncDot, { backgroundColor: syncColor }]} />
-            <Ionicons name="chevron-forward" size={18} color={COLORS.textLight} />
+            <Ionicons name="chevron-forward" size={18} color={colors.textLight} />
           </View>
         </View>
         {residencia.tem_animais && (
           <View style={styles.tag}>
-            <Ionicons name="paw-outline" size={12} color={COLORS.textLight} />
+            <Ionicons name="paw-outline" size={12} color={colors.textLight} />
             <Text style={styles.tagText}>Animais</Text>
           </View>
         )}
@@ -200,44 +205,45 @@ function ResidenciaCard({ residencia, responsavelNome, onPress, onLongPress }: {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   searchContainer: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    margin: SPACING.md, backgroundColor: COLORS.white,
+    margin: SPACING.md, backgroundColor: colors.white,
     borderRadius: RADIUS.sm, paddingHorizontal: SPACING.sm,
-    borderWidth: 1, borderColor: COLORS.borderLight,
+    borderWidth: 1, borderColor: colors.borderLight,
     height: 44,
   },
-  searchInput: { flex: 1, fontSize: FONT_SIZE.md, color: COLORS.text },
+  searchInput: { flex: 1, fontSize: FONT_SIZE.md, color: colors.text },
   list: { padding: SPACING.md, gap: SPACING.sm, paddingBottom: 80 },
   card: { gap: SPACING.xs },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   cardIcon: {
     width: 44, height: 44, borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.infoLight, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.infoLight, alignItems: 'center', justifyContent: 'center',
   },
   cardInfo: { flex: 1 },
-  cardTitle: { fontSize: FONT_SIZE.md, fontWeight: '700', color: COLORS.text },
-  cardSubtitle: { fontSize: FONT_SIZE.sm, color: COLORS.textLight },
-  cardCep: { fontSize: FONT_SIZE.xs, color: COLORS.placeholder },
+  cardTitle: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.text },
+  cardSubtitle: { fontSize: FONT_SIZE.sm, color: colors.textLight },
+  cardCep: { fontSize: FONT_SIZE.xs, color: colors.placeholder },
   responsavelRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  responsavelText: { fontSize: FONT_SIZE.xs, color: COLORS.primary, fontWeight: '500' },
+  responsavelText: { fontSize: FONT_SIZE.xs, color: colors.primary, fontWeight: '500' },
   cardActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   syncDot: { width: 8, height: 8, borderRadius: 4 },
   tag: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: COLORS.borderLight, borderRadius: RADIUS.full,
+    backgroundColor: colors.borderLight, borderRadius: RADIUS.full,
     paddingHorizontal: SPACING.sm, paddingVertical: 2, alignSelf: 'flex-start',
   },
-  tagText: { fontSize: FONT_SIZE.xs, color: COLORS.textLight },
+  tagText: { fontSize: FONT_SIZE.xs, color: colors.textLight },
   fab: {
     position: 'absolute', bottom: SPACING.xl, right: SPACING.md,
     width: 58, height: 58, borderRadius: 29,
-    backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
     ...Platform.select({
       ios: {
-        shadowColor: COLORS.primaryDark,
+        shadowColor: colors.primaryDark,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.35,
         shadowRadius: 8,

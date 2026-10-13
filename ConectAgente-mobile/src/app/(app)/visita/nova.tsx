@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
@@ -14,10 +14,11 @@ import { Button } from '../../../components/button';
 import { PageHeader } from '../../../components/ui/PageHeader';
 import { visitaSchema, VisitaFormDataValidated, validarDataBR } from '../../../utils/validators';
 import { formatDateInput, parseDateBR } from '../../../utils/formatters';
-import { ESPECIALIDADES, COLORS, SPACING, FONT_SIZE } from '../../../utils/constants';
+import { ESPECIALIDADES, SPACING, FONT_SIZE } from '../../../utils/constants';
 import { StatusVisita } from '../../../types';
 import { useResidencias } from '../../../hooks/useResidencias';
 import { visitaRepository } from '../../../database/repositories/visitaRepository';
+import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
 
 const MOTIVO_OPTIONS = [
   { label: 'Visita de rotina', value: 'rotina' },
@@ -34,6 +35,8 @@ const STATUS_OPTIONS = [
 ];
 
 export default function NovaVisita() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const { residencia_id, morador_id, backTo } = useLocalSearchParams<{
     residencia_id?: string;
     morador_id?: string;
@@ -340,6 +343,8 @@ export default function NovaVisita() {
 }
 
 function SectionTitle({ title }: { title: string }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   return (
     <View style={styles.sectionTitleContainer}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -348,27 +353,28 @@ function SectionTitle({ title }: { title: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   modoContainer: {
     flexDirection: 'row',
     gap: SPACING.sm,
     padding: SPACING.md,
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderLight,
+    borderBottomColor: colors.borderLight,
   },
   modoBtn: { flex: 1 },
   infoBanner: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.avisoFundo,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#BFDBFE',
+    borderBottomColor: colors.avisoBorda,
   },
   infoBannerText: {
     fontSize: FONT_SIZE.xs,
-    color: '#1D4ED8',
+    color: colors.aviso,
   },
   scroll: { padding: SPACING.md, gap: SPACING.md, paddingBottom: SPACING.xl },
   sectionTitleContainer: {
@@ -380,13 +386,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: FONT_SIZE.sm,
     fontWeight: '700',
-    color: COLORS.textLight,
+    color: colors.textLight,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   sectionLine: {
     flex: 1,
     height: 1,
-    backgroundColor: COLORS.borderLight,
+    backgroundColor: colors.borderLight,
   },
 });

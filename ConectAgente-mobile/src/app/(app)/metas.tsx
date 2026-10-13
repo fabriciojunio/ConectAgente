@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, Alert, ScrollView,
 } from 'react-native';
@@ -9,7 +9,8 @@ import { useVisitas } from '../../hooks/useVisitas';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/button';
 import { PageHeader } from '../../components/ui/PageHeader';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 const MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -17,6 +18,8 @@ const MESES = [
 ];
 
 export default function Metas() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const { backTo } = useLocalSearchParams<{ backTo?: string }>();
   const { estatisticas, definirMeta } = useVisitas();
   const [novaMeta, setNovaMeta] = useState('');
@@ -46,7 +49,7 @@ export default function Metas() {
 
   const stats = estatisticas;
   const percentual = stats?.percentual_meta ?? 0;
-  const cor = percentual >= 100 ? COLORS.success : percentual >= 70 ? COLORS.warning : COLORS.error;
+  const cor = percentual >= 100 ? colors.success : percentual >= 70 ? colors.warning : colors.error;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -85,7 +88,7 @@ export default function Metas() {
               onChangeText={setNovaMeta}
               keyboardType="numeric"
               placeholder="Número de visitas"
-              placeholderTextColor={COLORS.placeholder}
+              placeholderTextColor={colors.placeholder}
             />
             <Button title="Salvar" onPress={salvarMeta} loading={isSaving} />
           </View>
@@ -95,16 +98,16 @@ export default function Metas() {
         <Card>
           <Text style={styles.cardTitle}>Resumo de produtividade</Text>
           <View style={styles.statsGrid}>
-            <StatItem icon="today-outline" label="Hoje" value={stats?.realizadas_hoje ?? 0} color={COLORS.primary} />
-            <StatItem icon="calendar-outline" label="Semana" value={stats?.realizadas_semana ?? 0} color={COLORS.info} />
-            <StatItem icon="checkmark-circle-outline" label="Mês" value={stats?.realizadas_mes ?? 0} color={COLORS.success} />
-            <StatItem icon="time-outline" label="Agendadas" value={stats?.total_agendadas ?? 0} color={COLORS.warning} />
+            <StatItem icon="today-outline" label="Hoje" value={stats?.realizadas_hoje ?? 0} color={colors.primary} />
+            <StatItem icon="calendar-outline" label="Semana" value={stats?.realizadas_semana ?? 0} color={colors.info} />
+            <StatItem icon="checkmark-circle-outline" label="Mês" value={stats?.realizadas_mes ?? 0} color={colors.success} />
+            <StatItem icon="time-outline" label="Agendadas" value={stats?.total_agendadas ?? 0} color={colors.warning} />
           </View>
         </Card>
 
         {/* DICA */}
         <View style={styles.dica}>
-          <Ionicons name="bulb-outline" size={20} color={COLORS.warning} />
+          <Ionicons name="bulb-outline" size={20} color={colors.warning} />
           <Text style={styles.dicaText}>
             A meta recomendada pelo Ministério da Saúde é de{' '}
             <Text style={{ fontWeight: '700' }}>400 visitas por mês</Text> por ACS em área urbana
@@ -122,6 +125,8 @@ function StatItem({ icon, label, value, color }: {
   value: number;
   color: string;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   return (
     <View style={styles.statItem}>
       <Ionicons name={icon} size={22} color={color} />
@@ -131,31 +136,32 @@ function StatItem({ icon, label, value, color }: {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   content: { padding: SPACING.md, gap: SPACING.md, paddingBottom: SPACING.xl },
-  mesTitle: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: COLORS.primary },
-  metaAtual: { fontSize: FONT_SIZE.md, color: COLORS.textLight, marginTop: 4 },
+  mesTitle: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: colors.primary },
+  metaAtual: { fontSize: FONT_SIZE.md, color: colors.textLight, marginTop: 4 },
   barWrapper: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginTop: SPACING.md },
-  barBg: { flex: 1, height: 16, backgroundColor: COLORS.borderLight, borderRadius: 8, overflow: 'hidden' },
+  barBg: { flex: 1, height: 16, backgroundColor: colors.borderLight, borderRadius: 8, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 8 },
   percent: { fontSize: FONT_SIZE.xl, fontWeight: '800', minWidth: 48, textAlign: 'right' },
-  metaCount: { fontSize: FONT_SIZE.sm, color: COLORS.textLight, marginTop: 4 },
-  cardTitle: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: COLORS.text, marginBottom: SPACING.sm },
+  metaCount: { fontSize: FONT_SIZE.sm, color: colors.textLight, marginTop: 4 },
+  cardTitle: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: colors.text, marginBottom: SPACING.sm },
   inputRow: { flexDirection: 'row', gap: SPACING.sm, alignItems: 'center' },
   metaInput: {
     flex: 1, height: 50, borderRadius: RADIUS.sm, borderWidth: 1.5,
-    borderColor: COLORS.border, paddingHorizontal: SPACING.sm,
-    fontSize: FONT_SIZE.xl, fontWeight: '700', color: COLORS.text,
+    borderColor: colors.border, paddingHorizontal: SPACING.sm,
+    fontSize: FONT_SIZE.xl, fontWeight: '700', color: colors.text,
     textAlign: 'center',
   },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   statItem: { flex: 1, minWidth: '45%', alignItems: 'center', gap: 4, paddingVertical: SPACING.sm },
   statValue: { fontSize: FONT_SIZE.xxl, fontWeight: '800' },
-  statLabel: { fontSize: FONT_SIZE.xs, color: COLORS.textLight },
+  statLabel: { fontSize: FONT_SIZE.xs, color: colors.textLight },
   dica: {
     flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm,
-    backgroundColor: COLORS.warningLight, padding: SPACING.md, borderRadius: RADIUS.sm,
+    backgroundColor: colors.warningLight, padding: SPACING.md, borderRadius: RADIUS.sm,
   },
-  dicaText: { flex: 1, fontSize: FONT_SIZE.sm, color: COLORS.text, lineHeight: 20 },
+  dicaText: { flex: 1, fontSize: FONT_SIZE.sm, color: colors.text, lineHeight: 20 },
 });

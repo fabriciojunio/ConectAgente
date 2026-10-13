@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -20,7 +20,11 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#ffffff' }}>
+    // Sem cor de fundo aqui: esta view fica fora do ThemeProvider, entao nao
+    // tem paleta para ler. Quem pinta e o ThemedApp, logo abaixo, que esta
+    // dentro. Antes havia um '#ffffff' fixo, que aparecia como clarao branco
+    // atras das telas no tema escuro.
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
           <NetworkProvider>
@@ -47,7 +51,7 @@ function ThemedApp() {
   }, [isDark, colors.tabBar]);
 
   return (
-    <>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
@@ -55,6 +59,6 @@ function ThemedApp() {
         <Stack.Screen name="(app)" />
         <Stack.Screen name="(admin)" />
       </Stack>
-    </>
+    </View>
   );
 }

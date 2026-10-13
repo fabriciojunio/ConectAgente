@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
@@ -14,7 +14,8 @@ import { Button } from '../../components/button';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { formatCPF, stripCPF } from '../../utils/formatters';
 import { validarCPF } from '../../utils/validators';
-import { COLORS, SPACING, FONT_SIZE, VALIDATION } from '../../utils/constants';
+import { SPACING, FONT_SIZE, VALIDATION } from '../../utils/constants';
+import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 const cadastroSchema = z.object({
   nome: z.string().min(3, 'Nome obrigatório (mín. 3 caracteres)'),
@@ -32,6 +33,8 @@ const cadastroSchema = z.object({
 type CadastroFormData = z.infer<typeof cadastroSchema>;
 
 export default function Cadastro() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const { registrar } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -94,13 +97,14 @@ export default function Cadastro() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: SPACING.md, gap: SPACING.md },
   description: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.textLight,
-    backgroundColor: COLORS.infoLight,
+    color: colors.textLight,
+    backgroundColor: colors.infoLight,
     padding: SPACING.md,
     borderRadius: 8,
     lineHeight: 22,
@@ -108,7 +112,7 @@ const styles = StyleSheet.create({
   form: { gap: SPACING.md },
   lgpd: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.placeholder,
+    color: colors.placeholder,
     textAlign: 'center',
     paddingVertical: SPACING.md,
     lineHeight: 18,

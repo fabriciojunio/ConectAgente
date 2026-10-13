@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity, Text,
 } from 'react-native';
@@ -16,9 +16,12 @@ import { PageHeader } from '../../../components/ui/PageHeader';
 import { cepService } from '../../../services/cepService';
 import { residenciaSchema, ResidenciaFormDataValidated } from '../../../utils/validators';
 import { formatCEP, stripCEP } from '../../../utils/formatters';
-import { TIPO_IMOVEL_OPTIONS, ESTADOS_BRASIL, RISCO_OPTIONS, COLORS, SPACING, FONT_SIZE } from '../../../utils/constants';
+import { TIPO_IMOVEL_OPTIONS, ESTADOS_BRASIL, RISCO_OPTIONS, SPACING, FONT_SIZE } from '../../../utils/constants';
+import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
 
 export default function NovaResidencia() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const { criar } = useResidencias();
   const [isLoading, setIsLoading] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
@@ -85,9 +88,9 @@ export default function NovaResidencia() {
             mask={formatCEP}
             rightElement={
               buscandoCep
-                ? <Ionicons name="sync" size={20} color={COLORS.textLight} />
+                ? <Ionicons name="sync" size={20} color={colors.textLight} />
                 : <TouchableOpacity onPress={() => buscarCEP(watch('cep'))}>
-                    <Ionicons name="search-outline" size={20} color={COLORS.primary} />
+                    <Ionicons name="search-outline" size={20} color={colors.primary} />
                   </TouchableOpacity>
             }
             onEndEditing={(e) => buscarCEP(e.nativeEvent.text)}
@@ -158,11 +161,12 @@ export default function NovaResidencia() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: SPACING.md, gap: SPACING.md, paddingBottom: SPACING.xl },
   sectionTitle: {
-    fontSize: FONT_SIZE.lg, fontWeight: '700', color: COLORS.primary,
+    fontSize: FONT_SIZE.lg, fontWeight: '700', color: colors.primary,
     marginTop: SPACING.sm,
   },
   row: { flexDirection: 'row', gap: SPACING.sm },

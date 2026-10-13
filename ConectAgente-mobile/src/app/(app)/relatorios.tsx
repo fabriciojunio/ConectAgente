@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import {
   View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator,
@@ -10,10 +10,13 @@ import { useVisitas } from '../../hooks/useVisitas';
 import { exportService, PeriodoRelatorio, FormatoRelatorio } from '../../services/exportService';
 import { Card } from '../../components/ui/Card';
 import { PageHeader } from '../../components/ui/PageHeader';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
 import { visitaRepository } from '../../database/repositories/visitaRepository';
+import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 export default function Relatorios() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const { backTo } = useLocalSearchParams<{ backTo?: string }>();
   const { agente } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
@@ -86,7 +89,7 @@ export default function Relatorios() {
           icon="today-outline"
           title="Relatório do dia"
           description="Visitas realizadas hoje"
-          color={COLORS.primary}
+          color={colors.primary}
           onPress={() => exportar('dia')}
           isLoading={isExporting}
         />
@@ -95,7 +98,7 @@ export default function Relatorios() {
           icon="calendar-outline"
           title="Relatório semanal"
           description="Visitas desta semana"
-          color={COLORS.info}
+          color={colors.info}
           onPress={() => exportar('semana')}
           isLoading={isExporting}
         />
@@ -104,13 +107,13 @@ export default function Relatorios() {
           icon="bar-chart-outline"
           title="Relatório mensal"
           description="Visitas deste mês"
-          color={COLORS.success}
+          color={colors.success}
           onPress={() => exportar('mes')}
           isLoading={isExporting}
         />
 
         <View style={styles.info}>
-          <Ionicons name="information-circle-outline" size={18} color={COLORS.info} />
+          <Ionicons name="information-circle-outline" size={18} color={colors.info} />
           <Text style={styles.infoText}>
             Os relatórios são gerados e compartilhados diretamente do dispositivo.
             Compatível com Excel, Google Sheets e LibreOffice.
@@ -127,12 +130,14 @@ function FormatButton({ label, icon, active, onPress }: {
   active: boolean;
   onPress: () => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   return (
     <TouchableOpacity
       style={[styles.formatBtn, active && styles.formatBtnActive]}
       onPress={onPress}
     >
-      <Ionicons name={icon} size={20} color={active ? COLORS.primary : COLORS.textLight} />
+      <Ionicons name={icon} size={20} color={active ? colors.primary : colors.textLight} />
       <Text style={[styles.formatBtnText, active && styles.formatBtnTextActive]}>{label}</Text>
     </TouchableOpacity>
   );
@@ -146,6 +151,8 @@ function PeriodoCard({ icon, title, description, color, onPress, isLoading }: {
   onPress: () => void;
   isLoading: boolean;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   return (
     <TouchableOpacity onPress={onPress} disabled={isLoading} activeOpacity={0.8}>
       <Card style={styles.periodoCard}>
@@ -157,36 +164,37 @@ function PeriodoCard({ icon, title, description, color, onPress, isLoading }: {
           <Text style={styles.periodoDesc}>{description}</Text>
         </View>
         {isLoading ? (
-          <ActivityIndicator color={COLORS.primary} />
+          <ActivityIndicator color={colors.primary} />
         ) : (
-          <Ionicons name="download-outline" size={22} color={COLORS.primary} />
+          <Ionicons name="download-outline" size={22} color={colors.primary} />
         )}
       </Card>
     </TouchableOpacity>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   content: { padding: SPACING.md, gap: SPACING.md },
-  sectionTitle: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: COLORS.text, marginBottom: 4 },
+  sectionTitle: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: colors.text, marginBottom: 4 },
   formatRow: { flexDirection: 'row', gap: SPACING.sm },
   formatBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: SPACING.xs, padding: SPACING.sm, borderRadius: RADIUS.sm,
-    borderWidth: 1.5, borderColor: COLORS.borderLight,
+    borderWidth: 1.5, borderColor: colors.borderLight,
   },
-  formatBtnActive: { borderColor: COLORS.primary, backgroundColor: COLORS.infoLight },
-  formatBtnText: { fontSize: FONT_SIZE.sm, color: COLORS.textLight, fontWeight: '600' },
-  formatBtnTextActive: { color: COLORS.primary },
+  formatBtnActive: { borderColor: colors.primary, backgroundColor: colors.infoLight },
+  formatBtnText: { fontSize: FONT_SIZE.sm, color: colors.textLight, fontWeight: '600' },
+  formatBtnTextActive: { color: colors.primary },
   periodoCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
   periodoIcon: { width: 52, height: 52, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
   periodoInfo: { flex: 1 },
-  periodoTitle: { fontSize: FONT_SIZE.md, fontWeight: '700', color: COLORS.text },
-  periodoDesc: { fontSize: FONT_SIZE.sm, color: COLORS.textLight },
+  periodoTitle: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.text },
+  periodoDesc: { fontSize: FONT_SIZE.sm, color: colors.textLight },
   info: {
     flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.sm,
-    backgroundColor: COLORS.infoLight, padding: SPACING.md, borderRadius: RADIUS.sm,
+    backgroundColor: colors.infoLight, padding: SPACING.md, borderRadius: RADIUS.sm,
   },
-  infoText: { flex: 1, fontSize: FONT_SIZE.sm, color: COLORS.text, lineHeight: 20 },
+  infoText: { flex: 1, fontSize: FONT_SIZE.sm, color: colors.text, lineHeight: 20 },
 });

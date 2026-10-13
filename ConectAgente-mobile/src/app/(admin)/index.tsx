@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl, Platform, Alert,
@@ -11,7 +11,8 @@ import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { agenteRepository } from '../../database/repositories/agenteRepository';
 import { visitaRepository } from '../../database/repositories/visitaRepository';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 const ADMIN_GRADIENT = ['#4A148C', '#7B1FA2', '#AB47BC'] as const;
 
@@ -20,6 +21,8 @@ type UltimaVisita = Awaited<ReturnType<typeof visitaRepository.obterUltimasVisit
 type AgenteStats = Awaited<ReturnType<typeof agenteRepository.listarTodos>>[number];
 
 export default function AdminDashboard() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const { agente, logout } = useAuth();
   const [stats, setStats] = useState<GlobalStats | null>(null);
   const [ultimasVisitas, setUltimasVisitas] = useState<UltimaVisita[]>([]);
@@ -94,11 +97,11 @@ export default function AdminDashboard() {
         {/* STATS GLOBAIS */}
         <View style={styles.statsGrid}>
           <StatBox icon="people-outline" label="Agentes" value={stats?.totalAgentes ?? 0} color="#7B1FA2" />
-          <StatBox icon="business-outline" label="Residências" value={stats?.totalResidencias ?? 0} color={COLORS.info} />
-          <StatBox icon="person-outline" label="Moradores" value={stats?.totalMoradores ?? 0} color={COLORS.success} />
-          <StatBox icon="today-outline" label="Visitas hoje" value={stats?.totalVisitasHoje ?? 0} color={COLORS.warning} />
-          <StatBox icon="calendar-outline" label="Visitas/mês" value={stats?.totalVisitasMes ?? 0} color={COLORS.primary} />
-          <StatBox icon="sync-outline" label="Pend. sync" value={stats?.visitasPendentesSync ?? 0} color={COLORS.error} />
+          <StatBox icon="business-outline" label="Residências" value={stats?.totalResidencias ?? 0} color={colors.info} />
+          <StatBox icon="person-outline" label="Moradores" value={stats?.totalMoradores ?? 0} color={colors.success} />
+          <StatBox icon="today-outline" label="Visitas hoje" value={stats?.totalVisitasHoje ?? 0} color={colors.warning} />
+          <StatBox icon="calendar-outline" label="Visitas/mês" value={stats?.totalVisitasMes ?? 0} color={colors.primary} />
+          <StatBox icon="sync-outline" label="Pend. sync" value={stats?.visitasPendentesSync ?? 0} color={colors.error} />
         </View>
 
         {/* AÇÕES RÁPIDAS */}
@@ -106,9 +109,9 @@ export default function AdminDashboard() {
           <SectionHeader title="Navegação rápida" />
           <View style={styles.quickRow}>
             <QuickBtn icon="people-outline" label="Agentes" color="#7B1FA2" onPress={() => router.push('/(admin)/agentes')} />
-            <QuickBtn icon="business-outline" label="Residências" color={COLORS.info} onPress={() => router.push('/(admin)/residencias')} />
-            <QuickBtn icon="clipboard-outline" label="Visitas" color={COLORS.primary} onPress={() => router.push('/(admin)/visitas')} />
-            <QuickBtn icon="settings-outline" label="Sistema" color={COLORS.textMedium} onPress={() => router.push('/(admin)/configuracoes')} />
+            <QuickBtn icon="business-outline" label="Residências" color={colors.info} onPress={() => router.push('/(admin)/residencias')} />
+            <QuickBtn icon="clipboard-outline" label="Visitas" color={colors.primary} onPress={() => router.push('/(admin)/visitas')} />
+            <QuickBtn icon="settings-outline" label="Sistema" color={colors.textMedium} onPress={() => router.push('/(admin)/configuracoes')} />
           </View>
         </View>
 
@@ -146,7 +149,7 @@ export default function AdminDashboard() {
             />
             {ultimasVisitas.map((v) => (
               <View key={v.id} style={styles.visitaRow}>
-                <View style={[styles.statusDot, { backgroundColor: v.status === 'realizada' ? COLORS.success : COLORS.warning }]} />
+                <View style={[styles.statusDot, { backgroundColor: v.status === 'realizada' ? colors.success : colors.warning }]} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.visitaEndereco} numberOfLines={1}>
                     {v.logradouro}, {v.numero} - {v.bairro}
@@ -155,8 +158,8 @@ export default function AdminDashboard() {
                     {(v as any).agente_nome ?? 'Agente'} · {new Date(v.data_visita).toLocaleDateString('pt-BR')}
                   </Text>
                 </View>
-                <View style={[styles.statusChip, { backgroundColor: v.status === 'realizada' ? COLORS.successLight : COLORS.warningLight }]}>
-                  <Text style={[styles.statusChipText, { color: v.status === 'realizada' ? COLORS.success : COLORS.warning }]}>
+                <View style={[styles.statusChip, { backgroundColor: v.status === 'realizada' ? colors.successLight : colors.warningLight }]}>
+                  <Text style={[styles.statusChipText, { color: v.status === 'realizada' ? colors.success : colors.warning }]}>
                     {v.status}
                   </Text>
                 </View>
@@ -174,6 +177,8 @@ export default function AdminDashboard() {
 // ─── Sub-components ───────────────────────────────────────────
 
 function SectionHeader({ title, action }: { title: string; action?: { label: string; onPress: () => void } }) {
+  const { colors } = useTheme();
+  const sh = useMemo(() => criarSh(colors), [colors]);
   return (
     <View style={sh.row}>
       <Text style={sh.title}>{title}</Text>
@@ -185,9 +190,10 @@ function SectionHeader({ title, action }: { title: string; action?: { label: str
     </View>
   );
 }
-const sh = StyleSheet.create({
+const criarSh = (colors: ThemeColors) =>
+  StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm },
-  title: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: COLORS.text },
+  title: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: colors.text },
   action: { fontSize: FONT_SIZE.sm, color: '#7B1FA2', fontWeight: '600' },
 });
 
@@ -197,6 +203,8 @@ function StatBox({ icon, label, value, color }: {
   value: number;
   color: string;
 }) {
+  const { colors } = useTheme();
+  const sb = useMemo(() => criarSb(colors), [colors]);
   return (
     <View style={[sb.box, { borderTopColor: color }]}>
       <Ionicons name={icon} size={20} color={color} />
@@ -205,10 +213,11 @@ function StatBox({ icon, label, value, color }: {
     </View>
   );
 }
-const sb = StyleSheet.create({
+const criarSb = (colors: ThemeColors) =>
+  StyleSheet.create({
   box: {
     width: '30%',
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: RADIUS.md,
     alignItems: 'center',
     paddingVertical: SPACING.sm + 4,
@@ -222,7 +231,7 @@ const sb = StyleSheet.create({
     }),
   },
   value: { fontSize: FONT_SIZE.xxl, fontWeight: '800', marginTop: 2 },
-  label: { fontSize: 10, color: COLORS.textLight, fontWeight: '500', textAlign: 'center' },
+  label: { fontSize: 10, color: colors.textLight, fontWeight: '500', textAlign: 'center' },
 });
 
 function QuickBtn({ icon, label, color, onPress }: {
@@ -231,6 +240,8 @@ function QuickBtn({ icon, label, color, onPress }: {
   color: string;
   onPress: () => void;
 }) {
+  const { colors } = useTheme();
+  const qb = useMemo(() => criarQb(colors), [colors]);
   return (
     <TouchableOpacity style={qb.btn} onPress={onPress} activeOpacity={0.75}>
       <View style={[qb.wrap, { backgroundColor: color + '18' }]}>
@@ -240,17 +251,19 @@ function QuickBtn({ icon, label, color, onPress }: {
     </TouchableOpacity>
   );
 }
-const qb = StyleSheet.create({
+const criarQb = (colors: ThemeColors) =>
+  StyleSheet.create({
   btn: { alignItems: 'center', gap: SPACING.xs, flex: 1 },
   wrap: { width: 56, height: 56, borderRadius: RADIUS.lg, alignItems: 'center', justifyContent: 'center' },
-  label: { fontSize: FONT_SIZE.xs, color: COLORS.text, fontWeight: '600', textAlign: 'center' },
+  label: { fontSize: FONT_SIZE.xs, color: colors.text, fontWeight: '600', textAlign: 'center' },
 });
 
 // ─── Styles ───────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#4A148C' },
-  scroll: { flex: 1, backgroundColor: COLORS.background },
+  scroll: { flex: 1, backgroundColor: colors.background },
   scrollContent: { flexGrow: 1 },
 
   header: {
@@ -286,7 +299,7 @@ const styles = StyleSheet.create({
 
   agenteRow: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    backgroundColor: COLORS.card, borderRadius: RADIUS.md,
+    backgroundColor: colors.card, borderRadius: RADIUS.md,
     padding: SPACING.sm + 4, marginBottom: SPACING.xs,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4 },
@@ -298,14 +311,14 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   rankText: { fontSize: FONT_SIZE.sm, fontWeight: '800', color: '#fff' },
-  agenteName: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: COLORS.text },
-  agenteArea: { fontSize: FONT_SIZE.xs, color: COLORS.textLight, marginTop: 1 },
+  agenteName: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: colors.text },
+  agenteArea: { fontSize: FONT_SIZE.xs, color: colors.textLight, marginTop: 1 },
   visitasCount: { fontSize: FONT_SIZE.lg, fontWeight: '800', color: '#7B1FA2' },
-  visitasLabel: { fontSize: 10, color: COLORS.textLight },
+  visitasLabel: { fontSize: 10, color: colors.textLight },
 
   visitaRow: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    backgroundColor: COLORS.card, borderRadius: RADIUS.md,
+    backgroundColor: colors.card, borderRadius: RADIUS.md,
     padding: SPACING.sm + 2, marginBottom: SPACING.xs,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4 },
@@ -313,8 +326,8 @@ const styles = StyleSheet.create({
     }),
   },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
-  visitaEndereco: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: COLORS.text },
-  visitaInfo: { fontSize: FONT_SIZE.xs, color: COLORS.textLight, marginTop: 1 },
+  visitaEndereco: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: colors.text },
+  visitaInfo: { fontSize: FONT_SIZE.xs, color: colors.textLight, marginTop: 1 },
   statusChip: {
     paddingHorizontal: 8, paddingVertical: 3,
     borderRadius: RADIUS.full,

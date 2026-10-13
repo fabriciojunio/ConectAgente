@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,7 +8,8 @@ import { Card } from '../../../components/ui/Card';
 import { visitaRepository } from '../../../database/repositories/visitaRepository';
 import { Visita } from '../../../types';
 import { formatDate, formatDateTime } from '../../../utils/formatters';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS } from '../../../utils/constants';
+import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
 
 const MOTIVOS_LABEL: Record<string, string> = {
   rotina: 'Rotina',
@@ -25,14 +26,17 @@ const STATUS_LABEL: Record<string, string> = {
   nao_encontrado: 'Não encontrado',
 };
 
-const STATUS_COLOR: Record<string, string> = {
-  realizada: COLORS.success,
-  agendada: COLORS.warning,
-  cancelada: COLORS.error,
-  nao_encontrado: COLORS.textLight,
-};
+const criarStatusColor = (colors: ThemeColors): Record<string, string> => ({
+  realizada: colors.success,
+  agendada: colors.warning,
+  cancelada: colors.error,
+  nao_encontrado: colors.textLight,
+});
 
 export default function DetalheVisita() {
+  const { colors } = useTheme();
+  const STATUS_COLOR = useMemo(() => criarStatusColor(colors), [colors]);
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const { id, backTo } = useLocalSearchParams<{ id: string; backTo?: string }>();
   const [visita, setVisita] = useState<Visita | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,7 +54,7 @@ export default function DetalheVisita() {
       <SafeAreaView style={styles.container}>
         <PageHeader title="Detalhes da Visita" showBack backTo={backTo} />
         <View style={styles.center}>
-          <ActivityIndicator color={COLORS.primary} size="large" />
+          <ActivityIndicator color={colors.primary} size="large" />
         </View>
       </SafeAreaView>
     );
@@ -67,7 +71,7 @@ export default function DetalheVisita() {
     );
   }
 
-  const statusColor = STATUS_COLOR[visita.status] ?? COLORS.textLight;
+  const statusColor = STATUS_COLOR[visita.status] ?? colors.textLight;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -118,14 +122,14 @@ export default function DetalheVisita() {
               <InfoRow
                 label="Medicamentos em dia"
                 value={visita.medicamentos_em_dia ? 'Sim' : 'Não'}
-                color={visita.medicamentos_em_dia ? COLORS.success : COLORS.error}
+                color={visita.medicamentos_em_dia ? colors.success : colors.error}
               />
             )}
             {visita.cartao_vacinas_em_dia !== undefined && (
               <InfoRow
                 label="Cartão de vacinas em dia"
                 value={visita.cartao_vacinas_em_dia ? 'Sim' : 'Não'}
-                color={visita.cartao_vacinas_em_dia ? COLORS.success : COLORS.error}
+                color={visita.cartao_vacinas_em_dia ? colors.success : colors.error}
               />
             )}
           </Section>
@@ -154,7 +158,7 @@ export default function DetalheVisita() {
         {visita.precisa_agendamento && (
           <Section title="Agendamento de Consulta" icon="calendar-outline">
             <View style={styles.agendamentoBox}>
-              <Ionicons name="alert-circle" size={20} color={COLORS.warning} />
+              <Ionicons name="alert-circle" size={20} color={colors.warning} />
               <Text style={styles.agendamentoText}>
                 Necessita agendamento
                 {visita.especialidade_agendamento ? `: ${visita.especialidade_agendamento}` : ''}
@@ -174,10 +178,12 @@ export default function DetalheVisita() {
 }
 
 function Section({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   return (
     <Card style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Ionicons name={icon as any} size={18} color={COLORS.primary} />
+        <Ionicons name={icon as any} size={18} color={colors.primary} />
         <Text style={styles.sectionTitle}>{title}</Text>
       </View>
       {children}
@@ -186,6 +192,8 @@ function Section({ title, icon, children }: { title: string; icon: string; child
 }
 
 function VitalBox({ label, value, unit }: { label: string; value: string; unit: string }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   return (
     <View style={styles.vitalBox}>
       <Text style={styles.vitalValue}>{value}</Text>
@@ -196,6 +204,8 @@ function VitalBox({ label, value, unit }: { label: string; value: string; unit: 
 }
 
 function InfoRow({ label, value, color }: { label: string; value: string; color?: string }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   return (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
@@ -205,6 +215,8 @@ function InfoRow({ label, value, color }: { label: string; value: string; color?
 }
 
 function InfoBlock({ label, value }: { label: string; value: string }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   return (
     <View style={styles.infoBlock}>
       <Text style={styles.infoBlockLabel}>{label}</Text>
@@ -213,51 +225,52 @@ function InfoBlock({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emptyText: { color: COLORS.textLight, fontSize: FONT_SIZE.md },
+  emptyText: { color: colors.textLight, fontSize: FONT_SIZE.md },
   scroll: { padding: SPACING.md, gap: SPACING.md, paddingBottom: SPACING.xl },
 
   headerCard: { gap: SPACING.xs },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   statusDot: { width: 12, height: 12, borderRadius: 6 },
-  dataText: { fontSize: FONT_SIZE.xl, fontWeight: '700', color: COLORS.text },
+  dataText: { fontSize: FONT_SIZE.xl, fontWeight: '700', color: colors.text },
   statusText: { fontSize: FONT_SIZE.sm, fontWeight: '600' },
   motivoBadge: {
-    backgroundColor: COLORS.primaryLight + '33',
+    backgroundColor: colors.primaryLight + '33',
     borderRadius: RADIUS.sm,
     paddingHorizontal: SPACING.sm,
     paddingVertical: 4,
   },
-  motivoBadgeText: { fontSize: FONT_SIZE.xs, color: COLORS.primary, fontWeight: '600' },
+  motivoBadgeText: { fontSize: FONT_SIZE.xs, color: colors.primary, fontWeight: '600' },
 
   section: { gap: SPACING.sm },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginBottom: 2 },
-  sectionTitle: { fontSize: FONT_SIZE.md, fontWeight: '700', color: COLORS.text },
+  sectionTitle: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.text },
 
   vitaisGrid: { flexDirection: 'row', gap: SPACING.sm, flexWrap: 'wrap' },
   vitalBox: {
-    flex: 1, minWidth: 90, backgroundColor: COLORS.background,
+    flex: 1, minWidth: 90, backgroundColor: colors.background,
     borderRadius: RADIUS.sm, padding: SPACING.sm, alignItems: 'center',
   },
-  vitalValue: { fontSize: FONT_SIZE.xxl, fontWeight: '800', color: COLORS.primary },
-  vitalUnit: { fontSize: FONT_SIZE.xs, color: COLORS.textLight },
-  vitalLabel: { fontSize: FONT_SIZE.xs, color: COLORS.text, fontWeight: '500', textAlign: 'center', marginTop: 2 },
+  vitalValue: { fontSize: FONT_SIZE.xxl, fontWeight: '800', color: colors.primary },
+  vitalUnit: { fontSize: FONT_SIZE.xs, color: colors.textLight },
+  vitalLabel: { fontSize: FONT_SIZE.xs, color: colors.text, fontWeight: '500', textAlign: 'center', marginTop: 2 },
 
   infoRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: SPACING.xs, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight,
+    paddingVertical: SPACING.xs, borderBottomWidth: 1, borderBottomColor: colors.borderLight,
   },
-  infoLabel: { fontSize: FONT_SIZE.sm, color: COLORS.textLight },
-  infoValue: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: COLORS.text },
+  infoLabel: { fontSize: FONT_SIZE.sm, color: colors.textLight },
+  infoValue: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: colors.text },
 
   infoBlock: { gap: 4 },
-  infoBlockLabel: { fontSize: FONT_SIZE.xs, color: COLORS.textLight, fontWeight: '600', textTransform: 'uppercase' },
-  blockText: { fontSize: FONT_SIZE.md, color: COLORS.text, lineHeight: 22 },
+  infoBlockLabel: { fontSize: FONT_SIZE.xs, color: colors.textLight, fontWeight: '600', textTransform: 'uppercase' },
+  blockText: { fontSize: FONT_SIZE.md, color: colors.text, lineHeight: 22 },
 
   agendamentoBox: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  agendamentoText: { fontSize: FONT_SIZE.md, color: COLORS.text, fontWeight: '500', flex: 1 },
+  agendamentoText: { fontSize: FONT_SIZE.md, color: colors.text, fontWeight: '500', flex: 1 },
 
-  footerText: { fontSize: FONT_SIZE.xs, color: COLORS.textLight, textAlign: 'center', marginTop: SPACING.sm },
+  footerText: { fontSize: FONT_SIZE.xs, color: colors.textLight, textAlign: 'center', marginTop: SPACING.sm },
 });

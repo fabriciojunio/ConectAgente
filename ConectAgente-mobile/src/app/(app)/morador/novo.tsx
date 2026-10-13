@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, Switch, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
@@ -15,12 +15,15 @@ import { Button } from '../../../components/button';
 import { PageHeader } from '../../../components/ui/PageHeader';
 import { moradorSchema, MoradorFormDataValidated, validarDataNascimento } from '../../../utils/validators';
 import { formatCPF, stripCPF, formatCartaoSUS, formatTelefone, formatDateInput, parseDateBR } from '../../../utils/formatters';
-import { SEXO_OPTIONS, ESCOLARIDADE_OPTIONS, COLORS, SPACING, FONT_SIZE } from '../../../utils/constants';
+import { SEXO_OPTIONS, ESCOLARIDADE_OPTIONS, SPACING, FONT_SIZE } from '../../../utils/constants';
 import { Sexo, Escolaridade } from '../../../types';
 import { residenciaRepository } from '../../../database/repositories/residenciaRepository';
 import { Controller } from 'react-hook-form';
+import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
 
 export default function NovoMorador() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const { residencia_id: residenciaParam } = useLocalSearchParams<{ residencia_id: string }>();
   const { criar } = useMoradores(residenciaParam);
   const { residencias } = useResidencias();
@@ -156,8 +159,8 @@ export default function NovoMorador() {
                           onChange(novo);
                         }
                       }}
-                      trackColor={{ false: COLORS.disabled, true: COLORS.primaryLight }}
-                      thumbColor={value ? COLORS.primary : COLORS.white}
+                      trackColor={{ false: colors.disabled, true: colors.primaryLight }}
+                      thumbColor={value ? colors.primary : colors.white}
                     />
                   </View>
                 )}
@@ -233,6 +236,8 @@ export default function NovoMorador() {
 }
 
 function StepIndicator({ number, label, active }: { number: number; label: string; active: boolean }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   return (
     <View style={styles.stepItem}>
       <View style={[styles.stepCircle, active && styles.stepCircleActive]}>
@@ -243,32 +248,33 @@ function StepIndicator({ number, label, active }: { number: number; label: strin
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   stepper: {
     flexDirection: 'row', alignItems: 'center', padding: SPACING.md,
-    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight,
+    backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.borderLight,
   },
   stepItem: { alignItems: 'center', gap: 4, flex: 1 },
   stepCircle: {
     width: 32, height: 32, borderRadius: 16,
-    backgroundColor: COLORS.borderLight, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.borderLight, alignItems: 'center', justifyContent: 'center',
   },
-  stepCircleActive: { backgroundColor: COLORS.primary },
-  stepNumber: { fontSize: FONT_SIZE.md, fontWeight: '700', color: COLORS.textLight },
-  stepNumberActive: { color: COLORS.white },
-  stepLabel: { fontSize: FONT_SIZE.xs, color: COLORS.textLight },
-  stepLabelActive: { color: COLORS.primary, fontWeight: '600' },
-  stepLine: { flex: 1, height: 2, backgroundColor: COLORS.borderLight },
+  stepCircleActive: { backgroundColor: colors.primary },
+  stepNumber: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.textLight },
+  stepNumberActive: { color: colors.white },
+  stepLabel: { fontSize: FONT_SIZE.xs, color: colors.textLight },
+  stepLabelActive: { color: colors.primary, fontWeight: '600' },
+  stepLine: { flex: 1, height: 2, backgroundColor: colors.borderLight },
   scroll: { padding: SPACING.md, paddingBottom: SPACING.xl },
   form: { gap: SPACING.md },
   sectionTitle: {
-    fontSize: FONT_SIZE.lg, fontWeight: '700', color: COLORS.primary, marginTop: SPACING.sm,
+    fontSize: FONT_SIZE.lg, fontWeight: '700', color: colors.primary, marginTop: SPACING.sm,
   },
   row: { flexDirection: 'row', gap: SPACING.sm },
   switchRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingVertical: SPACING.sm, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight,
+    paddingVertical: SPACING.sm, borderBottomWidth: 1, borderBottomColor: colors.borderLight,
   },
-  switchLabel: { fontSize: FONT_SIZE.md, fontWeight: '500', color: COLORS.text, flex: 1, marginRight: SPACING.md },
+  switchLabel: { fontSize: FONT_SIZE.md, fontWeight: '500', color: colors.text, flex: 1, marginRight: SPACING.md },
 });

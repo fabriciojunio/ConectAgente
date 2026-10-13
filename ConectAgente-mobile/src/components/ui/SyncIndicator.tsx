@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSync } from '../../contexts/SyncContext';
 import { useNetwork } from '../../contexts/NetworkContext';
-import { COLORS, FONT_SIZE, SPACING } from '../../utils/constants';
+import { FONT_SIZE, SPACING } from '../../utils/constants';
+import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 export function SyncIndicator() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const { status, sincronizarAgora } = useSync();
   const { isOnline } = useNetwork();
 
@@ -35,11 +38,11 @@ export function SyncIndicator() {
       onPress={handlePress}
     >
       {status.sincronizando ? (
-        <Ionicons name="sync" size={14} color={COLORS.white} />
+        <Ionicons name="sync" size={14} color={colors.white} />
       ) : !isOnline ? (
-        <Ionicons name="cloud-offline" size={14} color={COLORS.white} />
+        <Ionicons name="cloud-offline" size={14} color={colors.white} />
       ) : (
-        <Ionicons name="cloud-upload" size={14} color={COLORS.white} />
+        <Ionicons name="cloud-upload" size={14} color={colors.white} />
       )}
       <Text style={styles.text}>
         {status.sincronizando
@@ -52,21 +55,22 @@ export function SyncIndicator() {
   );
 }
 
-const styles = StyleSheet.create({
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.warning,
+    backgroundColor: colors.warning,
     paddingHorizontal: SPACING.sm,
     paddingVertical: 4,
     borderRadius: 12,
     gap: 4,
   },
   offline: {
-    backgroundColor: COLORS.error,
+    backgroundColor: colors.error,
   },
   text: {
-    color: COLORS.white,
+    color: colors.white,
     fontSize: FONT_SIZE.xs,
     fontWeight: '600',
   },
