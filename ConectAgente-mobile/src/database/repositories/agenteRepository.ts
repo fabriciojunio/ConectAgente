@@ -12,7 +12,13 @@ import { SECURE_KEYS } from '../../utils/constants';
 // encontrasse uma instalação no ar entrava como administrador e lia o
 // prontuário de todos. Agora ela é sorteada na primeira execução, guardada
 // no SecureStore e apagada quando é trocada.
-const ADMIN_CPF = '11144477735';
+/**
+ * CPF da conta de administrador criada na primeira execucao.
+ *
+ * Exportado porque a tela de login precisa dele para mostrar a credencial
+ * inicial uma unica vez. Ver `garantirAdminPadrao`.
+ */
+export const ADMIN_CPF = '11144477735';
 
 // ============================================================
 // RATE LIMITING: proteção contra força bruta

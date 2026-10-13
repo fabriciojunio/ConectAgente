@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, Image, StyleSheet, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
@@ -14,7 +14,7 @@ import { Button } from '../../components/button';
 import { loginSchema, LoginFormData } from '../../utils/validators';
 import { formatCPF, stripCPF } from '../../utils/formatters';
 import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
-import { agenteRepository } from '../../database/repositories/agenteRepository';
+import { ADMIN_CPF, agenteRepository } from '../../database/repositories/agenteRepository';
 import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 export default function Login() {
@@ -23,6 +23,43 @@ export default function Login() {
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const insets = useSafeAreaInsets();
+
+  /**
+   * Credencial inicial do administrador, mostrada uma unica vez.
+   *
+   * Por que ela precisa aparecer aqui. A conta de administrador e criada na
+   * primeira execucao com senha sorteada, guardada no cofre do sistema. Quem
+   * le essa senha e a tela de configuracoes, que fica dentro da area
+   * administrativa, e so se entra la com a conta de administrador. Numa
+   * instalacao nova ninguem entrava: para ver a senha era preciso ja estar
+   * dentro, e para entrar era preciso a senha.
+   *
+   * O aviso some sozinho: `esquecerSenhaInicialDoAdmin` apaga a chave quando
+   * a senha e trocada, e `obterSenhaInicialDoAdmin` passa a devolver nulo.
+   *
+   * O que isso custa: quem tiver o aparelho em maos antes da primeira troca
+   * ve a senha. E uma conta local, que manda no SQLite daquele aparelho e nao
+   * no servidor, onde quem decide e o RLS com a sessao do Supabase. Entre
+   * expor uma credencial local ate a primeira troca e deixar a area
+   * administrativa inalcancavel para sempre, o primeiro e o mal menor, e o
+   * texto pede a troca.
+   */
+  const [senhaInicialAdmin, setSenhaInicialAdmin] = useState<string | null>(null);
+
+  useEffect(() => {
+    let vivo = true;
+    agenteRepository
+      .obterSenhaInicialDoAdmin()
+      .then((senha) => {
+        if (vivo) setSenhaInicialAdmin(senha);
+      })
+      .catch(() => {
+        // Cofre indisponivel nao pode derrubar a tela de login.
+      });
+    return () => {
+      vivo = false;
+    };
+  }, []);
 
   const { control, handleSubmit } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -124,6 +161,18 @@ export default function Login() {
             />
           </View>
 
+          {senhaInicialAdmin && (
+            <View style={styles.avisoAdmin}>
+              <Text style={styles.avisoAdminTitulo}>Primeiro acesso do administrador</Text>
+              <Text style={styles.avisoAdminTexto}>
+                CPF {formatCPF(ADMIN_CPF)}, senha {senhaInicialAdmin}
+              </Text>
+              <Text style={styles.avisoAdminTexto}>
+                Troque a senha no primeiro acesso. Este aviso some quando ela for trocada.
+              </Text>
+            </View>
+          )}
+
           {/* FOOTER LGPD: fixo no fundo do formContainer */}
           <Text style={styles.lgpd}>
             Este sistema está em conformidade com a LGPD (Lei 13.709/2018).
@@ -219,6 +268,24 @@ const criarStyles = (colors: ThemeColors) =>
     // telas irmas com espacamento diferente parecem telas de sistemas
     // diferentes.
     gap: SPACING.md,
+  },
+  avisoAdmin: {
+    marginTop: SPACING.md,
+    padding: SPACING.md,
+    borderRadius: RADIUS.md,
+    backgroundColor: colors.avisoFundo,
+    borderWidth: 1,
+    borderColor: colors.avisoBorda,
+    gap: 4,
+  },
+  avisoAdminTitulo: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: '700',
+    color: colors.aviso,
+  },
+  avisoAdminTexto: {
+    fontSize: FONT_SIZE.xs,
+    color: colors.textMedium,
   },
   lgpd: {
     fontSize: FONT_SIZE.xs,
