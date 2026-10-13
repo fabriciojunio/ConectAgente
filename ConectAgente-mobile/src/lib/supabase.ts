@@ -20,8 +20,40 @@ import { createClient } from '@supabase/supabase-js';
 const urlConfigurada = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 const chaveConfigurada = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
+/**
+ * Valores que vêm do `.env.example` e não são servidor nenhum.
+ *
+ * Por que isto existe. Quem clona o projeto copia o `.env.example` para
+ * `.env` e preenche aos poucos, e o APK compilado nesse meio do caminho
+ * carregava `https://seu-projeto.supabase.co`. String não vazia, então o
+ * aplicativo se considerava configurado, tentava falar com um host que não
+ * existe e a tela mostrava erro de rede. O agente em campo conclui que está
+ * sem sinal, quando o que falta é configuração.
+ *
+ * O painel web já recusava esses valores em `src/lib/env.ts`. Os dois lados
+ * precisam da mesma regra, senão o mesmo `.env` meio preenchido dá
+ * diagnóstico diferente em cada aplicativo.
+ */
+const MARCAS_DE_EXEMPLO = ['seu-projeto', 'placeholder', 'sua-api', 'SEU_ID'];
+
+export function ehValorDeExemplo(valor: string): boolean {
+  return MARCAS_DE_EXEMPLO.some((marca) => valor.includes(marca));
+}
+
+/**
+ * A chave `anon` do Supabase é um JWT e passa de 100 caracteres. O
+ * `.env.example` traz só o cabeçalho do JWT, com 39, e é por isso que o
+ * tamanho entra na conta.
+ */
+export const TAMANHO_MINIMO_DA_CHAVE = 100;
+
 /** Diz se o servidor está configurado. A sincronização depende disto. */
-export const supabaseConfigurado = urlConfigurada !== '' && chaveConfigurada !== '';
+export const supabaseConfigurado =
+  urlConfigurada !== '' &&
+  chaveConfigurada !== '' &&
+  !ehValorDeExemplo(urlConfigurada) &&
+  !ehValorDeExemplo(chaveConfigurada) &&
+  chaveConfigurada.length >= TAMANHO_MINIMO_DA_CHAVE;
 
 if (!supabaseConfigurado) {
   console.warn(
@@ -43,9 +75,12 @@ if (!supabaseConfigurado) {
 // offline, e a sincronização falha com mensagem própria quando for tentada.
 const URL_RESERVA = 'https://servidor-nao-configurado.invalid';
 
+// Usa `supabaseConfigurado`, e não `urlConfigurada || URL_RESERVA`: o valor de
+// exemplo é string não vazia, então o `||` o deixava passar e o cliente saía
+// apontado para um endereço que não responde.
 export const supabase = createClient(
-  urlConfigurada || URL_RESERVA,
-  chaveConfigurada || 'chave-nao-configurada',
+  supabaseConfigurado ? urlConfigurada : URL_RESERVA,
+  supabaseConfigurado ? chaveConfigurada : 'chave-nao-configurada',
   {
   auth: {
     // Usa AsyncStorage para persistir sessão entre reinicializações do app
