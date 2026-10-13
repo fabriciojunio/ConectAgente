@@ -35,6 +35,26 @@ cp .env.example .env     # preencha as três variáveis
 npm run dev
 ```
 
+### Ligar ao Supabase
+
+Em vez de editar os dois `.env` na mão:
+
+```bash
+bash scripts/configurar-supabase.sh \
+  --url https://xxxxxxxxxxxx.supabase.co \
+  --anon eyJhbGciOi...
+```
+
+O script confere a credencial contra o servidor antes de escrever qualquer
+arquivo: se o endereço não responde, se a chave é recusada, ou se o schema
+ainda não foi aplicado, ele para e não escreve nada. `.env` meio preenchido
+não quebra o aplicativo, ele sobe e a sincronização falha em silêncio, e isso
+é pior que não configurar.
+
+Os valores estão em supabase.com, no projeto, em Settings → API: "Project URL"
+e "anon public". Rode antes o `ConectAgente-web/supabase/setup-completo.sql`
+no editor SQL do Supabase.
+
 O aplicativo abre e funciona mesmo sem o `.env` preenchido: o banco local é
 independente do servidor. O que não funciona sem ele é a sincronização, e o
 aplicativo avisa em vez de falhar calado.
@@ -154,15 +174,10 @@ localmente. A tradução e a remoção dos campos locais ficam num lugar só, em
 
 Honestidade sobre o estado, que vale mais que uma lista de recursos:
 
-- **A trilha de auditoria é quase inexistente na prática.** O módulo
-  `utils/lgpd.ts` tem as funções, mas quase nenhuma é chamada: só a troca de
-  senha registra evento. Acesso e alteração de prontuário não deixam rastro.
-  Para órgão público isso precisa ser resolvido, e o art. 37 da LGPD é o
-  motivo. Detalhes em [docs/lgpd.md](docs/lgpd.md).
-- **Consentimento não é coletado.** A tabela existe no banco local e nada
-  escreve nela.
-- **Anonimização não está ligada a nenhuma tela**, então o direito de
-  eliminação do art. 18 não é exercível pelo sistema hoje.
+- **A cifra dos campos no aparelho não dá autenticidade.** É SHA-256 em modo
+  contador, feita à mão porque o `expo-crypto` não expõe AES, e cifra de fluxo
+  sem MAC é maleável. Resolver custa migração do formato armazenado.
+- **Não há segundo fator no painel**, que é onde se lê o prontuário de todos.
 - **Notificação e sincronização em segundo plano foram removidas.** O código
   existia e era coerente, mas dependia de quatro pacotes nativos não
   instalados, e ligá-los exige build de desenvolvimento. As versões para o SDK

@@ -140,6 +140,12 @@ jobs:
       - name: Rodar as suites de banco
         run: bash ConectAgente-web/supabase/testes/rodar-todos.sh
 
+      # O configurador escreve os .env. Um .env meio preenchido nao quebra o
+      # aplicativo: ele sobe, as telas aparecem, e a sincronizacao falha em
+      # silencio. Por isso o que se testa e a recusa, nao o caminho feliz.
+      - name: Conferir o configurador do Supabase
+        run: bash scripts/testar-configurador.sh
+
   # ---------------------------------------------------------------------------
   # Dependencias
   # ---------------------------------------------------------------------------
