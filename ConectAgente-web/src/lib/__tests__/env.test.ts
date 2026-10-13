@@ -9,7 +9,20 @@
  */
 import { conferirEnv, chaveDeServicoVazou } from '../env';
 
-const CHAVE_LONGA = 'a'.repeat(120);
+/**
+ * Chaves com formato de verdade.
+ *
+ * O dado anterior era `'a'.repeat(120)`: passava no `.min(100)` e não era um
+ * JWT, porque não tinha os três pedaços separados por ponto. Dado de teste que
+ * nenhum servidor aceitaria dá a impressão de cobertura que não existe.
+ *
+ * O Supabase hoje tem dois formatos em circulação, e os dois valem: o JWT
+ * antigo e o `sb_publishable_` / `sb_secret_`, que é o que sai em projeto novo.
+ */
+const JWT_PUBLICA = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' + 'a'.repeat(120) + '.assinatura';
+const PUBLICAVEL = 'sb_publishable_ExemploDeChaveParaTeste_000000';
+const SECRETA = 'sb_secret_ExemploDeChaveParaTeste_000000';
+const CHAVE_LONGA = JWT_PUBLICA;
 
 const VALIDO: NodeJS.ProcessEnv = {
   NEXT_PUBLIC_SUPABASE_URL: 'https://abcdefghij.supabase.co',
@@ -23,7 +36,7 @@ describe('conferirEnv: ambiente completo', () => {
   });
 
   it('aceita a chave de serviço quando ela existe', () => {
-    const r = conferirEnv({ ...VALIDO, SUPABASE_SERVICE_ROLE_KEY: CHAVE_LONGA });
+    const r = conferirEnv({ ...VALIDO, SUPABASE_SERVICE_ROLE_KEY: SECRETA });
     expect(r.valido).toBe(true);
   });
 
@@ -59,15 +72,16 @@ describe('conferirEnv: o que estava passando batido', () => {
     expect(r.valido).toBe(false);
   });
 
-  it('recusa chave curta demais para ser real', () => {
-    // A chave `anon` do Supabase é um JWT e passa de 100 caracteres. O que
-    // estava no .env do projeto tinha 39: era só o cabeçalho do JWT.
+  it('recusa o cabeçalho do JWT, que é o que vinha no .env do projeto', () => {
+    // Tinha 39 caracteres: era só o cabeçalho, sem corpo nem assinatura. A
+    // mensagem diz o que se espera, porque quem configura precisa saber o que
+    // procurar no painel, não só que está errado.
     const r = conferirEnv({
       ...VALIDO,
       NEXT_PUBLIC_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
     });
     expect(r.valido).toBe(false);
-    expect(r.problemas.join(' ')).toContain('truncada');
+    expect(r.problemas.join(' ')).toContain('sb_publishable_');
   });
 
   it('recusa URL ausente', () => {
@@ -103,7 +117,7 @@ describe('chaveDeServicoVazou', () => {
     // chave de serviço ignora o RLS por definição: publicada, qualquer pessoa
     // lê o prontuário de todos. É o tipo de erro que nasce de alguém tentar
     // "fazer funcionar no cliente".
-    const vazou = { ...VALIDO, NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY: CHAVE_LONGA };
+    const vazou = { ...VALIDO, NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY: SECRETA };
     expect(chaveDeServicoVazou(vazou)).toBe(true);
   });
 
@@ -113,7 +127,39 @@ describe('chaveDeServicoVazou', () => {
   });
 
   it('não confunde a chave de serviço legítima, sem prefixo público', () => {
-    const certo = { ...VALIDO, SUPABASE_SERVICE_ROLE_KEY: CHAVE_LONGA };
+    const certo = { ...VALIDO, SUPABASE_SERVICE_ROLE_KEY: SECRETA };
     expect(chaveDeServicoVazou(certo)).toBe(false);
+  });
+});
+
+describe('os dois formatos de chave do Supabase', () => {
+  // Em 13/10/2026 o projeto de verdade saiu com `sb_publishable_`, de 46
+  // caracteres, e a regra antiga exigia 100. O painel teria respondido
+  // degradado no /api/health com o ambiente perfeitamente configurado.
+  it('aceita a chave publicável do formato novo', () => {
+    const r = conferirEnv({ ...VALIDO, NEXT_PUBLIC_SUPABASE_ANON_KEY: PUBLICAVEL });
+    expect(r.valido).toBe(true);
+  });
+
+  it('aceita o JWT antigo', () => {
+    const r = conferirEnv({ ...VALIDO, NEXT_PUBLIC_SUPABASE_ANON_KEY: JWT_PUBLICA });
+    expect(r.valido).toBe(true);
+  });
+
+  it('recusa a chave secreta no lugar da publicável', () => {
+    // Iria para o pacote do navegador, e ela ignora o RLS. No formato antigo
+    // as duas eram JWTs parecidos e a troca só aparecia em produção.
+    const r = conferirEnv({ ...VALIDO, NEXT_PUBLIC_SUPABASE_ANON_KEY: SECRETA });
+    expect(r.valido).toBe(false);
+  });
+
+  it('recusa a publicável no lugar da secreta', () => {
+    const r = conferirEnv({ ...VALIDO, SUPABASE_SERVICE_ROLE_KEY: PUBLICAVEL });
+    expect(r.valido).toBe(false);
+  });
+
+  it('recusa texto que não tem formato de chave nenhuma', () => {
+    const r = conferirEnv({ ...VALIDO, NEXT_PUBLIC_SUPABASE_ANON_KEY: 'a'.repeat(120) });
+    expect(r.valido).toBe(false);
   });
 });

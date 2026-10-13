@@ -24,6 +24,11 @@ SCRIPT="$AQUI/configurar-supabase.sh"
 
 JWT_PLAUSIVEL="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.$(printf 'a%.0s' $(seq 1 120)).assinatura"
 
+# O formato novo do Supabase, com 46 caracteres. Projeto criado depois da
+# mudanca sai so com ele, e exigir 100 caracteres recusava chave boa.
+PUBLICAVEL="sb_publishable_ExemploDeChaveParaTeste_000000"
+SECRETA="sb_secret_ExemploDeChaveParaTeste_000000"
+
 ok=0; falhou=0
 
 # Guarda o estado dos arquivos antes, para provar que nenhum foi tocado.
@@ -69,10 +74,16 @@ recusa "chave truncada"         --url https://abcdefghijkl.supabase.co --anon "e
 recusa "chave sem formato JWT"  --url https://abcdefghijkl.supabase.co --anon "$(printf 'x%.0s' $(seq 1 150))"
 recusa "servico igual a anon"   --url https://abcdefghijkl.supabase.co --anon "$JWT_PLAUSIVEL" --service "$JWT_PLAUSIVEL"
 recusa "servico truncado"       --url https://abcdefghijkl.supabase.co --anon "$JWT_PLAUSIVEL" --service "eyJabc"
+recusa "secreta no lugar da publicavel" --url https://abcdefghijkl.supabase.co --anon "$SECRETA"
+recusa "publicavel no lugar da secreta" --url https://abcdefghijkl.supabase.co --anon "$PUBLICAVEL" --service "$PUBLICAVEL"
+recusa "prefixo novo sem nada depois"   --url https://abcdefghijkl.supabase.co --anon "sb_publishable_"
 
 echo
 echo "==> projeto que nao existe (usa rede)"
 recusa "endereco inexistente"   --url https://zzzznaoexistezzzz.supabase.co --anon "$JWT_PLAUSIVEL"
+# O formato novo passa pela conferencia de formato e so para na rede, que e o
+# que prova que ele nao e mais recusado por tamanho.
+recusa "formato novo chega ate a rede" --url https://zzzznaoexistezzzz.supabase.co --anon "$PUBLICAVEL"
 
 echo
 echo "==> a ajuda funciona sem argumentos de credencial"

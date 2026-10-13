@@ -69,59 +69,108 @@ case "$URL" in
   *seu-projeto*|*placeholder*) falhar "a URL ainda é a de exemplo" ;;
 esac
 
-# A chave anon é um JWT: três partes separadas por ponto, e passa de 100
-# caracteres. O que vem no .env.example tem 39, que é só o cabeçalho.
-if [ "${#ANON}" -lt 100 ]; then
-  falhar "a chave anon tem ${#ANON} caracteres. A real passa de 100: provavelmente foi copiada pela metade."
+# O Supabase tem dois formatos de chave em circulação, e os dois valem.
+#
+# O antigo é um JWT: `eyJ...` em três partes separadas por ponto, passando de
+# 100 caracteres. O `.env.example` traz só o cabeçalho dele, com 39.
+#
+# O novo começa com `sb_publishable_` (pública) ou `sb_secret_` (secreta), e
+# tem 46 caracteres. Projeto criado depois da mudança sai só com ele. Exigir
+# 100 caracteres, como estava aqui, recusava chave boa e mandava a pessoa
+# procurar erro onde não havia.
+#
+# O formato novo é melhor numa coisa: as duas se distinguem à vista. No
+# formato antigo a `anon` e a `service_role` eram dois JWTs parecidos, e
+# trocar uma pela outra só aparecia em produção, com o RLS ignorado.
+publica_valida() {
+  case "$1" in
+    sb_secret_*) return 1 ;;
+    sb_publishable_?*) return 0 ;;
+    *.*.*) [ "${#1}" -ge 100 ] && return 0 || return 1 ;;
+    *) return 1 ;;
+  esac
+}
+
+secreta_valida() {
+  case "$1" in
+    sb_publishable_*) return 1 ;;
+    sb_secret_?*) return 0 ;;
+    *.*.*) [ "${#1}" -ge 100 ] && return 0 || return 1 ;;
+    *) return 1 ;;
+  esac
+}
+
+if ! publica_valida "$ANON"; then
+  case "$ANON" in
+    sb_secret_*)
+      falhar "isso é a chave SECRETA. Ela ignora o RLS e iria dentro do APK. A publicável está em Settings, API, campo sb_publishable." ;;
+    *)
+      falhar "a chave não tem formato de chave publicável: esperado sb_publishable_... ou um JWT de três partes com mais de 100 caracteres. Esta tem ${#ANON}." ;;
+  esac
 fi
-case "$ANON" in
-  *.*.*) ;;
-  *) falhar "a chave anon não tem formato de JWT (esperado cabeçalho.corpo.assinatura)" ;;
-esac
-if [ -n "$SERVICE" ] && [ "${#SERVICE}" -lt 100 ]; then
-  falhar "a chave de serviço parece truncada"
+
+if [ -n "$SERVICE" ] && ! secreta_valida "$SERVICE"; then
+  falhar "a chave de serviço não tem formato de chave secreta: esperado sb_secret_... ou um JWT de três partes"
 fi
 if [ -n "$SERVICE" ] && [ "$SERVICE" = "$ANON" ]; then
-  falhar "a chave de serviço é igual à anon. Uma das duas foi copiada do campo errado."
+  falhar "a chave de serviço é igual à publicável. Uma das duas foi copiada do campo errado."
 fi
 
 echo "    ok"
 
 # ---------------------------------------------------------------------------
-# 2. O servidor responde e aceita a chave
+# 2. O servidor responde, aceita a chave, e o schema está aplicado
 # ---------------------------------------------------------------------------
+#
+# Uma requisição só responde as três perguntas, e é na tabela `agentes`, não na
+# raiz do REST.
+#
+# A raiz recusa chave publicável de propósito:
+#
+#   {"message":"Secret API key required",
+#    "hint":"Only secret API keys can be used for this endpoint."}
+#
+# A primeira versão deste script sondava a raiz, e por isso recusava toda chave
+# no formato novo dizendo que o servidor a tinha rejeitado. A chave estava
+# certa; a pergunta é que estava errada. Custou uma rodada de "a credencial não
+# funciona" com uma credencial que funcionava.
 echo "==> falando com o servidor"
 
 BASE="${URL%/}"
-codigo=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
-  -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
-  "$BASE/rest/v1/" 2>/dev/null)
+resposta=$(curl -s -w '
+%{http_code}' --max-time 45   -H "apikey: $ANON" -H "Authorization: Bearer $ANON"   "$BASE/rest/v1/agentes?select=id&limit=1" 2>/dev/null)
+
+codigo="${resposta##*$'
+'}"
+corpo="${resposta%$'
+'*}"
 
 case "$codigo" in
-  000) falhar "não consegui falar com $BASE. Sem internet, ou o endereço está errado." ;;
-  401|403) falhar "o servidor respondeu $codigo: a chave anon foi recusada." ;;
-  200|404) echo "    o servidor respondeu e aceitou a chave (HTTP $codigo)" ;;
-  *) falhar "resposta inesperada do servidor: HTTP $codigo" ;;
-esac
-
-# ---------------------------------------------------------------------------
-# 3. O schema foi aplicado
-# ---------------------------------------------------------------------------
-echo "==> conferindo se o banco já tem o schema"
-
-tabela=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
-  -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
-  "$BASE/rest/v1/agentes?select=id&limit=1" 2>/dev/null)
-
-case "$tabela" in
-  200) echo "    a tabela agentes existe e o RLS deixou consultar" ;;
+  000)
+    falhar "não consegui falar com $BASE. Sem internet, ou o endereço está errado." ;;
+  200)
+    echo "    o servidor respondeu, a chave foi aceita e a tabela agentes existe" ;;
   401|403)
-    # Sem sessão, a policy nega. Isso é o certo: significa que a tabela existe
-    # e está protegida. Tabela ausente responderia 404.
-    echo "    a tabela agentes existe e está protegida por RLS (HTTP $tabela)" ;;
+    # Sem sessão o RLS nega, e negar prova que a tabela existe e está
+    # protegida. Mas 401 também é o que volta com chave errada, então o corpo
+    # da resposta é que separa os dois casos.
+    case "$corpo" in
+      *"API key"*|*"apikey"*|*"JWT"*)
+        falhar "o servidor recusou a chave (HTTP $codigo): $corpo" ;;
+      *)
+        echo "    a tabela agentes existe e está protegida por RLS (HTTP $codigo)" ;;
+    esac ;;
   404)
-    falhar "a tabela agentes não existe. Rode antes o supabase/setup-completo.sql no editor SQL do Supabase." ;;
-  *) falhar "resposta inesperada ao procurar a tabela agentes: HTTP $tabela" ;;
+    case "$corpo" in
+      *PGRST205*|*"Could not find the table"*)
+        falhar "a chave funciona, mas o banco está vazio. Rode antes o ConectAgente-web/supabase/setup-completo.sql no editor SQL do Supabase." ;;
+      *)
+        falhar "o servidor respondeu 404: $corpo" ;;
+    esac ;;
+  503)
+    falhar "o projeto ainda está subindo (HTTP 503). Espere um minuto e tente de novo." ;;
+  *)
+    falhar "resposta inesperada do servidor: HTTP $codigo. $corpo" ;;
 esac
 
 # ---------------------------------------------------------------------------

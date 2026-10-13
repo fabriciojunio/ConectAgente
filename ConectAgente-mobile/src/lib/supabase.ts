@@ -41,11 +41,33 @@ export function ehValorDeExemplo(valor: string): boolean {
 }
 
 /**
- * A chave `anon` do Supabase é um JWT e passa de 100 caracteres. O
- * `.env.example` traz só o cabeçalho do JWT, com 39, e é por isso que o
- * tamanho entra na conta.
+ * O Supabase tem dois formatos de chave em circulação, e os dois são válidos.
+ *
+ * O antigo é um JWT: `eyJ...` em três partes separadas por ponto, passando de
+ * 100 caracteres. O `.env.example` traz só o cabeçalho dele, com 39, e foi por
+ * isso que o tamanho entrou na conta.
+ *
+ * O novo começa com `sb_publishable_` e tem 46 caracteres. Projeto criado
+ * depois da mudança sai só com ele.
+ *
+ * Exigir 100 caracteres, como estava aqui, recusava a chave nova em silêncio:
+ * o aplicativo dizia "não configurado" com uma credencial perfeitamente boa, e
+ * o agente concluía que estava sem sinal. É o mesmo diagnóstico errado que o
+ * valor de exemplo causava, agora pelo lado oposto.
+ *
+ * O formato novo traz uma vantagem: `sb_publishable_` e `sb_secret_` se
+ * distinguem à vista. No formato antigo a chave `anon` e a `service_role` eram
+ * dois JWTs parecidos, e trocar uma pela outra só aparecia em produção.
  */
-export const TAMANHO_MINIMO_DA_CHAVE = 100;
+const PREFIXO_PUBLICA = 'sb_publishable_';
+const PREFIXO_SECRETA = 'sb_secret_';
+const TAMANHO_MINIMO_JWT = 100;
+
+export function ehChavePublicaValida(valor: string): boolean {
+  if (valor.startsWith(PREFIXO_SECRETA)) return false; // nunca no aplicativo
+  if (valor.startsWith(PREFIXO_PUBLICA)) return valor.length > PREFIXO_PUBLICA.length;
+  return valor.split('.').length === 3 && valor.length >= TAMANHO_MINIMO_JWT;
+}
 
 /** Diz se o servidor está configurado. A sincronização depende disto. */
 export const supabaseConfigurado =
@@ -53,7 +75,7 @@ export const supabaseConfigurado =
   chaveConfigurada !== '' &&
   !ehValorDeExemplo(urlConfigurada) &&
   !ehValorDeExemplo(chaveConfigurada) &&
-  chaveConfigurada.length >= TAMANHO_MINIMO_DA_CHAVE;
+  ehChavePublicaValida(chaveConfigurada);
 
 if (!supabaseConfigurado) {
   console.warn(

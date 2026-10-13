@@ -22,3 +22,8 @@ coverage/
 chaves/
 *.keystore
 *.jks
+
+# Copia que o scripts/configurar-supabase.sh guarda antes de sobrescrever.
+# Tem credencial dentro, como o .env que ela copia.
+*.env.anterior
+.env.anterior
