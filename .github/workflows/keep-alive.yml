@@ -21,11 +21,20 @@ on:
     # Segunda-feira, 09:00 em Brasília (12:00 UTC).
     - cron: '0 12 * * 1'
   workflow_dispatch: {}
+  # Mudança neste arquivo roda o keep-alive na hora. Serve de prova: sem isso,
+  # um erro de digitação no nome de um segredo só apareceria na segunda
+  # seguinte, e o projeto já teria sido suspenso.
+  push:
+    paths:
+      - '.github/workflows/keep-alive.yml'
 
 jobs:
   acordar:
     name: Manter o projeto ativo
     runs-on: ubuntu-latest
+    # O pior caso da espera abaixo é perto de três minutos. Dez minutos é folga
+    # sem deixar um curl travado ocupar o runner até o limite da conta.
+    timeout-minutes: 10
     steps:
       - name: Tocar o endpoint REST
         env:
