@@ -20,6 +20,7 @@ import { Sexo, Escolaridade } from '../../../types';
 import { residenciaRepository } from '../../../database/repositories/residenciaRepository';
 import { Controller } from 'react-hook-form';
 import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
+import { lgpdRepository } from '../../../database/repositories/lgpdRepository';
 
 export default function NovoMorador() {
   const { colors } = useTheme();
@@ -72,6 +73,20 @@ export default function NovoMorador() {
         sexo: data.sexo as Sexo,
         escolaridade: data.escolaridade as Escolaridade | undefined,
       });
+      // Consentimento colhido no cadastro.
+      //
+      // O aceite acontece aqui, onde a finalidade e a base legal aparecem na
+      // tela. O que fica guardado e o que prova o aceite: quando foi, de que
+      // versao da politica, e quais dados foram coletados. Sem `await`, pela
+      // mesma razao da auditoria: o cadastro ja aconteceu, e falhar ao
+      // registrar nao pode desfaze-lo.
+      void lgpdRepository.registrarConsentimento({
+        moradorId: morador.id,
+        dadosColetados: Object.entries(data)
+          .filter(([, valor]) => valor !== undefined && valor !== '' && valor !== null)
+          .map(([campo]) => campo),
+      });
+
       router.replace({
         pathname: '/(app)/prontuario/[moradorId]',
         params: { moradorId: morador.id },
