@@ -36,3 +36,12 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# APK gerado para instalar no aparelho.
+#
+# Fica fora do repositorio por tamanho: o pacote com todas as ABIs passa de
+# 90 MB, o GitHub avisa acima de 50 MB e recusa acima de 100 MB. Quem precisa
+# do arquivo gera com as instrucoes de docs/apk.md.
+release/
+*.apk
+*.aab
