@@ -185,3 +185,22 @@ export function applyMask(value: string, mask: string): string {
   }
   return result;
 }
+
+/**
+ * A data local no formato que o banco guarda: AAAA-MM-DD.
+ *
+ * Existe porque `toISOString()` nao serve aqui. Ele converte para UTC, entao
+ * a meia-noite local de 13/10 no Brasil vira `2026-10-13T03:00:00.000Z`, com
+ * hora e fuso grudados. Comparar isso com o que esta gravado, que e so
+ * `2026-10-13`, da falso em comparacao de texto, porque a string mais curta e
+ * considerada menor. Era o que zerava o contador de visitas do dia.
+ *
+ * Num fuso a leste de Greenwich o estrago seria maior: a meia-noite local cai
+ * no dia anterior em UTC, e a data em si sairia errada.
+ */
+export function apenasData(data: Date): string {
+  const ano = data.getFullYear();
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  const dia = String(data.getDate()).padStart(2, '0');
+  return `${ano}-${mes}-${dia}`;
+}
