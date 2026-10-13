@@ -1,8 +1,18 @@
 # Gerar e testar o APK
 
 O aplicativo é gerenciado pelo Expo, então a pasta `android/` não fica no
-repositório: ela é gerada por `expo prebuild` quando se precisa de um APK. Isso
-mantém o time trabalhando com Expo Go no dia a dia.
+repositório: ela é gerada por `expo prebuild` quando se precisa de um APK.
+
+**O Expo Go não serve mais, e isso é deliberado.** Em 13/10/2026 entraram a
+notificação de lembrete e a sincronização em segundo plano, que dependem de
+módulo nativo e por isso nunca funcionaram lá. A escolha foi entre manter o
+Expo Go e ter o aplicativo que o agente precisa: o agente anda a microárea sem
+sinal e volta para a unidade, e sem sincronização em segundo plano o dado fica
+no celular até ele lembrar de abrir o aplicativo.
+
+Quem for mexer no projeto roda `npx expo run:android`, que compila e instala um
+build de desenvolvimento no aparelho. Leva mais tempo que o Expo Go na primeira
+vez, e depois recarrega igual.
 
 ---
 
@@ -53,9 +63,10 @@ Java, onde a contrabarra é caractere de escape. `C:\Users\junio` vira
 caminho. Barra normal funciona no Windows e evita o problema.
 
 **`expo prebuild` troca os scripts do `package.json`**, de
-`expo start --android` para `expo run:android`. Reverta: a pasta `android/` é
-ignorada pelo git, o projeto continua gerenciado, e forçar build nativo em
-quem só quer rodar no Expo Go é pior.
+`expo start --android` para `expo run:android`. **Agora deixe assim**: o
+projeto depende de módulo nativo e não roda mais no Expo Go, então o script
+que compila é o certo. Era o contrário antes de 13/10/2026, e o comentário
+anterior aqui mandava reverter.
 
 **O caminho do projeto precisa ser curto.** A compilação nativa estoura o
 limite de 260 caracteres do Windows. O erro fala de CMake e de um cabeçalho do

@@ -19,6 +19,7 @@ import { StatusVisita } from '../../../types';
 import { useResidencias } from '../../../hooks/useResidencias';
 import { visitaRepository } from '../../../database/repositories/visitaRepository';
 import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
+import { agendarLembreteVisita } from '../../../services/notificationService';
 
 const MOTIVO_OPTIONS = [
   { label: 'Visita de rotina', value: 'rotina' },
@@ -137,13 +138,26 @@ export default function NovaVisita() {
   async function onSubmitAgendamento(data: VisitaFormDataValidated) {
     setIsLoading(true);
     try {
-      await agendarVisita({
+      const agendamento = await agendarVisita({
         residencia_id: data.residencia_id,
         morador_id: data.morador_id,
         data_agendada: parseDateBR(data.data_visita),
         motivo: data.observacoes ?? 'Visita de rotina',
         observacoes: data.observacoes,
       });
+
+      // Lembrete meia hora antes. Sem `await`: agendar o aviso e melhoria da
+      // agenda, nao a agenda. Se a permissao for negada ou o aparelho nao
+      // suportar, a visita continua agendada do mesmo jeito.
+      const residencia = residencias.find((r) => r.id === data.residencia_id);
+      void agendarLembreteVisita({
+        visitaId: agendamento.id,
+        endereco: residencia
+          ? `${residencia.logradouro}, ${residencia.numero}`
+          : 'visita agendada',
+        quando: new Date(`${parseDateBR(data.data_visita)}T09:00:00`),
+      });
+
       router.replace('/(app)/calendario');
     } catch (error) {
       Alert.alert('Erro', error instanceof Error ? error.message : 'Erro ao agendar');
