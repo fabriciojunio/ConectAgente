@@ -179,7 +179,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.lg,
     paddingBottom: SPACING.md,
-    justifyContent: 'space-between',
+    // Sem `justifyContent: 'space-between'` aqui.
+    //
+    // O container e vertical e ocupa o que sobra da tela, entao o
+    // `space-between` dividia a folga entre titulo, subtitulo, formulario e
+    // rodape. O resultado era um vao grande entre o subtitulo e o campo de
+    // CPF, que cresce junto com a altura do aparelho: a mesma tela fica
+    // apertada no aparelho pequeno e esparramada no grande.
+    //
+    // O rodape da LGPD continua no fundo, mas por `marginTop: 'auto'` nele,
+    // que empurra so o rodape e deixa o resto do conteudo no espacamento
+    // normal.
+    //
+    // Era o unico `space-between` vertical do aplicativo: os outros 19 sao
+    // em linha, onde distribuir e o comportamento desejado.
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.06,
@@ -197,12 +210,18 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   form: {
-    gap: SPACING.sm,
+    // SPACING.md e o espacamento de formulario das outras duas telas de
+    // autenticacao, cadastro e recuperar-senha. Aqui estava SPACING.sm, e
+    // telas irmas com espacamento diferente parecem telas de sistemas
+    // diferentes.
+    gap: SPACING.md,
   },
   lgpd: {
     fontSize: FONT_SIZE.xs,
     color: COLORS.placeholder,
     textAlign: 'center',
     paddingTop: SPACING.sm,
+    // Empurra so o rodape para o fundo, sem esticar o que vem antes.
+    marginTop: 'auto',
   },
 });

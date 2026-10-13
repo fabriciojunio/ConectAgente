@@ -14,7 +14,7 @@ import { Badge } from '../../../components/ui/Badge';
 import { EmptyState } from '../../../components/ui/EmptyState';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { PageHeader } from '../../../components/ui/PageHeader';
-import { calcularIdade, formatDate, toDateBR } from '../../../utils/formatters';
+import { calcularIdade, formatCEP, formatDate, toDateBR } from '../../../utils/formatters';
 import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../../../utils/constants';
 
 const MOTIVOS_LABEL: Record<string, string> = {
@@ -136,7 +136,7 @@ export default function ResidenciaDetalhe() {
               <Text style={styles.addressSub}>
                 {residencia.bairro} • {residencia.cidade}/{residencia.estado}
               </Text>
-              <Text style={styles.addressCep}>CEP: {residencia.cep}</Text>
+              <Text style={styles.addressCep}>CEP: {formatCEP(residencia.cep)}</Text>
             </View>
           </View>
 
