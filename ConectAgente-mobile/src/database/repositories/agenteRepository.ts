@@ -1,6 +1,6 @@
 import { getDatabase } from '../database';
 import { Agente } from '../../types';
-import { generateUUID, isoNow } from '../../utils/formatters';
+import { apenasData, generateUUID, isoNow } from '../../utils/formatters';
 import * as SecureStore from 'expo-secure-store';
 import { hashSenha, verificarSenha, sortearSenhaForte } from '../../utils/encryption';
 import { SECURE_KEYS } from '../../utils/constants';
@@ -247,7 +247,10 @@ export const agenteRepository = {
 
   async listarTodos(): Promise<Array<Agente & { total_residencias: number; total_moradores: number; visitas_mes: number }>> {
     const db = await getDatabase();
-    const mesAtual = new Date().toISOString().slice(0, 7);
+    // `apenasData`, e nao `toISOString()`: o recorte da data em UTC vira o
+    // dia seguinte a partir das 21h no fuso do Brasil, e no fim do mes isso
+    // troca o mes inteiro da consulta.
+    const mesAtual = apenasData(new Date()).slice(0, 7);
     const rows = await db.getAllAsync<Record<string, unknown>>(
       `SELECT a.*,
         (SELECT COUNT(*) FROM residencias r WHERE r.agente_id = a.id AND r.deleted_at IS NULL) as total_residencias,
@@ -266,7 +269,7 @@ export const agenteRepository = {
 
   async obterEstatisticasGlobais() {
     const db = await getDatabase();
-    const hoje = new Date().toISOString().split('T')[0];
+    const hoje = apenasData(new Date());
     const mesAtual = hoje.slice(0, 7);
     const [agentes, residencias, moradores, visitasMes, visitasHoje, syncPendente, totalAudit] =
       await Promise.all([

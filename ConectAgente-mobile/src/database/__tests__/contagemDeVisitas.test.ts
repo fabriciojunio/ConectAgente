@@ -130,3 +130,55 @@ describe('a consulta de estatísticas', () => {
     expect(ateOFim).toContain('apenasData');
   });
 });
+
+/**
+ * O mesmo defeito apareceu em três lugares diferentes, então aqui ele vira
+ * regra do projeto e não correção pontual.
+ *
+ * Primeiro na contagem da tela inicial. Depois no relatório, que dizia
+ * "Nenhuma visita encontrada para este período" com a visita do dia
+ * registrada e visível na lista. E por fim nos lugares que usavam o recorte
+ * da data em UTC como se fosse a data local: no fuso do Brasil, das 21h em
+ * diante o recorte já é o dia seguinte, e na virada do mês troca o mês
+ * inteiro da consulta.
+ *
+ * Carimbo de instante continua em UTC, que é o certo: sessão, auditoria,
+ * `deleted_at`. O que não pode é data civil sair de `toISOString()`.
+ */
+describe('nenhum lugar deriva data civil do UTC', () => {
+  const { readdirSync, readFileSync } = require('fs') as typeof import('fs');
+  const { join } = require('path') as typeof import('path');
+
+  const RAIZ = join(__dirname, '..', '..');
+
+  function fontes(pasta: string): string[] {
+    const achados: string[] = [];
+    for (const entrada of readdirSync(pasta, { withFileTypes: true })) {
+      if (entrada.name === '__tests__' || entrada.name === 'node_modules') continue;
+      const caminho = join(pasta, entrada.name);
+      if (entrada.isDirectory()) achados.push(...fontes(caminho));
+      else if (/\.tsx?$/.test(entrada.name)) achados.push(caminho);
+    }
+    return achados;
+  }
+
+  const ARQUIVOS = fontes(RAIZ);
+
+  it('existem arquivos para conferir', () => {
+    expect(ARQUIVOS.length).toBeGreaterThan(40);
+  });
+
+  it.each(ARQUIVOS.map((c) => [c.replace(RAIZ, ''), c]))(
+    'nenhum recorte de data em %s',
+    (_nome, caminho) => {
+      const fonte = (readFileSync(caminho, 'utf-8') as string)
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/\/\/[^\n]*/g, '');
+
+      // `.split('T')[0]` pega a data; `.slice(0, 7)` pega o mês. Os dois sobre
+      // `toISOString()` devolvem o valor em UTC, e não o do aparelho.
+      expect(fonte).not.toMatch(/toISOString\(\)\s*\.\s*split\(/);
+      expect(fonte).not.toMatch(/toISOString\(\)\s*\.\s*slice\(/);
+    }
+  );
+});

@@ -11,7 +11,7 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { utils, write } from 'xlsx';
 import { Visita } from '../types';
-import { formatDate, formatDateTime } from '../utils/formatters';
+import { apenasData, formatDate, formatDateTime } from '../utils/formatters';
 
 export type PeriodoRelatorio = 'dia' | 'semana' | 'mes';
 export type FormatoRelatorio = 'csv' | 'xlsx';
@@ -68,7 +68,7 @@ export const exportService = {
       'Bolsa Família': m.beneficio_bolsa_familia ? 'Sim' : 'Não',
     }));
 
-    await exportarExcel(linhas, 'Pacientes', `pacientes_${new Date().toISOString().split('T')[0]}`);
+    await exportarExcel(linhas, 'Pacientes', `pacientes_${apenasData(new Date())}`);
   },
 };
 

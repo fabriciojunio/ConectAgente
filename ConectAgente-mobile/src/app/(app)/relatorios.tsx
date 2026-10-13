@@ -12,6 +12,7 @@ import { Card } from '../../components/ui/Card';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
 import { visitaRepository } from '../../database/repositories/visitaRepository';
+import { apenasData } from '../../utils/formatters';
 import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 export default function Relatorios() {
@@ -26,18 +27,30 @@ export default function Relatorios() {
     if (!agente) return;
     setIsExporting(true);
     try {
+      // `apenasData`, e nao `toISOString()`.
+      //
+      // `visitas.data_visita` guarda so a data, no formato 2026-10-13. O
+      // `toISOString()` devolve a meia-noite local convertida para UTC, com
+      // hora e fuso grudados, e o SQLite compara texto caractere a caractere:
+      // a string mais curta perde.
+      //
+      // O efeito aqui era o relatorio dizer "Nenhuma visita encontrada para
+      // este periodo" com a visita do dia registrada e aparecendo na lista.
+      // Pior que numero errado, porque parece que o dado nao existe.
+      //
+      // Mesmo defeito que havia na contagem da tela inicial, em outro lugar.
       const hoje = new Date();
       let data_inicio: string;
-      let data_fim = hoje.toISOString();
+      const data_fim = apenasData(hoje);
 
       if (periodo === 'dia') {
-        data_inicio = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).toISOString();
+        data_inicio = apenasData(hoje);
       } else if (periodo === 'semana') {
         const inicioSemana = new Date(hoje);
         inicioSemana.setDate(hoje.getDate() - hoje.getDay());
-        data_inicio = inicioSemana.toISOString();
+        data_inicio = apenasData(inicioSemana);
       } else {
-        data_inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString();
+        data_inicio = apenasData(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
       }
 
       const visitas = await visitaRepository.listar(agente.id, { data_inicio, data_fim });
@@ -48,7 +61,7 @@ export default function Relatorios() {
       }
 
       await exportService.exportarVisitas(
-        { visitas, periodo, data_referencia: hoje.toISOString().split('T')[0] },
+        { visitas, periodo, data_referencia: apenasData(hoje) },
         formato
       );
     } catch (error) {

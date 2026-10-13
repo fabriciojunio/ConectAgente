@@ -11,7 +11,7 @@ import { Agendamento } from '../../types';
 import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
-import { formatDate } from '../../utils/formatters';
+import { apenasData, formatDate } from '../../utils/formatters';
 import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
 import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
@@ -31,7 +31,7 @@ export default function Calendario() {
   const { colors } = useTheme();
   const styles = useMemo(() => criarStyles(colors), [colors]);
   const { datasComAgendamento, agendamentosPorData } = useVisitas();
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(apenasData(new Date()));
   const [markedDates, setMarkedDates] = useState<Record<string, object>>({});
   const [agendamentosDodia, setAgendamentosDodia] = useState<Agendamento[]>([]);
 
@@ -46,7 +46,7 @@ export default function Calendario() {
     });
 
     // Marcar dia selecionado
-    const hoje = new Date().toISOString().split('T')[0];
+    const hoje = apenasData(new Date());
     marked[hoje] = {
       ...(marked[hoje] ?? {}),
       today: true,
@@ -113,7 +113,7 @@ export default function Calendario() {
       <View style={styles.agendaContainer}>
         <View style={styles.agendaHeader}>
           <Text style={styles.agendaTitle}>
-            {selectedDate === new Date().toISOString().split('T')[0]
+            {selectedDate === apenasData(new Date())
               ? 'Hoje'
               : formatDate(selectedDate)
             }
