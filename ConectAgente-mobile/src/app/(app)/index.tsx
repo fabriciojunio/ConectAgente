@@ -122,6 +122,22 @@ export default function Dashboard() {
   const primeiroNome = agente?.nome.split(' ')[0] ?? '';
   const percentual = stats ? Math.min(stats.percentual_meta, 100) : 0;
 
+  /**
+   * Agente sem meta cadastrada no mês é o caso comum, não a exceção: a meta
+   * vem da coordenação e pode demorar a chegar. A tela mostrava, para ele,
+   * "1 de 0 visitas realizadas" e uma barra parada em 0%, que lê como se ele
+   * estivesse devendo trabalho quando ninguém pediu nada.
+   */
+  const temMeta = (stats?.meta_mensal ?? 0) > 0;
+
+  const textoDaMeta = !stats
+    ? 'Carregando meta...'
+    : temMeta
+      ? `${stats.realizadas_mes} de ${stats.meta_mensal} visitas realizadas`
+      : stats.realizadas_mes === 1
+        ? '1 visita realizada neste mês'
+        : `${stats.realizadas_mes} visitas realizadas neste mês`;
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
@@ -181,16 +197,14 @@ export default function Dashboard() {
           <View style={styles.metaCard}>
             <View style={styles.metaHeader}>
               <Text style={styles.metaTitle}>Meta mensal</Text>
-              <Text style={styles.metaPercent}>{percentual}%</Text>
+              <Text style={styles.metaPercent}>{temMeta ? `${percentual}%` : 'sem meta'}</Text>
             </View>
-            <View style={styles.metaBarBg}>
-              <View style={[styles.metaBarFill, { width: `${percentual}%` as any }]} />
-            </View>
-            <Text style={styles.metaSubtext}>
-              {stats
-                ? `${stats.realizadas_mes} de ${stats.meta_mensal} visitas realizadas`
-                : 'Carregando meta...'}
-            </Text>
+            {temMeta && (
+              <View style={styles.metaBarBg}>
+                <View style={[styles.metaBarFill, { width: `${percentual}%` as any }]} />
+              </View>
+            )}
+            <Text style={styles.metaSubtext}>{textoDaMeta}</Text>
           </View>
         </LinearGradient>
 

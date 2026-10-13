@@ -14,6 +14,7 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import { moradorRepository } from '../../database/repositories/moradorRepository';
 import { useAuth } from '../../contexts/AuthContext';
 import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { formatCEP } from '../../utils/formatters';
 
 export default function Residencias() {
   const { residencias, isLoading, carregar, excluir } = useResidencias();
@@ -175,7 +176,7 @@ function ResidenciaCard({ residencia, responsavelNome, onPress, onLongPress }: {
             <Text style={styles.cardSubtitle} numberOfLines={1}>
               {residencia.bairro} • {residencia.cidade}/{residencia.estado}
             </Text>
-            <Text style={styles.cardCep}>CEP: {residencia.cep}</Text>
+            <Text style={styles.cardCep}>CEP: {formatCEP(residencia.cep)}</Text>
             {responsavelNome && (
               <View style={styles.responsavelRow}>
                 <Ionicons name="person-outline" size={12} color={COLORS.primary} />
