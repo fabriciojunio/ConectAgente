@@ -65,13 +65,26 @@ describe('apenasData', () => {
 
 describe('a comparação que o banco faz', () => {
   it('o jeito antigo deixa a visita de hoje de fora', () => {
-    // Este é o defeito, reproduzido. Se algum dia este teste passar a dizer
-    // `true`, é porque o formato gravado mudou, e a consulta precisa mudar
-    // junto.
+    // O valor literal que o `toISOString()` produzia na máquina de quem
+    // desenvolve, no fuso do Brasil. Escrito à mão de propósito: a primeira
+    // versão deste teste chamava `inicioDoDiaEmUTC(HOJE)` e comparava com esta
+    // string, e aí passava aqui e quebrava no CI, que roda em UTC e devolve
+    // `T00:00:00.000Z`. Um teste que só vale no fuso de quem escreveu não
+    // prova nada sobre o defeito.
+    const limiteAntigo = '2026-10-13T03:00:00.000Z';
+
+    expect(sqliteMaiorOuIgual(DATA_GRAVADA, limiteAntigo)).toBe(false);
+  });
+
+  it('o jeito antigo gruda hora e fuso numa coluna que só tem data', () => {
+    // Esta parte vale em qualquer fuso: seja qual for o deslocamento, o que
+    // sai do `toISOString()` tem 24 caracteres e a coluna guarda 10. É a
+    // diferença de formato que causa o defeito, e é ela que o teste trava.
     const limiteAntigo = inicioDoDiaEmUTC(HOJE);
 
-    expect(limiteAntigo).toBe('2026-10-13T03:00:00.000Z');
-    expect(sqliteMaiorOuIgual(DATA_GRAVADA, limiteAntigo)).toBe(false);
+    expect(limiteAntigo).toContain('T');
+    expect(limiteAntigo).toContain('Z');
+    expect(limiteAntigo.length).toBeGreaterThan(DATA_GRAVADA.length);
   });
 
   it('o jeito novo conta a visita de hoje', () => {
