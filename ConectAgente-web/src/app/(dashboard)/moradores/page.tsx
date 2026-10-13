@@ -4,7 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { usePagination } from '@/hooks/usePagination';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
-import { getMoradores, getEstatisticasMoradores } from '@/services/moradorService';
+import {
+  getMoradores,
+  getEstatisticasMoradores,
+  getMoradorAuditado,
+} from '@/services/moradorService';
 import type { MoradorComDetalhes } from '@/services/moradorService';
 import { cacheGetStale } from '@/lib/cache';
 import { formatDate, withTimeout } from '@/lib/utils';
@@ -65,7 +69,35 @@ export default function MoradoresPage() {
   const [moradores, setMoradores] = useState<MoradorComDetalhes[]>(initMoradores?.data ?? []);
   const [search, setSearch] = useState('');
   const [selectedMorador, setSelectedMorador] = useState<MoradorComDetalhes | null>(null);
+  const [abrindoFicha, setAbrindoFicha] = useState(false);
   const [estatisticas, setEstatisticas] = useState(initStats ?? EMPTY_STATS);
+
+  /**
+   * Abre a ficha pela função do banco, que registra a leitura.
+   *
+   * A linha da lista já tem os dados na mão, e seria mais rápido só mostrar.
+   * Mas abrir a ficha de uma pessoa é um acesso, e o art. 37 da LGPD pede
+   * registro. `fn_ler_morador` grava na mesma transação em que lê, então o
+   * registro não depende de o cliente lembrar de avisar.
+   */
+  // `abrindoFicha` tambem evita abrir duas fichas com dois cliques rapidos:
+  // cada abertura grava um registro, e dois registros para um clique duplo
+  // sujam a trilha.
+  const abrirFicha = useCallback(async (morador: MoradorComDetalhes) => {
+    setAbrindoFicha(true);
+    try {
+      const completo = await getMoradorAuditado(morador.id);
+      if (!completo) {
+        setError('Você não tem permissão para abrir a ficha deste paciente.');
+        return;
+      }
+      setSelectedMorador({ ...morador, ...completo });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao abrir a ficha.');
+    } finally {
+      setAbrindoFicha(false);
+    }
+  }, []);
 
   const fetchData = useCallback(async () => {
     if (moradores.length === 0) setLoading(true);
@@ -189,7 +221,7 @@ export default function MoradoresPage() {
                     <tr
                       key={morador.id}
                       className="border-b last:border-0 hover:bg-[var(--superficie-alt)] cursor-pointer transition-colors"
-                      onClick={() => setSelectedMorador(morador)}
+                      onClick={() => { if (!abrindoFicha) abrirFicha(morador); }}
                     >
                       <td className="px-4 py-3">
                         <div>

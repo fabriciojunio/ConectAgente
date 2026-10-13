@@ -11,6 +11,7 @@
 #   rodar-testes-sync.sh       o dado coletado em campo chega ao servidor
 #   rodar-testes-cadastro.sh   um agente consegue entrar no sistema
 #   rodar-testes-idempotencia.sh  o arquivo de instalacao aguenta rodar 2x
+#   rodar-testes-leitura.sh    abrir ficha de paciente deixa rastro
 #
 # Por que existem fora do Jest. Os tres defeitos mais graves do projeto nao
 # apareciam em teste de unidade, porque cada lado estava coerente consigo
@@ -33,6 +34,7 @@ SUITES=(
   "rodar-testes-sync.sh:sincronizacao do aplicativo com o servidor"
   "rodar-testes-cadastro.sh:cadastro publico e aprovacao"
   "rodar-testes-idempotencia.sh:instalacao executada mais de uma vez"
+  "rodar-testes-leitura.sh:leitura de ficha registrada na trilha"
 )
 
 falhas=0
