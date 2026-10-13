@@ -10,6 +10,7 @@ import { useFocusEffect } from 'expo-router';
 import { agenteRepository } from '../../database/repositories/agenteRepository';
 import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
 import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
+import { lgpdRepository, type ItemExpirado } from '../../database/repositories/lgpdRepository';
 
 type AuditEntry = Awaited<ReturnType<typeof agenteRepository.listarAuditLog>>[number];
 type GlobalStats = Awaited<ReturnType<typeof agenteRepository.obterEstatisticasGlobais>>;
@@ -38,17 +39,20 @@ export default function AdminConfiguracoes() {
   const [refreshing, setRefreshing] = useState(false);
   // Senha sorteada na primeira execucao. Vem nula depois de trocada.
   const [senhaInicial, setSenhaInicial] = useState<string | null>(null);
+  const [vencidos, setVencidos] = useState<ItemExpirado[]>([]);
   const [mostrarSenha, setMostrarSenha] = useState(false);
 
   const carregar = useCallback(async () => {
-    const [s, log, senha] = await Promise.all([
+    const [s, log, senha, prazos] = await Promise.all([
       agenteRepository.obterEstatisticasGlobais(),
       agenteRepository.listarAuditLog(limite),
       agenteRepository.obterSenhaInicialDoAdmin(),
+      lgpdRepository.levantarVencidos(),
     ]);
     setStats(s);
     setAuditLog(log);
     setSenhaInicial(senha);
+    setVencidos(prazos);
   }, [limite]);
 
   useFocusEffect(useCallback(() => { carregar(); }, [carregar]));
@@ -226,6 +230,30 @@ export default function AdminConfiguracoes() {
           )}
         </View>
 
+        {/* Prazo de guarda */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Prazo de guarda</Text>
+          <View style={styles.card}>
+            <Text style={styles.prazoTexto}>
+              Dado de saúde fica 20 anos, pela Resolução CFM 1.821/2007. O resto, 5 anos,
+              pelo prazo geral do Código Civil. O sistema conta o que passou do prazo e não
+              apaga nada sozinho: quem decide eliminar é a coordenação.
+            </Text>
+            {vencidos.map((v, i) => (
+              <AppRow
+                key={v.tabela}
+                label={`${v.tabela} (${v.anos} anos)`}
+                value={
+                  v.quantidade === 0
+                    ? 'nada vencido'
+                    : `${v.quantidade} vencido${v.quantidade > 1 ? 's' : ''}`
+                }
+                last={i === vencidos.length - 1}
+              />
+            ))}
+          </View>
+        </View>
+
         {/* App info */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Sobre o sistema</Text>
@@ -302,6 +330,13 @@ const criarStyles = (colors: ThemeColors) =>
 
   section: { paddingHorizontal: SPACING.md, marginBottom: SPACING.md },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm },
+  prazoTexto: {
+    fontSize: FONT_SIZE.xs,
+    color: colors.textLight,
+    lineHeight: 16,
+    padding: SPACING.sm,
+    paddingBottom: 0,
+  },
   sectionTitle: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.text, marginBottom: SPACING.sm },
   sectionCount: { fontSize: FONT_SIZE.sm, color: colors.textLight },
 

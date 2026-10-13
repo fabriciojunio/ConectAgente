@@ -16,6 +16,8 @@ import { PageHeader } from '../../../components/ui/PageHeader';
 import { calcularIdade, formatDate, toDateBR } from '../../../utils/formatters';
 import { SPACING, FONT_SIZE, RADIUS } from '../../../utils/constants';
 import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
+import { lgpdRepository } from '../../../database/repositories/lgpdRepository';
+import { useAuth } from '../../../contexts/AuthContext';
 
 export default function MoradorDetalhe() {
   const { colors } = useTheme();
@@ -25,6 +27,52 @@ export default function MoradorDetalhe() {
   const [visitas, setVisitas] = useState<Visita[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const { agente } = useAuth();
+
+  /**
+   * Direito a eliminacao, art. 18, IV da Lei 13.709/2018.
+   *
+   * Duas confirmacoes de proposito. Nao e DELETE: o atendimento aconteceu e a
+   * unidade precisa do numero para prestacao de contas. O que sai e o vinculo
+   * com a pessoa, que e justamente o que ela tem direito de tirar. Como nao da
+   * para desfazer, a tela diz isso antes.
+   */
+  function pedirAnonimizacao() {
+    if (!morador || !agente) return;
+
+    Alert.alert(
+      'Remover dados pessoais',
+      `Isto apaga nome, CPF, cartão SUS, telefone, filiação e data de nascimento de ${morador.nome}. `
+        + 'As visitas continuam contadas, sem vínculo com a pessoa. Não dá para desfazer.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Continuar',
+          style: 'destructive',
+          onPress: () =>
+            Alert.alert(
+              'Confirmar',
+              'O titular pediu a eliminação dos dados dele?',
+              [
+                { text: 'Não', style: 'cancel' },
+                { text: 'Sim, remover', style: 'destructive', onPress: anonimizar },
+              ]
+            ),
+        },
+      ]
+    );
+  }
+
+  async function anonimizar() {
+    if (!morador || !agente) return;
+    const feito = await lgpdRepository.anonimizar(morador.id, agente.id);
+    if (feito) {
+      Alert.alert('Pronto', 'Os dados pessoais foram removidos.');
+      router.back();
+    } else {
+      Alert.alert('Erro', 'Não foi possível remover os dados.');
+    }
+  }
 
   async function carregar() {
     if (!id) return;
@@ -131,6 +179,12 @@ export default function MoradorDetalhe() {
               pathname: '/(app)/visita/nova',
               params: { morador_id: id, residencia_id: morador.residencia_id },
             })}
+          />
+          <ActionButton
+            icon="person-remove-outline"
+            label="Remover dados (LGPD)"
+            color={colors.error}
+            onPress={pedirAnonimizacao}
           />
         </View>
 
