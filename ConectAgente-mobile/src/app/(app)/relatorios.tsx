@@ -14,6 +14,7 @@ import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
 import { visitaRepository } from '../../database/repositories/visitaRepository';
 import { apenasData } from '../../utils/formatters';
 import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
+import { ACOES_AUDITORIA, auditRepository } from '../../database/repositories/auditRepository';
 
 export default function Relatorios() {
   const { colors } = useTheme();
@@ -59,6 +60,17 @@ export default function Relatorios() {
         Alert.alert('Aviso', 'Nenhuma visita encontrada para este período.');
         return;
       }
+
+      // Exportacao tira dado pessoal do aparelho: e das operacoes que mais
+      // precisam de registro. Guarda o periodo e quantas visitas sairam, nunca
+      // o conteudo delas.
+      void auditRepository.registrar({
+        agenteId: agente.id,
+        acao: ACOES_AUDITORIA.EXPORT,
+        tabela: 'visitas',
+        registroId: agente.id,
+        contexto: { periodo, formato, quantidade: visitas.length },
+      });
 
       await exportService.exportarVisitas(
         { visitas, periodo, data_referencia: apenasData(hoje) },

@@ -21,6 +21,7 @@ import { calcularIdade, formatDateInput } from '../../../utils/formatters';
 import { validarDataBR } from '../../../utils/validators';
 import { SPACING, FONT_SIZE, RADIUS, ESPECIALIDADES } from '../../../utils/constants';
 import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
+import { ACOES_AUDITORIA, auditRepository } from '../../../database/repositories/auditRepository';
 
 type Step = 'saude' | 'gestante' | 'puericultura' | 'mulher' | 'social' | 'medicamentos';
 
@@ -115,6 +116,22 @@ export default function ProntuarioScreen() {
       ]);
       setMorador(m);
       setProntuario(p);
+
+      // Registro de leitura de prontuario, art. 37 da LGPD.
+      //
+      // E o evento que mais importa num sistema de saude e o que faltava:
+      // abrir o prontuario de alguem nao deixava rastro nenhum. Grava so quem
+      // abriu e de quem era o prontuario, nunca o conteudo.
+      //
+      // Sem await de proposito: a tela nao espera auditoria para aparecer, e
+      // `registrar` nunca lanca.
+      void auditRepository.registrar({
+        agenteId: agente.id,
+        acao: ACOES_AUDITORIA.LEITURA,
+        tabela: 'prontuarios',
+        registroId: moradorId,
+        contexto: { origem: 'tela de prontuario' },
+      });
 
       if (p.saude) {
         const s = p.saude;
