@@ -25,8 +25,8 @@ instalado (servidor, não só o cliente).
 # Aplicativo de campo
 cd ConectAgente-mobile
 npm ci
-cp .env.example .env     # preencha a URL e a chave anon do Supabase
-npx expo start
+cp .env.example .env     # ou use scripts/configurar-supabase.sh, abaixo
+npx expo run:android     # compila e instala no aparelho ou emulador
 
 # Painel web
 cd ConectAgente-web
@@ -168,30 +168,45 @@ localmente. A tradução e a remoção dos campos locais ficam num lugar só, em
 `syncQueueRepository.prepararPayloadParaServidor`, e o teste
 `contratoSync.test.ts` compara os dois schemas para a divergência não voltar.
 
+**Três decisões de 13/10/2026, para não serem rediscutidas sem motivo.**
+
+- **O aplicativo não roda mais no Expo Go** (13/10/2026). A notificação de
+  lembrete e a sincronização em segundo plano dependem de módulo nativo. A
+  escolha foi entre manter o Expo Go e ter o aplicativo que o agente precisa:
+  ele anda a microárea sem sinal e volta para a unidade, e sem sincronização em
+  segundo plano o dado fica no celular até alguém lembrar de abrir o
+  aplicativo. Para desenvolver, `npx expo run:android`.
+- **Não existe servidor próprio, e não vai existir.** O aplicativo e o painel
+  falam direto com o PostgREST do Supabase, e quem decide quem lê o quê é o
+  RLS, dentro do banco. O repositório do time tem uma pasta `backend/` com um
+  Express e Prisma que ficou para trás nessa mudança; ela nunca esteve aqui e
+  nada a referencia. Trazê-la de volta significaria manter a regra de
+  autorização em dois lugares, e regra de autorização duplicada é a que fica
+  desatualizada no lugar menos visível. Se um dia for preciso um servidor, ele
+  entra para o que o RLS não resolve, não para repetir o que ele já faz.
+- **O banco continua no Supabase** (13/10/2026). O plano grátis suspende depois
+  de sete dias sem uso, e trocar para outro provedor custaria reescrever as 70
+  referências a `auth.uid()` nas policies, a autenticação dos dois aplicativos
+  e o substituto que as suítes de banco usam. O risco mora no RLS, que é o que
+  separa o prontuário de um agente do de outro. A suspensão é resolvida com um
+  ping semanal, que está em `.github/workflows/keep-alive.yml`.
+
 ---
 
 ## O que ainda falta
 
 Honestidade sobre o estado, que vale mais que uma lista de recursos:
 
-- **Os campos de identificação ficam em texto puro no banco do aparelho.** O
-  módulo de cifra existe e nenhuma linha o chama, o que a documentação dizia
-  ao contrário até 13/10/2026. Ligar o que está escrito não resolveria: é
-  SHA-256 em modo contador sem MAC, e cifrar `nome` e `cpf` quebraria a busca
-  local que o agente usa em campo. A saída é SQLCipher, cifrando o banco
-  inteiro, e custa dependência nativa. Hoje quem protege o arquivo é a cifra
-  de disco do Android. Detalhe em [docs/seguranca.md](docs/seguranca.md).
+- **Os campos de identificação ficam em texto puro no banco do aparelho.**
+  Havia um módulo de cifra que nenhuma linha chamava, e três documentos diziam
+  o contrário; ele foi removido em 13/10/2026 junto com a correção dos
+  documentos. Quem protege o arquivo hoje é a cifra de disco do Android. Se a
+  secretaria exigir mais, a saída é SQLCipher no banco inteiro, e custa
+  dependência nativa. Detalhe em [docs/seguranca.md](docs/seguranca.md).
 - **Não há segundo fator no painel**, que é onde se lê o prontuário de todos.
-- **Notificação e sincronização em segundo plano foram removidas.** O código
-  existia e era coerente, mas dependia de quatro pacotes nativos não
-  instalados, e ligá-los exige build de desenvolvimento. As versões para o SDK
-  54 estão anotadas no histórico do Git.
 - **A classificação de risco do time já está aqui**, portada do commit do Luan
   em vez de fundida, porque a linha deles carrega junto 97 arquivos de
-  relatório de cobertura, logs de erro e telas substituídas. O que continua
-  fora é a pasta `backend/`, um servidor Express com Prisma que o aplicativo
-  não referencia em lugar nenhum e que ficou para trás quando o projeto passou
-  a usar o Supabase direto. Ela segue no repositório do time, se fizer falta.
+  relatório de cobertura, logs de erro e telas substituídas.
 - **O histórico deste repositório não tem ancestral comum com o do time.**
   Enquanto isso não for resolvido, melhoria daqui não chega lá por um
   `git merge` normal: vai ter que ser por porte, como foi feito com a

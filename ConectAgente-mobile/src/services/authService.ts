@@ -10,6 +10,8 @@ import { SECURE_KEYS, SESSION_TIMEOUT_MS } from '../utils/constants';
 import { isoNow } from '../utils/formatters';
 import { supabase } from '../lib/supabase';
 import { ACOES_AUDITORIA, auditRepository } from '../database/repositories/auditRepository';
+import { limparLembretes } from './notificationService';
+import { pararSincronizacaoEmSegundoPlano } from '../tasks/backgroundSync';
 
 export interface SessionData {
   agente: Agente;
@@ -159,6 +161,12 @@ export const authService = {
     // Nao ha mais cache de chave de cifra para limpar: a cifra de campo foi
     // removida porque nenhuma linha a chamava. O que o logout apaga e a
     // sessao, que e o que de fato existe.
+    // Lembrete de visita e aviso pessoal: o aparelho nao pode avisar da visita
+    // de um agente para o proximo que entrar. A tarefa de segundo plano para
+    // junto, para o aparelho nao acordar por conta de quem ja saiu.
+    await limparLembretes();
+    await pararSincronizacaoEmSegundoPlano();
+
     await SecureStore.deleteItemAsync(SECURE_KEYS.AUTH_TOKEN);
     await SecureStore.deleteItemAsync(SECURE_KEYS.REFRESH_TOKEN);
     await SecureStore.deleteItemAsync(SECURE_KEYS.AGENTE_ID);

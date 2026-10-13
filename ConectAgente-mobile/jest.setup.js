@@ -78,3 +78,42 @@ beforeAll(() => {
 afterAll(() => {
   console.warn = originalWarn;
 });
+
+// ---------------------------------------------------------------------------
+// Módulos nativos de segundo plano e notificação
+// ---------------------------------------------------------------------------
+//
+// Entraram em 13/10/2026, quando o projeto deixou de ser distribuído pelo Expo
+// Go e passou a sair só como APK de release. São módulos nativos: fora do
+// aparelho eles não existem, e sem simulacro o Jest derruba a suíte inteira
+// com "Cannot find native module 'ExpoTaskManager'", mesmo em teste que não
+// toca neles, porque a falha acontece na importação.
+jest.mock('expo-task-manager', () => ({
+  defineTask: jest.fn(),
+  isTaskRegisteredAsync: jest.fn().mockResolvedValue(false),
+}));
+
+jest.mock('expo-background-task', () => ({
+  // Os valores espelham o enum real: Restricted = 1, Available = 2.
+  BackgroundTaskStatus: { Restricted: 1, Available: 2 },
+  BackgroundTaskResult: { Success: 1, Failed: 2 },
+  getStatusAsync: jest.fn().mockResolvedValue(2),
+  registerTaskAsync: jest.fn().mockResolvedValue(undefined),
+  unregisterTaskAsync: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('expo-notifications', () => ({
+  SchedulableTriggerInputTypes: { DATE: 'date' },
+  setNotificationHandler: jest.fn(),
+  getPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  requestPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+  scheduleNotificationAsync: jest.fn().mockResolvedValue('id-do-lembrete'),
+  cancelScheduledNotificationAsync: jest.fn().mockResolvedValue(undefined),
+  cancelAllScheduledNotificationsAsync: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('expo-device', () => ({
+  // `true` por padrão: o caminho que importa é o do aparelho de verdade. O
+  // teste que precisa do contrário sobrescreve.
+  isDevice: true,
+}));

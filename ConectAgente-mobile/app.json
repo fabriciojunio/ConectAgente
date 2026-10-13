@@ -22,7 +22,12 @@
         "foregroundImage": "./assets/images/LOGO-remove.png",
         "backgroundColor": "#a9c7c3"
       },
-      "package": "com.conectagente.app"
+      "package": "com.conectagente.app",
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "POST_NOTIFICATIONS",
+        "ACCESS_NETWORK_STATE"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -36,6 +41,14 @@
         "expo-sqlite",
         {
           "enableFTS": true
+        }
+      ],
+      "expo-background-task",
+      [
+        "expo-notifications",
+        {
+          "color": "#1565C0",
+          "defaultChannel": "lembretes"
         }
       ]
     ],

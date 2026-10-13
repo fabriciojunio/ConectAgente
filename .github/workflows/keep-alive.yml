@@ -1,0 +1,68 @@
+name: Keep-alive do Supabase
+
+# Por que isto existe.
+#
+# O plano gratuito do Supabase suspende o projeto depois de sete dias sem
+# nenhuma requisição, e voltar exige alguém abrir o painel e clicar em Resume.
+# Aconteceu em 13/10/2026: o aplicativo parou de sincronizar e nada no sistema
+# dizia o motivo, porque do lado do agente parece falta de sinal.
+#
+# Um toque por semana no endpoint REST basta para o relógio nunca chegar nos
+# sete dias. Roda às segundas de manhã, que é quando alguém está por perto se
+# der errado, e não de madrugada de domingo.
+#
+# A alternativa era trocar de provedor. Custaria reescrever as 70 referências a
+# `auth.uid()` nas policies e a autenticação dos dois aplicativos, com risco no
+# RLS, que é o que separa o prontuário de um agente do de outro. Vinte linhas
+# de YAML resolvem o mesmo sintoma.
+
+on:
+  schedule:
+    # Segunda-feira, 09:00 em Brasília (12:00 UTC).
+    - cron: '0 12 * * 1'
+  workflow_dispatch: {}
+
+jobs:
+  acordar:
+    name: Manter o projeto ativo
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tocar o endpoint REST
+        env:
+          URL: ${{ secrets.SUPABASE_URL }}
+          CHAVE: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -uo pipefail
+
+          if [ -z "${URL:-}" ] || [ -z "${CHAVE:-}" ]; then
+            echo "Faltam os segredos SUPABASE_URL e SUPABASE_ANON_KEY no repositorio."
+            echo "Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+          # Projeto suspenso demora a responder na primeira requisicao, porque
+          # o servidor esta subindo. Tres tentativas com espera crescente, em
+          # vez de uma so que falharia justamente no caso que importa.
+          for tentativa in 1 2 3; do
+            codigo=$(curl -s -o /dev/null -w '%{http_code}' --max-time 45 \
+              -H "apikey: $CHAVE" \
+              -H "Authorization: Bearer $CHAVE" \
+              "${URL%/}/rest/v1/agentes?select=id&limit=1" || echo 000)
+
+            # 200 responde com dado; 401 e 403 sao o RLS negando, que tambem
+            # prova que o servidor esta de pe. Qualquer um dos tres serve.
+            case "$codigo" in
+              200|401|403)
+                echo "Projeto ativo (HTTP $codigo) na tentativa $tentativa."
+                exit 0
+                ;;
+            esac
+
+            echo "Tentativa $tentativa devolveu HTTP $codigo. Esperando."
+            sleep $((tentativa * 20))
+          done
+
+          echo "O projeto nao respondeu em tres tentativas."
+          echo "Pode estar suspenso ha mais tempo e precisar de Resume manual"
+          echo "no painel do Supabase."
+          exit 1

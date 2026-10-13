@@ -11,12 +11,21 @@ import { SyncProvider } from '../contexts/SyncContext';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { getDatabase } from '../database/database';
 import { agenteRepository } from '../database/repositories/agenteRepository';
+import { registrarSincronizacaoEmSegundoPlano } from '../tasks/backgroundSync';
 
 export default function RootLayout() {
   useEffect(() => {
     getDatabase()
       .then(() => agenteRepository.garantirAdminPadrao())
       .catch(console.error);
+
+    // Registra a sincronizacao em segundo plano uma vez, na abertura.
+    //
+    // Fica aqui, e nao depois do login, porque o sistema operacional acorda o
+    // aplicativo sem passar por tela nenhuma: a tarefa precisa estar
+    // registrada no processo, nao na sessao. A propria tarefa confere a fila e
+    // nao faz nada quando ela esta vazia.
+    void registrarSincronizacaoEmSegundoPlano();
   }, []);
 
   return (
