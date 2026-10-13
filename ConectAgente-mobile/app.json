@@ -50,7 +50,8 @@
           "color": "#1565C0",
           "defaultChannel": "lembretes"
         }
-      ]
+      ],
+      "./plugins/assinatura-release"
     ],
     "experiments": {
       "typedRoutes": true
