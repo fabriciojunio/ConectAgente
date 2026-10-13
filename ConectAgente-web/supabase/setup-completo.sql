@@ -311,21 +311,27 @@ ALTER TABLE metas_visitas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE prontuarios ENABLE ROW LEVEL SECURITY;
 
 -- Políticas RLS: agente_id deve corresponder ao usuário autenticado
+DROP POLICY IF EXISTS agente_residencias ON residencias;
 CREATE POLICY "agente_residencias" ON residencias
   USING (agente_id::text = auth.uid()::text);
 
+DROP POLICY IF EXISTS agente_moradores ON moradores;
 CREATE POLICY "agente_moradores" ON moradores
   USING (agente_id::text = auth.uid()::text);
 
+DROP POLICY IF EXISTS agente_visitas ON visitas;
 CREATE POLICY "agente_visitas" ON visitas
   USING (agente_id::text = auth.uid()::text);
 
+DROP POLICY IF EXISTS agente_agendamentos ON agendamentos;
 CREATE POLICY "agente_agendamentos" ON agendamentos
   USING (agente_id::text = auth.uid()::text);
 
+DROP POLICY IF EXISTS agente_metas ON metas_visitas;
 CREATE POLICY "agente_metas" ON metas_visitas
   USING (agente_id::text = auth.uid()::text);
 
+DROP POLICY IF EXISTS agente_prontuarios ON prontuarios;
 CREATE POLICY "agente_prontuarios" ON prontuarios
   USING (agente_id::text = auth.uid()::text);
 

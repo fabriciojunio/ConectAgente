@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ===========================================================================
-# Roda as tres suites que exercitam o banco de verdade
+# Roda as suites que exercitam o banco de verdade
 # ===========================================================================
 #
 # Cada uma sobe um PostgreSQL descartavel numa porta propria, aplica o schema
@@ -10,6 +10,7 @@
 #   rodar-testes-rls.sh        quem pode ler e gravar o que
 #   rodar-testes-sync.sh       o dado coletado em campo chega ao servidor
 #   rodar-testes-cadastro.sh   um agente consegue entrar no sistema
+#   rodar-testes-idempotencia.sh  o arquivo de instalacao aguenta rodar 2x
 #
 # Por que existem fora do Jest. Os tres defeitos mais graves do projeto nao
 # apareciam em teste de unidade, porque cada lado estava coerente consigo
@@ -31,6 +32,7 @@ SUITES=(
   "rodar-testes-rls.sh:permissao de leitura e escrita"
   "rodar-testes-sync.sh:sincronizacao do aplicativo com o servidor"
   "rodar-testes-cadastro.sh:cadastro publico e aprovacao"
+  "rodar-testes-idempotencia.sh:instalacao executada mais de uma vez"
 )
 
 falhas=0
@@ -61,7 +63,10 @@ printf '%s\n' "${resumo[@]}"
 echo
 
 if [ "$falhas" -eq 0 ]; then
-  echo "As tres suites passaram."
+  # Conta pelo tamanho do vetor: ja ficou escrito "tres" com quatro
+  # suites na lista, e numero errado em saida de teste tira a
+  # confianca do resto.
+  echo "As ${#SUITES[@]} suites passaram."
   exit 0
 fi
 
