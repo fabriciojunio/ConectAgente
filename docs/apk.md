@@ -197,3 +197,47 @@ motivo, em vez de falhar calada e queimar as tentativas da fila.
 
 Sem o passo 3, o RLS nega toda gravação, e isso foi medido:
 `new row violates row-level security policy for table "residencias"`.
+
+---
+
+## A assinatura, e por que ela é o detalhe mais importante aqui
+
+O `build.gradle` que o `expo prebuild` gera assina o release com a chave de
+**depuração**, e o próprio prebuild recria essa chave a cada vez. O comentário
+dele admite: *"Caution! In production, you need to generate your own keystore
+file."*
+
+O efeito só aparece na segunda instalação:
+
+```
+INSTALL_FAILED_UPDATE_INCOMPATIBLE: Existing package com.conectagente.app
+signatures do not match newer version
+```
+
+Para atualizar, o agente teria que desinstalar. Num aplicativo offline-first
+isso quer dizer **perder a visita que ainda não sincronizou**, que é justamente
+o dado que só existe no aparelho dele.
+
+Por isso existe `plugins/assinatura-release.js`, registrado no `app.json`. Ele
+copia a chave do projeto para dentro do `android/` e troca o `signingConfig` do
+release, a cada prebuild. Como passo manual isso seria esquecido, porque o
+prebuild roda de novo a cada pacote nativo novo.
+
+A chave e a senha ficam em `ConectAgente-mobile/chaves/`, que está no
+`.gitignore`. O APK atual sai assinado como:
+
+```
+CN=ConectAgente, OU=Iniciacao Cientifica, O=UNISAGRADO, L=Bauru, ST=SP, C=BR
+SHA-256 19edbcfc6072aac79b4f18ed9cb1606d37788992bc6de05aeb85695e91e06886
+```
+
+**Guarde uma cópia da pasta `chaves/` fora desta máquina.** Perder esse arquivo
+não tem conserto: qualquer APK novo passa a ser recusado como atualização, e
+todo agente em campo teria que desinstalar o aplicativo para instalar a versão
+seguinte.
+
+Conferir quem assinou um APK:
+
+```bash
+"$LOCALAPPDATA/Android/Sdk/build-tools/36.0.0/apksigner.bat"   verify --print-certs app-release.apk
+```
