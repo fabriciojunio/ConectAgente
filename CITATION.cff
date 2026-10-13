@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: "Se usar este trabalho, cite as pessoas abaixo."
+title: "ConectAgente: sistema offline-first para o Agente Comunitário de Saúde"
+abstract: >-
+  Aplicativo de campo em React Native que funciona sem internet e painel web de
+  gestão em Next.js, com autorização por Row Level Security no PostgreSQL.
+  Projeto de iniciação científica do UNISAGRADO.
+type: software
+license: "LicenseRef-Academico"
+repository-code: "https://github.com/fabriciojunio/ConectAgente"
+date-released: "2026-10-13"
+version: "1.0.0"
+keywords:
+  - saúde pública
+  - agente comunitário de saúde
+  - offline-first
+  - LGPD
+
+# A ordem é a da contribuição ao que está publicado aqui, e não hierarquia. O
+# código deste repositório é a reescrita de outubro de 2026; o projeto começou
+# em agosto de 2025, com a Camila, e o histórico original está em
+# github.com/CamilaRaimundo/ConectAgente.
+authors:
+  - given-names: "Fabrício Júnio"
+    family-names: "Almeida Dias"
+    alias: fabriciojunio
+    affiliation: "UNISAGRADO"
+  - given-names: "Camila"
+    family-names: "Pereira Raimundo"
+    alias: CamilaRaimundo
+    affiliation: "UNISAGRADO"
+  - given-names: "Luan"
+    alias: LuanPaD
+    affiliation: "UNISAGRADO"
+  - given-names: "Kauã"
+    family-names: "Limão Nunes"
+    alias: Lim4o
+    affiliation: "UNISAGRADO"

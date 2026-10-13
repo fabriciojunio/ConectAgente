@@ -178,8 +178,9 @@ localmente. A tradução e a remoção dos campos locais ficam num lugar só, em
   aplicativo. Para desenvolver, `npx expo run:android`.
 - **Não existe servidor próprio, e não vai existir.** O aplicativo e o painel
   falam direto com o PostgREST do Supabase, e quem decide quem lê o quê é o
-  RLS, dentro do banco. O repositório do time tem uma pasta `backend/` com um
-  Express e Prisma que ficou para trás nessa mudança; ela nunca esteve aqui e
+  RLS, dentro do banco. O repositório do time tem uma pasta
+  `ConectAgente-mobile/backend/` com um Express e Prisma que ficou para trás
+  nessa mudança; ela nunca esteve aqui e
   nada a referencia. Trazê-la de volta significaria manter a regra de
   autorização em dois lugares, e regra de autorização duplicada é a que fica
   desatualizada no lugar menos visível. Se um dia for preciso um servidor, ele
@@ -215,6 +216,33 @@ Honestidade sobre o estado, que vale mais que uma lista de recursos:
   Enquanto isso não for resolvido, melhoria daqui não chega lá por um
   `git merge` normal: vai ter que ser por porte, como foi feito com a
   classificação de risco, ou por uma decisão conjunta de refazer a base.
+
+---
+
+## Quem fez
+
+O ConectAgente é um projeto de iniciação científica, feito em equipe. Grande
+parte do que está neste repositório veio da reescrita de outubro de 2026, que é
+trabalho meu, Fabrício Júnio Almeida Dias
+([@fabriciojunio](https://github.com/fabriciojunio)): o aplicativo de campo, o
+painel web, o banco com as policies de RLS, as suítes de teste, a documentação
+e o empacotamento do APK.
+
+Antes dela, contribuíram:
+
+- **Camila Pereira Raimundo** ([@CamilaRaimundo](https://github.com/CamilaRaimundo))
+  criou o repositório em 23/08/2025, com a tela de login e o módulo admin.
+- **Luan** ([@LuanPaD](https://github.com/LuanPaD)) fez a classificação de risco
+  das residências, em 18/06/2026.
+- **Kauã Limão Nunes** ([@Lim4o](https://github.com/Lim4o)) revisou e integrou
+  essa classificação de risco.
+
+O histórico original continua em
+[CamilaRaimundo/ConectAgente](https://github.com/CamilaRaimundo/ConectAgente).
+Os commits de lá não foram trazidos para cá: as duas histórias não têm ancestral
+comum e o conteúdo foi reescrito, então importá-los daria um gráfico de
+contribuição que não corresponde a este código. O crédito fica aqui, por
+escrito, e no `CITATION.cff`.
 
 ---
 
