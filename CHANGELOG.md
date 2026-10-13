@@ -8,6 +8,28 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ### Corrigido
 
+- **A área administrativa estava inalcançável numa instalação nova.** A conta
+  de administrador nasce com senha sorteada, e quem lia essa senha era a tela
+  de configurações, que fica dentro da própria área administrativa. Para ver a
+  senha era preciso já estar dentro, e para entrar era preciso a senha.
+  Agentes, residências, visitas e configurações do gerente ficavam fora de
+  alcance para sempre, e nada no aplicativo avisava.
+- **O contador de visitas do dia nunca contava a visita do dia.** A coluna
+  guarda só a data, `2026-10-13`, e a consulta comparava com o resultado de
+  `toISOString()`, que leva hora e fuso grudados. O SQLite compara texto e a
+  string mais curta perde. O mesmo defeito aparecia no relatório, que dizia
+  "Nenhuma visita encontrada" num dia com visita registrada, e em mais quatro
+  lugares que derivavam a data civil do UTC: das 21h em diante, no fuso do
+  Brasil, o recorte já é o dia seguinte.
+- **O modo escuro funcionava em uma tela de vinte e três.** As demais liam a
+  paleta clara fixa e continuavam brancas com o escuro ligado.
+- **O arquivo de instalação do banco quebrava na segunda execução**, deixando
+  o banco pela metade sem a pessoa ter como saber o que entrou.
+- **A barra de progresso mostrava 100% para quem não tem meta**, porque
+  dividir por zero dá infinito.
+- **O aplicativo se dizia conectado com o `.env` de exemplo** e mostrava erro
+  de rede em vez de dizer que falta configuração. O agente concluía que estava
+  sem sinal.
 - **O dado coletado em campo nunca chegava ao servidor.** O aplicativo é
   offline-first, continuava gravando no banco local e nada parecia errado para
   o agente, enquanto o servidor recusava toda gravação. Eram 61 colunas sem
@@ -51,6 +73,22 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ### Adicionado
 
+- **Trilha de auditoria de verdade (LGPD, art. 37).** Entrar no sistema, abrir
+  prontuário, exportar relatório e anonimizar morador no aplicativo; aprovar e
+  rejeitar cadastro e abrir ficha de paciente no painel. A leitura no painel
+  precisou de solução diferente: lá o navegador fala direto com o banco, sem
+  servidor nosso no meio, então quem registra é `fn_ler_morador`, função
+  `SECURITY DEFINER` que grava na mesma transação em que lê, e também grava a
+  tentativa quando recusa.
+- **Consentimento, eliminação e prazo de guarda.** O aceite é registrado no
+  cadastro do morador; a ficha dele oferece remover os dados pessoais, com
+  dupla confirmação, mantendo o registro estatístico; e o painel do gerente
+  mostra o que passou do prazo de guarda, sem apagar nada sozinho.
+- **Configurador do Supabase.** Confere a credencial contra o servidor antes
+  de escrever qualquer arquivo: endereço que não responde, chave recusada ou
+  schema ausente param o script.
+- **Modo escuro no aplicativo e no painel**, com escolha entre claro, escuro e
+  seguir o aparelho.
 - **Sessão do Supabase no aplicativo.** Sem ela, `auth.uid()` é nulo e toda
   policy nega a gravação. Abre no login quando há rede, sem bloquear o uso
   offline, e a sincronização para antes de tentar quando não há sessão, para
