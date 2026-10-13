@@ -17,7 +17,7 @@
  * lados precisam da mesma regra, senão o mesmo `.env` meio preenchido dá
  * diagnóstico diferente em cada aplicativo.
  */
-import { ehValorDeExemplo, TAMANHO_MINIMO_DA_CHAVE } from '../supabase';
+import { ehValorDeExemplo, ehChavePublicaValida } from '../supabase';
 
 describe('ehValorDeExemplo', () => {
   it.each([
@@ -43,20 +43,47 @@ describe('ehValorDeExemplo', () => {
   });
 });
 
-describe('tamanho mínimo da chave', () => {
-  it('a chave do .env.example não passa', () => {
-    // O que está no arquivo de exemplo é só o cabeçalho de um JWT.
-    const doExemplo = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
-    expect(doExemplo.length).toBeLessThan(TAMANHO_MINIMO_DA_CHAVE);
+describe('formato da chave pública', () => {
+  // O Supabase tem dois formatos em circulação. Exigir 100 caracteres, como
+  // estava aqui, recusava a chave nova em silêncio: o aplicativo dizia "não
+  // configurado" com uma credencial boa, e o agente concluía que estava sem
+  // sinal. Foi o que aconteceu com o projeto de verdade, em 13/10/2026.
+  const JWT_REAL = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' + 'a'.repeat(120) + '.assinatura';
+
+  it.each([
+    ['sb_publishable_ExemploDeChaveParaTeste_000000', 'o formato novo, com 46 caracteres'],
+    [JWT_REAL, 'o JWT antigo'],
+  ])('aceita %s (%s)', (chave) => {
+    expect(ehChavePublicaValida(chave)).toBe(true);
   });
 
-  it('uma chave anon real passa', () => {
-    expect('a'.repeat(210).length).toBeGreaterThanOrEqual(TAMANHO_MINIMO_DA_CHAVE);
+  it('recusa a chave do .env.example, que é só o cabeçalho do JWT', () => {
+    expect(ehChavePublicaValida('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9')).toBe(false);
+  });
+
+  it('recusa JWT truncado pela metade', () => {
+    expect(ehChavePublicaValida('eyJhbGciOi.abc')).toBe(false);
+  });
+
+  it('recusa o prefixo novo sem nada depois', () => {
+    expect(ehChavePublicaValida('sb_publishable_')).toBe(false);
+  });
+
+  it('recusa a chave secreta, mesmo bem formada', () => {
+    // `sb_secret_` ignora o RLS por definição. No aplicativo ela iria dentro
+    // do APK, à disposição de quem abrisse o arquivo. O formato novo deixa
+    // isso visível; no JWT antigo as duas eram parecidas e a troca só
+    // aparecia em produção.
+    expect(ehChavePublicaValida('sb_secret_ExemploDeChaveParaTeste_000000')).toBe(false);
+  });
+
+  it('recusa texto solto', () => {
+    expect(ehChavePublicaValida('minha-chave')).toBe(false);
   });
 });
 
 describe('supabaseConfigurado conforme o ambiente', () => {
-  const CHAVE_REAL = 'a'.repeat(210);
+  const CHAVE_REAL = 'sb_publishable_ExemploDeChaveParaTeste_000000';
 
   /**
    * Recarrega o módulo com o ambiente trocado.

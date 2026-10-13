@@ -19,6 +19,41 @@ import { z } from 'zod';
  * importação derrubaria o build. Quem chama é o `/api/health` e os scripts
  * operacionais, onde falhar cedo é o que se quer.
  */
+/**
+ * O Supabase tem dois formatos de chave em circulação, e os dois são válidos.
+ *
+ * O antigo é um JWT: `eyJ...` em três partes separadas por ponto, passando de
+ * 100 caracteres. O novo começa com `sb_publishable_` e tem 46. Projeto criado
+ * depois da mudança sai só com o novo.
+ *
+ * Exigir 100 caracteres recusava a chave nova, e aqui o estrago seria o do
+ * `/api/health` responder degradado com o ambiente perfeitamente configurado.
+ *
+ * O formato novo traz uma vantagem que o antigo não tinha: `sb_publishable_` e
+ * `sb_secret_` se distinguem à vista. No formato antigo, `anon` e
+ * `service_role` eram dois JWTs parecidos, e trocar uma pela outra só aparecia
+ * em produção, com o RLS ignorado.
+ */
+const PREFIXO_PUBLICA = 'sb_publishable_';
+const PREFIXO_SECRETA = 'sb_secret_';
+const TAMANHO_MINIMO_JWT = 100;
+
+function ehJwt(v: string): boolean {
+  return v.split('.').length === 3 && v.length >= TAMANHO_MINIMO_JWT;
+}
+
+export function ehChavePublicaValida(v: string): boolean {
+  if (v.startsWith(PREFIXO_SECRETA)) return false;
+  if (v.startsWith(PREFIXO_PUBLICA)) return v.length > PREFIXO_PUBLICA.length;
+  return ehJwt(v);
+}
+
+export function ehChaveSecretaValida(v: string): boolean {
+  if (v.startsWith(PREFIXO_PUBLICA)) return false;
+  if (v.startsWith(PREFIXO_SECRETA)) return v.length > PREFIXO_SECRETA.length;
+  return ehJwt(v);
+}
+
 const schema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z
     .string()
@@ -30,10 +65,13 @@ const schema = z.object({
 
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z
     .string()
-    .min(100, 'NEXT_PUBLIC_SUPABASE_ANON_KEY parece truncada: a chave real tem mais de 100 caracteres')
     .refine(
       (v) => !v.includes('placeholder'),
       'NEXT_PUBLIC_SUPABASE_ANON_KEY ainda está com o valor de exemplo'
+    )
+    .refine(
+      ehChavePublicaValida,
+      'NEXT_PUBLIC_SUPABASE_ANON_KEY não parece uma chave publicável: espera-se sb_publishable_... ou um JWT de três partes'
     ),
 
   /**
@@ -43,7 +81,10 @@ const schema = z.object({
    */
   SUPABASE_SERVICE_ROLE_KEY: z
     .string()
-    .min(100, 'SUPABASE_SERVICE_ROLE_KEY parece truncada')
+    .refine(
+      ehChaveSecretaValida,
+      'SUPABASE_SERVICE_ROLE_KEY não parece uma chave secreta: espera-se sb_secret_... ou um JWT de três partes. Chave publicável aqui deixaria o painel sem os poderes que ele precisa, e a secreta no lugar da publicável iria para o navegador'
+    )
     .optional(),
 
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
