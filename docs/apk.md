@@ -30,7 +30,7 @@ cd ConectAgente-mobile
 
 export ANDROID_HOME="$LOCALAPPDATA/Android/Sdk"
 export ANDROID_SDK_ROOT="$ANDROID_HOME"
-export JAVA_HOME="$HOME/scoop/apps/temurin17-jdk/current"
+export JAVA_HOME="$HOME/scoop/apps/temurin20-jdk/current"
 export PATH="$JAVA_HOME/bin:$PATH"
 
 npx expo prebuild --platform android --no-install
@@ -42,7 +42,10 @@ echo "sdk.dir=C:/Users/junio/AppData/Local/Android/Sdk" > local.properties
 
 O APK sai em `android/app/build/outputs/apk/release/app-release.apk`.
 
-Duas coisas que custaram tempo e vale registrar:
+O JDK é o 20 porque é o que está na máquina, por causa do trabalho. Não troque
+a variável do sistema: defina só para o comando, como acima.
+
+Cinco coisas que custaram tempo e valem registro:
 
 **`local.properties` com barra normal.** O arquivo é lido como `.properties` do
 Java, onde a contrabarra é caractere de escape. `C:\Users\junio` vira
@@ -53,6 +56,53 @@ caminho. Barra normal funciona no Windows e evita o problema.
 `expo start --android` para `expo run:android`. Reverta: a pasta `android/` é
 ignorada pelo git, o projeto continua gerenciado, e forçar build nativo em
 quem só quer rodar no Expo Go é pior.
+
+**O caminho do projeto precisa ser curto.** A compilação nativa estoura o
+limite de 260 caracteres do Windows. O erro fala de CMake e de um cabeçalho do
+React, não de caminho:
+
+```
+ninja: error: Stat(...RuntimeSchedulerIntersectionObserverDelegate.h):
+Filename longer than 260 characters
+```
+
+Atalho por junction não resolve, porque o autolinking grava o caminho real.
+A saída é copiar o projeto para uma pasta curta, por exemplo `C:\ca`, e
+compilar de lá.
+
+**O cache do Gradle também conta no limite.** O padrão fica em
+`~/scoop/apps/gradle/current/.gradle`, e os caminhos de `prefab` dentro dele
+passam de 260. Use um cache curto, só para o comando:
+
+```bash
+GRADLE_USER_HOME=C:\g ./gradlew assembleRelease --no-daemon
+```
+
+E ao trocar o cache, **apague os `.cxx`**: eles guardam o caminho antigo
+gravado dentro dos arquivos do ninja, e a compilação continua falhando com a
+mensagem do cache velho mesmo depois da troca.
+
+```bash
+find node_modules -maxdepth 3 -name .cxx -type d -exec rm -rf {} +
+```
+
+**O pacote JavaScript fica para trás sem avisar.** Esta é a pior, porque não
+dá erro nenhum. O Gradle considera a tarefa do bundle atualizada, empacota o
+JavaScript de uma compilação anterior, imprime `BUILD SUCCESSFUL`, e o APK sai
+com o comportamento antigo. Aconteceu duas vezes aqui, e nas duas o APK
+instalado parecia novo e não era.
+
+Antes de confiar num APK recém-compilado, compare as datas:
+
+```bash
+find android/app/build -name index.android.bundle -exec ls -la {} \;
+ls -la android/app/build/outputs/apk/release/app-release.apk
+```
+
+O bundle precisa ser **mais novo** que a última alteração no `src/`. E olhe o
+aplicativo instalado, não o arquivo: procurar texto dentro do bundle para saber
+se a correção entrou dá resposta errada, porque nome de função some na
+minificação e acento muda de codificação.
 
 ---
 

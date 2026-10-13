@@ -10,6 +10,7 @@ import { SECURE_KEYS, SESSION_TIMEOUT_MS } from '../utils/constants';
 import { clearEncryptionKeyCache } from '../utils/encryption';
 import { isoNow } from '../utils/formatters';
 import { supabase } from '../lib/supabase';
+import { ACOES_AUDITORIA, auditRepository } from '../database/repositories/auditRepository';
 
 export interface SessionData {
   agente: Agente;
@@ -58,6 +59,15 @@ export const authService = {
     // normalmente e a fila espera. O que muda é que a falha passa a ser
     // visível em vez de silenciosa.
     await this.abrirSessaoNoServidor(agente.email, senha);
+
+    // Entrada no sistema. Junto com a leitura de prontuario, e o que permite
+    // responder "quem estava com este aparelho quando o dado foi aberto".
+    void auditRepository.registrar({
+      agenteId: agente.id,
+      acao: ACOES_AUDITORIA.LOGIN,
+      tabela: 'agentes',
+      registroId: agente.id,
+    });
 
     return { agente, token: localToken, expires_at };
   },

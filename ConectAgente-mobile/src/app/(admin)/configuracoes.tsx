@@ -24,6 +24,8 @@ const criarAcaoIcons = (
   UPDATE: { icon: 'create-outline', color: colors.info },
   DELETE: { icon: 'trash-outline', color: colors.error },
   LOGIN: { icon: 'log-in-outline', color: colors.primary },
+  LEITURA: { icon: 'eye-outline', color: colors.secondary },
+  EXPORT: { icon: 'download-outline', color: colors.accent },
 });
 
 export default function AdminConfiguracoes() {
