@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, RefreshControl, FlatList,
 } from 'react-native';
@@ -15,7 +15,8 @@ import { EmptyState } from '../../../components/ui/EmptyState';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { PageHeader } from '../../../components/ui/PageHeader';
 import { calcularIdade, formatCEP, formatDate, toDateBR } from '../../../utils/formatters';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS } from '../../../utils/constants';
+import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
 
 const MOTIVOS_LABEL: Record<string, string> = {
   rotina: 'Rotina', busca_ativa: 'Busca ativa',
@@ -23,6 +24,8 @@ const MOTIVOS_LABEL: Record<string, string> = {
 };
 
 export default function ResidenciaDetalhe() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [residencia, setResidencia] = useState<Residencia | null>(null);
   const [visitas, setVisitas] = useState<Visita[]>([]);
@@ -81,13 +84,13 @@ export default function ResidenciaDetalhe() {
 
   function obterCorRisco(r: string) {
     const map: Record<string, string> = {
-      critico: COLORS.error,
-      alto: COLORS.warning,
-      medio: '#a16207',
-      baixo: COLORS.success,
-      nenhum: COLORS.placeholder,
+      critico: colors.error,
+      alto: colors.warning,
+      medio: colors.warning,
+      baixo: colors.success,
+      nenhum: colors.placeholder,
     };
-    return map[r] ?? COLORS.placeholder;
+    return map[r] ?? colors.placeholder;
   }
 
   function obterSiglaRisco(r: string) {
@@ -127,7 +130,7 @@ export default function ResidenciaDetalhe() {
         {/* ENDEREÇO */}
         <Card>
           <View style={styles.addressRow}>
-            <Ionicons name="location-outline" size={20} color={COLORS.primary} />
+            <Ionicons name="location-outline" size={20} color={colors.primary} />
             <View style={styles.addressInfo}>
               <Text style={styles.addressMain}>
                 {residencia.logradouro}, {residencia.numero}
@@ -195,7 +198,7 @@ export default function ResidenciaDetalhe() {
                       size={14} 
                       color={obterCorRisco(r)} 
                     />
-                    <Text style={[styles.riscoBotaoText, { color: isSelected ? obterCorRisco(r) : COLORS.textLight, fontWeight: isSelected ? '700' : '400' }]}>
+                    <Text style={[styles.riscoBotaoText, { color: isSelected ? obterCorRisco(r) : colors.textLight, fontWeight: isSelected ? '700' : '400' }]}>
                       {obterSiglaRisco(r)}
                     </Text>
                   </TouchableOpacity>
@@ -216,7 +219,7 @@ export default function ResidenciaDetalhe() {
               })}
               style={styles.addButton}
             >
-              <Ionicons name="add" size={18} color={COLORS.white} />
+              <Ionicons name="add" size={18} color={colors.white} />
               <Text style={styles.addButtonText}>Adicionar</Text>
             </TouchableOpacity>
           </View>
@@ -268,7 +271,7 @@ export default function ResidenciaDetalhe() {
               params: { residencia_id: id },
             })}
           >
-            <Ionicons name="clipboard-outline" size={20} color={COLORS.primary} />
+            <Ionicons name="clipboard-outline" size={20} color={colors.primary} />
             <Text style={styles.actionText}>Registrar visita</Text>
           </TouchableOpacity>
         </View>
@@ -282,6 +285,8 @@ function MoradorCard({ morador, isResponsavel, onPress }: {
   isResponsavel: boolean;
   onPress: () => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const idade = calcularIdade(morador.data_nascimento);
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
@@ -312,7 +317,7 @@ function MoradorCard({ morador, isResponsavel, onPress }: {
               )}
             </View>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={COLORS.textLight} />
+          <Ionicons name="chevron-forward" size={18} color={colors.textLight} />
         </View>
       </Card>
     </TouchableOpacity>
@@ -320,11 +325,13 @@ function MoradorCard({ morador, isResponsavel, onPress }: {
 }
 
 function VisitaHistoricoCard({ visita }: { visita: Visita }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const statusConfig: Record<string, { color: string; icon: keyof typeof Ionicons.glyphMap; label: string }> = {
-    realizada: { color: COLORS.success, icon: 'checkmark-circle', label: 'Realizada' },
-    nao_encontrado: { color: COLORS.warning, icon: 'alert-circle', label: 'Não encontrado' },
-    cancelada: { color: COLORS.error, icon: 'close-circle', label: 'Cancelada' },
-    agendada: { color: COLORS.info, icon: 'time', label: 'Agendada' },
+    realizada: { color: colors.success, icon: 'checkmark-circle', label: 'Realizada' },
+    nao_encontrado: { color: colors.warning, icon: 'alert-circle', label: 'Não encontrado' },
+    cancelada: { color: colors.error, icon: 'close-circle', label: 'Cancelada' },
+    agendada: { color: colors.info, icon: 'time', label: 'Agendada' },
   };
   const cfg = statusConfig[visita.status] ?? statusConfig.realizada;
   const motivo = visita.motivo_visita ? MOTIVOS_LABEL[visita.motivo_visita] ?? visita.motivo_visita : null;
@@ -385,8 +392,8 @@ function VisitaHistoricoCard({ visita }: { visita: Visita }) {
       ) : null}
       {visita.precisa_agendamento && visita.especialidade_agendamento && (
         <View style={[styles.visitaDetalhe, styles.agendamentoTag]}>
-          <Ionicons name="calendar-outline" size={13} color={COLORS.warning} />
-          <Text style={[styles.visitaDetalheVal, { color: COLORS.warning }]}>
+          <Ionicons name="calendar-outline" size={13} color={colors.warning} />
+          <Text style={[styles.visitaDetalheVal, { color: colors.warning }]}>
             Agendamento: {visita.especialidade_agendamento}
           </Text>
         </View>
@@ -396,6 +403,8 @@ function VisitaHistoricoCard({ visita }: { visita: Visita }) {
 }
 
 function InfoItem({ label, value }: { label: string; value: string }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   return (
     <View style={styles.infoItem}>
       <Text style={styles.infoLabel}>{label}</Text>
@@ -412,74 +421,76 @@ function traduzirTipo(tipo: string): string {
 }
 
 function traduzirSexo(sexo: string): string {
+  const { colors } = useTheme();
   const map: Record<string, string> = {
     masculino: 'Masculino', feminino: 'Feminino', outro: 'Outro',
   };
   return map[sexo] ?? sexo;
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: SPACING.md, gap: SPACING.md, paddingBottom: SPACING.xl },
   addressRow: { flexDirection: 'row', gap: SPACING.sm },
   addressInfo: { flex: 1 },
-  addressMain: { fontSize: FONT_SIZE.md, fontWeight: '700', color: COLORS.text },
-  addressSub: { fontSize: FONT_SIZE.sm, color: COLORS.textLight },
-  addressCep: { fontSize: FONT_SIZE.xs, color: COLORS.placeholder },
-  divider: { height: 1, backgroundColor: COLORS.borderLight, marginVertical: SPACING.sm },
+  addressMain: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.text },
+  addressSub: { fontSize: FONT_SIZE.sm, color: colors.textLight },
+  addressCep: { fontSize: FONT_SIZE.xs, color: colors.placeholder },
+  divider: { height: 1, backgroundColor: colors.borderLight, marginVertical: SPACING.sm },
   riscoContainer: { marginTop: SPACING.sm, gap: SPACING.xs },
-  riscoTitle: { fontSize: FONT_SIZE.xs, color: COLORS.textLight, fontWeight: '600', marginBottom: 2 },
+  riscoTitle: { fontSize: FONT_SIZE.xs, color: colors.textLight, fontWeight: '600', marginBottom: 2 },
   badgeRow: { flexDirection: 'row', marginBottom: 2 },
   riscoSeletor: { flexDirection: 'row', justifyContent: 'space-between', gap: 4, marginTop: 4 },
   riscoBotao: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3,
-    paddingVertical: 6, paddingHorizontal: 2, borderRadius: RADIUS.sm, borderWidth: 1, borderColor: COLORS.borderLight,
-    backgroundColor: COLORS.white,
+    paddingVertical: 6, paddingHorizontal: 2, borderRadius: RADIUS.sm, borderWidth: 1, borderColor: colors.borderLight,
+    backgroundColor: colors.white,
   },
   riscoBotaoText: { fontSize: 10 },
   infoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   infoItem: { minWidth: '40%' },
-  infoLabel: { fontSize: FONT_SIZE.xs, color: COLORS.textLight, fontWeight: '600' },
-  infoValue: { fontSize: FONT_SIZE.md, color: COLORS.text },
+  infoLabel: { fontSize: FONT_SIZE.xs, color: colors.textLight, fontWeight: '600' },
+  infoValue: { fontSize: FONT_SIZE.md, color: colors.text },
   section: { gap: SPACING.sm },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sectionTitle: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: COLORS.text },
+  sectionTitle: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: colors.text },
   addButton: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: COLORS.primary, borderRadius: RADIUS.full,
+    backgroundColor: colors.primary, borderRadius: RADIUS.full,
     paddingHorizontal: SPACING.sm, paddingVertical: 6,
   },
-  addButtonText: { color: COLORS.white, fontSize: FONT_SIZE.sm, fontWeight: '600' },
+  addButtonText: { color: colors.white, fontSize: FONT_SIZE.sm, fontWeight: '600' },
   moradorCard: { gap: SPACING.xs },
   moradorHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   avatar: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: COLORS.primaryLight, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center',
   },
-  avatarText: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: COLORS.white },
+  avatarText: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: colors.white },
   moradorInfo: { flex: 1 },
   moradorNameRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, flexWrap: 'wrap' },
-  moradorName: { fontSize: FONT_SIZE.md, fontWeight: '700', color: COLORS.text },
-  moradorDetails: { fontSize: FONT_SIZE.sm, color: COLORS.textLight },
+  moradorName: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.text },
+  moradorDetails: { fontSize: FONT_SIZE.sm, color: colors.textLight },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 },
   visitaCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
     borderRadius: RADIUS.md,
     padding: SPACING.sm + 2,
     marginBottom: SPACING.xs,
     gap: 6,
     borderWidth: 1,
-    borderColor: COLORS.borderLight,
+    borderColor: colors.borderLight,
   },
   visitaHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
-  visitaData: { flex: 1, fontSize: FONT_SIZE.md, fontWeight: '700', color: COLORS.text },
+  visitaData: { flex: 1, fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.text },
   visitaBadge: { borderRadius: RADIUS.full, paddingHorizontal: 8, paddingVertical: 2 },
   visitaBadgeText: { fontSize: FONT_SIZE.xs, fontWeight: '700' },
   visitaDetalhe: { flexDirection: 'row', gap: 6, alignItems: 'flex-start' },
-  visitaDetalheLabel: { fontSize: FONT_SIZE.xs, fontWeight: '700', color: COLORS.textLight, minWidth: 80 },
-  visitaDetalheVal: { fontSize: FONT_SIZE.xs, color: COLORS.text },
+  visitaDetalheLabel: { fontSize: FONT_SIZE.xs, fontWeight: '700', color: colors.textLight, minWidth: 80 },
+  visitaDetalheVal: { fontSize: FONT_SIZE.xs, color: colors.text },
   agendamentoTag: {
-    backgroundColor: COLORS.warning + '12',
+    backgroundColor: colors.warning + '12',
     borderRadius: RADIUS.sm,
     paddingHorizontal: 6,
     paddingVertical: 3,
@@ -488,8 +499,8 @@ const styles = StyleSheet.create({
   actions: { gap: SPACING.sm },
   actionBtn: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    backgroundColor: COLORS.white, borderRadius: RADIUS.md,
-    padding: SPACING.md, borderWidth: 1.5, borderColor: COLORS.primary,
+    backgroundColor: colors.white, borderRadius: RADIUS.md,
+    padding: SPACING.md, borderWidth: 1.5, borderColor: colors.primary,
   },
-  actionText: { fontSize: FONT_SIZE.md, color: COLORS.primary, fontWeight: '600' },
+  actionText: { fontSize: FONT_SIZE.md, color: colors.primary, fontWeight: '600' },
 });

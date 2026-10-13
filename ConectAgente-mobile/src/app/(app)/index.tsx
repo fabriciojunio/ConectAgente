@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl, Platform, Alert, Image,
@@ -16,7 +16,8 @@ import { EstatisticasVisitas, Residencia } from '../../types';
 import { visitaRepository } from '../../database/repositories/visitaRepository';
 import { moradorRepository } from '../../database/repositories/moradorRepository';
 import { residenciaRepository } from '../../database/repositories/residenciaRepository';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 function obterSaudacao(): string {
   const h = new Date().getHours();
@@ -34,6 +35,8 @@ function iniciais(nome: string): string {
 const PHOTO_KEY = 'profile_photo_uri';
 
 export default function Dashboard() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const { agente, logout } = useAuth();
   const [stats, setStats] = useState<EstatisticasVisitas | null>(null);
   const [totalMoradores, setTotalMoradores] = useState(0);
@@ -148,14 +151,14 @@ export default function Dashboard() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={COLORS.primaryLight}
-            colors={[COLORS.primary]}
+            tintColor={colors.primaryLight}
+            colors={[colors.primary]}
           />
         }
       >
         {/* ── HEADER ─────────────────────────────────────────── */}
         <LinearGradient
-          colors={COLORS.primaryGradient}
+          colors={colors.primaryGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.header}
@@ -214,28 +217,28 @@ export default function Dashboard() {
             icon="today-outline"
             label="Hoje"
             value={stats?.realizadas_hoje ?? 0}
-            accent={COLORS.primary}
+            accent={colors.primary}
             onPress={() => router.push('/(app)/visitas')}
           />
           <StatCard
             icon="calendar-outline"
             label="Semana"
             value={stats?.realizadas_semana ?? 0}
-            accent={COLORS.info}
+            accent={colors.info}
             onPress={() => router.push('/(app)/visitas')}
           />
           <StatCard
             icon="time-outline"
             label="Agendadas"
             value={stats?.total_agendadas ?? 0}
-            accent={COLORS.warning}
+            accent={colors.warning}
             onPress={() => router.push('/(app)/calendario')}
           />
           <StatCard
             icon="people-outline"
             label="Pacientes"
             value={totalMoradores}
-            accent={COLORS.success}
+            accent={colors.success}
             onPress={() => router.push('/(app)/residencias')}
           />
         </View>
@@ -247,31 +250,31 @@ export default function Dashboard() {
             <QuickAction
               icon="add-circle-outline"
               label="Nova visita"
-              color={COLORS.primary}
+              color={colors.primary}
               onPress={() => router.push('/(app)/visita/nova')}
             />
             <QuickAction
               icon="home-outline"
               label="Nova residência"
-              color={COLORS.info}
+              color={colors.info}
               onPress={() => router.push('/(app)/residencia/nova')}
             />
             <QuickAction
               icon="person-add-outline"
               label="Novo morador"
-              color={COLORS.secondary}
+              color={colors.secondary}
               onPress={() => router.push('/(app)/morador/novo')}
             />
             <QuickAction
               icon="search-outline"
               label="Buscar"
-              color={COLORS.warning}
+              color={colors.warning}
               onPress={() => router.push('/(app)/busca')}
             />
             <QuickAction
               icon="document-text-outline"
               label="Relatórios"
-              color={COLORS.success}
+              color={colors.success}
               onPress={() => router.push('/(app)/relatorios')}
             />
             <QuickAction
@@ -289,13 +292,13 @@ export default function Dashboard() {
           <Card variant="default" padding="md">
             <AreaRow
               icon="business-outline"
-              iconColor={COLORS.info}
+              iconColor={colors.info}
               label="Residências cadastradas"
               value={totalResidencias}
             />
             <AreaRow
               icon="people-outline"
-              iconColor={COLORS.success}
+              iconColor={colors.success}
               label="Moradores cadastrados"
               value={totalMoradores}
               divider={false}
@@ -312,19 +315,19 @@ export default function Dashboard() {
           <Card variant="default" padding="md">
             <AreaRow
               icon="checkmark-circle-outline"
-              iconColor={COLORS.success}
+              iconColor={colors.success}
               label="Realizadas este mês"
               value={stats?.realizadas_mes ?? 0}
             />
             <AreaRow
               icon="ellipse-outline"
-              iconColor={COLORS.warning}
+              iconColor={colors.warning}
               label="Pendentes / agendadas"
               value={stats?.total_agendadas ?? 0}
             />
             <AreaRow
               icon="trending-up-outline"
-              iconColor={COLORS.primary}
+              iconColor={colors.primary}
               label="Total geral"
               value={stats?.total_realizadas ?? 0}
               divider={false}
@@ -346,7 +349,7 @@ export default function Dashboard() {
                 style={styles.recentCard}
               >
                 <View style={styles.recentIcon}>
-                  <Ionicons name="home-outline" size={18} color={COLORS.primary} />
+                  <Ionicons name="home-outline" size={18} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.recentTitle} numberOfLines={1}>
@@ -356,7 +359,7 @@ export default function Dashboard() {
                     {r.bairro} • {r.cidade}/{r.estado}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={COLORS.textLight} />
+                <Ionicons name="chevron-forward" size={16} color={colors.textLight} />
               </TouchableOpacity>
             ))}
           </View>
@@ -377,6 +380,8 @@ function SectionHeader({
   title: string;
   action?: { label: string; onPress: () => void };
 }) {
+  const { colors } = useTheme();
+  const sh = useMemo(() => criarSh(colors), [colors]);
   return (
     <View style={sh.row}>
       <Text style={sh.title}>{title}</Text>
@@ -388,10 +393,11 @@ function SectionHeader({
     </View>
   );
 }
-const sh = StyleSheet.create({
+const criarSh = (colors: ThemeColors) =>
+  StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm },
-  title: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: COLORS.text },
-  action: { fontSize: FONT_SIZE.sm, color: COLORS.primary, fontWeight: '600' },
+  title: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: colors.text },
+  action: { fontSize: FONT_SIZE.sm, color: colors.primary, fontWeight: '600' },
 });
 
 function StatCard({ icon, label, value, accent, onPress }: {
@@ -401,6 +407,8 @@ function StatCard({ icon, label, value, accent, onPress }: {
   accent: string;
   onPress?: () => void;
 }) {
+  const { colors } = useTheme();
+  const sc = useMemo(() => criarSc(colors), [colors]);
   return (
     <TouchableOpacity
       style={[sc.card, { borderTopColor: accent }]}
@@ -413,10 +421,11 @@ function StatCard({ icon, label, value, accent, onPress }: {
     </TouchableOpacity>
   );
 }
-const sc = StyleSheet.create({
+const criarSc = (colors: ThemeColors) =>
+  StyleSheet.create({
   card: {
     flex: 1,
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: RADIUS.md,
     alignItems: 'center',
     paddingVertical: SPACING.sm + 4,
@@ -425,7 +434,7 @@ const sc = StyleSheet.create({
     borderTopWidth: 3,
     ...Platform.select({
       ios: {
-        shadowColor: COLORS.primary,
+        shadowColor: colors.primary,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08,
         shadowRadius: 6,
@@ -434,7 +443,7 @@ const sc = StyleSheet.create({
     }),
   },
   value: { fontSize: FONT_SIZE.xxl, fontWeight: '800', marginTop: 2 },
-  label: { fontSize: 11, color: COLORS.textLight, fontWeight: '500', textAlign: 'center' },
+  label: { fontSize: 11, color: colors.textLight, fontWeight: '500', textAlign: 'center' },
 });
 
 function QuickAction({ icon, label, color, onPress }: {
@@ -443,6 +452,8 @@ function QuickAction({ icon, label, color, onPress }: {
   color: string;
   onPress: () => void;
 }) {
+  const { colors } = useTheme();
+  const qa = useMemo(() => criarQa(colors), [colors]);
   return (
     <TouchableOpacity style={qa.btn} onPress={onPress} activeOpacity={0.75}>
       <View style={[qa.iconWrap, { backgroundColor: color + '18' }]}>
@@ -452,13 +463,14 @@ function QuickAction({ icon, label, color, onPress }: {
     </TouchableOpacity>
   );
 }
-const qa = StyleSheet.create({
+const criarQa = (colors: ThemeColors) =>
+  StyleSheet.create({
   btn: { width: '31%', alignItems: 'center', gap: SPACING.xs },
   iconWrap: {
     width: 60, height: 60, borderRadius: RADIUS.lg,
     alignItems: 'center', justifyContent: 'center',
   },
-  label: { fontSize: FONT_SIZE.xs, color: COLORS.text, fontWeight: '600', textAlign: 'center' },
+  label: { fontSize: FONT_SIZE.xs, color: colors.text, fontWeight: '600', textAlign: 'center' },
 });
 
 function AreaRow({ icon, iconColor, label, value, divider = true }: {
@@ -468,6 +480,8 @@ function AreaRow({ icon, iconColor, label, value, divider = true }: {
   value: number;
   divider?: boolean;
 }) {
+  const { colors } = useTheme();
+  const ar = useMemo(() => criarAr(colors), [colors]);
   return (
     <View style={[ar.row, divider && ar.border]}>
       <View style={[ar.iconWrap, { backgroundColor: iconColor + '18' }]}>
@@ -478,19 +492,21 @@ function AreaRow({ icon, iconColor, label, value, divider = true }: {
     </View>
   );
 }
-const ar = StyleSheet.create({
+const criarAr = (colors: ThemeColors) =>
+  StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, paddingVertical: 10 },
-  border: { borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
+  border: { borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   iconWrap: { width: 34, height: 34, borderRadius: RADIUS.sm, alignItems: 'center', justifyContent: 'center' },
-  label: { flex: 1, fontSize: FONT_SIZE.md, color: COLORS.text },
-  value: { fontSize: FONT_SIZE.md, fontWeight: '700', color: COLORS.primary },
+  label: { flex: 1, fontSize: FONT_SIZE.md, color: colors.text },
+  value: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.primary },
 });
 
 // ─── Main styles ─────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.background },
-  scroll: { flex: 1, backgroundColor: COLORS.background },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
+  scroll: { flex: 1, backgroundColor: colors.background },
   scrollContent: { flexGrow: 1 },
 
   // Header
@@ -509,7 +525,7 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
 
   saudacao: { fontSize: FONT_SIZE.md, color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
-  nomeAgente: { fontSize: FONT_SIZE.xxl, fontWeight: '800', color: COLORS.white, letterSpacing: -0.5 },
+  nomeAgente: { fontSize: FONT_SIZE.xxl, fontWeight: '800', color: colors.white, letterSpacing: -0.5 },
   dateText: { fontSize: FONT_SIZE.sm, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
 
   avatarCircle: {
@@ -520,7 +536,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   avatarImage: { width: 42, height: 42, borderRadius: 21 },
-  avatarText: { fontSize: FONT_SIZE.sm, fontWeight: '800', color: COLORS.white },
+  avatarText: { fontSize: FONT_SIZE.sm, fontWeight: '800', color: colors.white },
   logoutBtn: { padding: 4 },
 
   unidadeChip: {
@@ -543,11 +559,11 @@ const styles = StyleSheet.create({
   },
   metaHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   metaTitle: { fontSize: FONT_SIZE.sm, color: 'rgba(255,255,255,0.9)', fontWeight: '600' },
-  metaPercent: { fontSize: FONT_SIZE.md, fontWeight: '800', color: COLORS.white },
+  metaPercent: { fontSize: FONT_SIZE.md, fontWeight: '800', color: colors.white },
   metaBarBg: {
     height: 8, backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 4, overflow: 'hidden',
   },
-  metaBarFill: { height: '100%', backgroundColor: COLORS.white, borderRadius: 4 },
+  metaBarFill: { height: '100%', backgroundColor: colors.white, borderRadius: 4 },
   metaSubtext: { fontSize: FONT_SIZE.xs, color: 'rgba(255,255,255,0.75)' },
 
   // Stats row
@@ -566,11 +582,11 @@ const styles = StyleSheet.create({
   // Recent residencias
   recentCard: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    backgroundColor: COLORS.card, borderRadius: RADIUS.md,
+    backgroundColor: colors.card, borderRadius: RADIUS.md,
     padding: SPACING.sm + 4, marginBottom: SPACING.xs,
     ...Platform.select({
       ios: {
-        shadowColor: COLORS.primary,
+        shadowColor: colors.primary,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08,
         shadowRadius: 6,
@@ -580,8 +596,8 @@ const styles = StyleSheet.create({
   },
   recentIcon: {
     width: 36, height: 36, borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.infoLight, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.infoLight, alignItems: 'center', justifyContent: 'center',
   },
-  recentTitle: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: COLORS.text },
-  recentSub: { fontSize: FONT_SIZE.xs, color: COLORS.textLight },
+  recentTitle: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: colors.text },
+  recentSub: { fontSize: FONT_SIZE.xs, color: colors.textLight },
 });

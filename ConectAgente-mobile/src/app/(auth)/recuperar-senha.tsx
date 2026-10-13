@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
@@ -14,7 +14,8 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import { formatCPF, stripCPF } from '../../utils/formatters';
 import { validarCPF } from '../../utils/validators';
 import { agenteRepository } from '../../database/repositories/agenteRepository';
-import { COLORS, SPACING, FONT_SIZE, RADIUS, VALIDATION } from '../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS, VALIDATION } from '../../utils/constants';
+import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 // ─── Etapa 1: verificar identidade ───────────────────────────
 const verificacaoSchema = z.object({
@@ -34,6 +35,8 @@ const novaSenhaSchema = z.object({
 type NovaSenhaForm = z.infer<typeof novaSenhaSchema>;
 
 export default function RecuperarSenha() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const [etapa, setEtapa] = useState<'verificar' | 'nova-senha' | 'sucesso'>('verificar');
   const [cpfVerificado, setCpfVerificado] = useState('');
   const [emailVerificado, setEmailVerificado] = useState('');
@@ -123,7 +126,7 @@ export default function RecuperarSenha() {
               </View>
 
               <View style={styles.infoBanner}>
-                <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.primary} />
+                <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} />
                 <Text style={styles.infoBannerText}>
                   Para sua segurança e em conformidade com a LGPD, confirme sua identidade
                   informando o CPF e o e-mail cadastrados no sistema.
@@ -169,7 +172,7 @@ export default function RecuperarSenha() {
             <>
               <View style={styles.stepRow}>
                 <View style={[styles.stepDot, styles.stepDotDone]}>
-                  <Ionicons name="checkmark" size={14} color={COLORS.white} />
+                  <Ionicons name="checkmark" size={14} color={colors.white} />
                 </View>
                 <View style={[styles.stepLine, styles.stepLineDone]} />
                 <View style={[styles.stepDot, styles.stepDotActive]}>
@@ -178,7 +181,7 @@ export default function RecuperarSenha() {
               </View>
 
               <View style={styles.infoBanner}>
-                <Ionicons name="checkmark-circle-outline" size={20} color={COLORS.success} />
+                <Ionicons name="checkmark-circle-outline" size={20} color={colors.success} />
                 <Text style={styles.infoBannerText}>
                   Identidade confirmada. Crie uma senha forte com pelo menos {VALIDATION.SENHA_MIN_LENGTH} caracteres.
                 </Text>
@@ -216,7 +219,7 @@ export default function RecuperarSenha() {
           {etapa === 'sucesso' && (
             <View style={styles.successContainer}>
               <View style={styles.successIcon}>
-                <Ionicons name="checkmark-circle" size={72} color={COLORS.success} />
+                <Ionicons name="checkmark-circle" size={72} color={colors.success} />
               </View>
               <Text style={styles.successTitle}>Senha redefinida!</Text>
               <Text style={styles.successText}>
@@ -238,8 +241,9 @@ export default function RecuperarSenha() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: SPACING.md, gap: SPACING.lg, paddingBottom: SPACING.xl },
   stepRow: {
     flexDirection: 'row',
@@ -252,33 +256,33 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.borderLight,
+    backgroundColor: colors.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepDotActive: { backgroundColor: COLORS.primary },
-  stepDotDone: { backgroundColor: COLORS.success },
-  stepDotText: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: COLORS.white },
-  stepLine: { flex: 1, maxWidth: 80, height: 2, backgroundColor: COLORS.borderLight },
-  stepLineDone: { backgroundColor: COLORS.success },
+  stepDotActive: { backgroundColor: colors.primary },
+  stepDotDone: { backgroundColor: colors.success },
+  stepDotText: { fontSize: FONT_SIZE.sm, fontWeight: '700', color: colors.white },
+  stepLine: { flex: 1, maxWidth: 80, height: 2, backgroundColor: colors.borderLight },
+  stepLineDone: { backgroundColor: colors.success },
   infoBanner: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: SPACING.sm,
-    backgroundColor: COLORS.infoLight,
+    backgroundColor: colors.infoLight,
     padding: SPACING.md,
     borderRadius: RADIUS.sm,
   },
   infoBannerText: {
     flex: 1,
     fontSize: FONT_SIZE.sm,
-    color: COLORS.text,
+    color: colors.text,
     lineHeight: 20,
   },
   form: { gap: SPACING.md },
   lgpd: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.placeholder,
+    color: colors.placeholder,
     textAlign: 'center',
     lineHeight: 18,
   },
@@ -292,17 +296,17 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: FONT_SIZE.xxl,
     fontWeight: '800',
-    color: COLORS.success,
+    color: colors.success,
   },
   successText: {
     fontSize: FONT_SIZE.md,
-    color: COLORS.text,
+    color: colors.text,
     textAlign: 'center',
     lineHeight: 22,
   },
   auditText: {
     fontSize: FONT_SIZE.xs,
-    color: COLORS.placeholder,
+    color: colors.placeholder,
     textAlign: 'center',
     lineHeight: 18,
   },

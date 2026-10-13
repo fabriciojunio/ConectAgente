@@ -20,7 +20,15 @@ const LIGHT = {
   disabled: '#CBD5E1', overlay: 'rgba(13,71,161,0.45)', divider: '#E8EDF5',
   hipertenso: '#C62828', diabetico: '#6A1B9A', gestante: '#AD1457',
   puericultura: '#00695C', domiciliado: '#1565C0',
+  // Fundos das etiquetas clinicas. Estavam escritos a mao dentro do Badge, e
+  // por isso continuavam pastel no tema escuro, com texto claro em cima.
+  hipertensoLight: '#FEF2F2', diabeticoLight: '#F5F3FF',
+  gestanteLight: '#FDF2F8', puericulturaLight: '#F0FDF4',
   inputBg: '#FFFFFF', tabBar: '#FFFFFF',
+  // Roxo do painel administrativo, que tem identidade propria de proposito,
+  // e o par da caixa de aviso das telas de visita.
+  accent: '#7B1FA2', accentLight: '#F3E5F5',
+  aviso: '#1D4ED8', avisoFundo: '#EFF6FF', avisoBorda: '#BFDBFE',
 };
 
 const DARK = {
@@ -39,7 +47,13 @@ const DARK = {
   disabled: '#374151', overlay: 'rgba(0,0,0,0.6)', divider: '#2A3348',
   hipertenso: '#EF9A9A', diabetico: '#CE93D8', gestante: '#F48FB1',
   puericultura: '#80CBC4', domiciliado: '#4FC3F7',
+  // Translucidos, como os outros fundos do tema escuro, para a etiqueta
+  // aparecer sem clarear o cartao inteiro.
+  hipertensoLight: 'rgba(239,154,154,0.15)', diabeticoLight: 'rgba(206,147,216,0.15)',
+  gestanteLight: 'rgba(244,143,177,0.15)', puericulturaLight: 'rgba(128,203,196,0.15)',
   inputBg: '#222840', tabBar: '#1A1F2E',
+  accent: '#CE93D8', accentLight: 'rgba(206,147,216,0.15)',
+  aviso: '#90CAF9', avisoFundo: 'rgba(144,202,249,0.12)', avisoBorda: 'rgba(144,202,249,0.3)',
 };
 
 /**

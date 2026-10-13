@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
 } from 'react-native';
@@ -12,7 +12,8 @@ import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { formatDate } from '../../utils/formatters';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 // Configurar locale pt-BR para o calendário
 LocaleConfig.locales['pt-BR'] = {
@@ -27,6 +28,8 @@ LocaleConfig.locales['pt-BR'] = {
 LocaleConfig.defaultLocale = 'pt-BR';
 
 export default function Calendario() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const { datasComAgendamento, agendamentosPorData } = useVisitas();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [markedDates, setMarkedDates] = useState<Record<string, object>>({});
@@ -38,7 +41,7 @@ export default function Calendario() {
     datas.forEach((data) => {
       marked[data] = {
         marked: true,
-        dotColor: COLORS.warning,
+        dotColor: colors.warning,
       };
     });
 
@@ -47,15 +50,15 @@ export default function Calendario() {
     marked[hoje] = {
       ...(marked[hoje] ?? {}),
       today: true,
-      todayBackgroundColor: COLORS.infoLight,
-      todayTextColor: COLORS.primary,
+      todayBackgroundColor: colors.infoLight,
+      todayTextColor: colors.primary,
     };
 
     if (selectedDate) {
       marked[selectedDate] = {
         ...(marked[selectedDate] ?? {}),
         selected: true,
-        selectedColor: COLORS.primary,
+        selectedColor: colors.primary,
       };
     }
 
@@ -91,16 +94,16 @@ export default function Calendario() {
         onDayPress={onDayPress}
         markedDates={markedDates}
         theme={{
-          backgroundColor: COLORS.white,
-          calendarBackground: COLORS.white,
-          selectedDayBackgroundColor: COLORS.primary,
-          selectedDayTextColor: COLORS.white,
-          todayTextColor: COLORS.primary,
-          dayTextColor: COLORS.text,
-          textDisabledColor: COLORS.placeholder,
-          monthTextColor: COLORS.primary,
-          arrowColor: COLORS.primary,
-          dotColor: COLORS.warning,
+          backgroundColor: colors.white,
+          calendarBackground: colors.white,
+          selectedDayBackgroundColor: colors.primary,
+          selectedDayTextColor: colors.white,
+          todayTextColor: colors.primary,
+          dayTextColor: colors.text,
+          textDisabledColor: colors.placeholder,
+          monthTextColor: colors.primary,
+          arrowColor: colors.primary,
+          dotColor: colors.warning,
           textDayFontWeight: '500',
           textMonthFontWeight: '700',
           textDayHeaderFontWeight: '600',
@@ -135,7 +138,7 @@ export default function Calendario() {
               <Card style={styles.agendCard}>
                 <View style={styles.agendRow}>
                   <View style={styles.agendIcon}>
-                    <Ionicons name="time-outline" size={20} color={COLORS.warning} />
+                    <Ionicons name="time-outline" size={20} color={colors.warning} />
                   </View>
                   <View style={styles.agendInfo}>
                     <Text style={styles.agendMotivo}>{item.motivo}</Text>
@@ -165,22 +168,23 @@ export default function Calendario() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   agendaContainer: { flex: 1, paddingHorizontal: SPACING.md, paddingTop: SPACING.md },
   agendaHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm },
-  agendaTitle: { fontSize: FONT_SIZE.xl, fontWeight: '700', color: COLORS.text },
-  agendaCount: { fontSize: FONT_SIZE.sm, color: COLORS.textLight },
+  agendaTitle: { fontSize: FONT_SIZE.xl, fontWeight: '700', color: colors.text },
+  agendaCount: { fontSize: FONT_SIZE.sm, color: colors.textLight },
   list: { gap: SPACING.sm, paddingBottom: SPACING.xl },
   agendCard: { gap: 4 },
   agendRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   agendIcon: { width: 36, alignItems: 'center' },
   agendInfo: { flex: 1 },
-  agendMotivo: { fontSize: FONT_SIZE.md, fontWeight: '600', color: COLORS.text },
-  agendObs: { fontSize: FONT_SIZE.sm, color: COLORS.textLight },
+  agendMotivo: { fontSize: FONT_SIZE.md, fontWeight: '600', color: colors.text },
+  agendObs: { fontSize: FONT_SIZE.sm, color: colors.textLight },
   realizarBtn: {
-    backgroundColor: COLORS.primary, borderRadius: RADIUS.full,
+    backgroundColor: colors.primary, borderRadius: RADIUS.full,
     paddingHorizontal: SPACING.sm, paddingVertical: 6,
   },
-  realizarText: { color: COLORS.white, fontSize: FONT_SIZE.sm, fontWeight: '700' },
+  realizarText: { color: colors.white, fontSize: FONT_SIZE.sm, fontWeight: '700' },
 });

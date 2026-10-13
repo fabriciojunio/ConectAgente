@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, RefreshControl,
 } from 'react-native';
@@ -14,9 +14,12 @@ import { EmptyState } from '../../../components/ui/EmptyState';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { PageHeader } from '../../../components/ui/PageHeader';
 import { calcularIdade, formatDate, toDateBR } from '../../../utils/formatters';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS } from '../../../utils/constants';
+import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
 
 export default function MoradorDetalhe() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [morador, setMorador] = useState<Morador | null>(null);
   const [visitas, setVisitas] = useState<Visita[]>([]);
@@ -114,7 +117,7 @@ export default function MoradorDetalhe() {
           <ActionButton
             icon="document-text-outline"
             label="Abrir prontuário"
-            color={COLORS.primary}
+            color={colors.primary}
             onPress={() => router.push({
               pathname: '/(app)/prontuario/[moradorId]',
               params: { moradorId: id },
@@ -123,7 +126,7 @@ export default function MoradorDetalhe() {
           <ActionButton
             icon="clipboard-outline"
             label="Registrar visita"
-            color={COLORS.info}
+            color={colors.info}
             onPress={() => router.push({
               pathname: '/(app)/visita/nova',
               params: { morador_id: id, residencia_id: morador.residencia_id },
@@ -141,7 +144,7 @@ export default function MoradorDetalhe() {
               <Card key={v.id} style={styles.visitaCard}>
                 <View style={styles.visitaRow}>
                   <View style={styles.visitaIcon}>
-                    <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+                    <Ionicons name="checkmark-circle" size={20} color={colors.success} />
                   </View>
                   <View style={styles.visitaInfo}>
                     <Text style={styles.visitaDate}>{formatDate(v.data_visita)}</Text>
@@ -164,6 +167,8 @@ export default function MoradorDetalhe() {
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   return (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
@@ -178,6 +183,8 @@ function ActionButton({ icon, label, color, onPress }: {
   color: string;
   onPress: () => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   return (
     <TouchableOpacity
       style={[styles.actionBtn, { borderColor: color }]}
@@ -194,43 +201,45 @@ function traduzirSexo(sexo: string): string {
 }
 
 function traduzirStatus(status: string): string {
+  const { colors } = useTheme();
   return { realizada: 'Realizada', agendada: 'Agendada', cancelada: 'Cancelada', nao_encontrado: 'Não encontrado' }[status] ?? status;
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   scroll: { padding: SPACING.md, gap: SPACING.md, paddingBottom: SPACING.xl },
   avatarRow: { flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.sm },
   avatar: {
     width: 60, height: 60, borderRadius: 30,
-    backgroundColor: COLORS.primaryLight, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center',
   },
-  avatarText: { fontSize: FONT_SIZE.xxl, fontWeight: '800', color: COLORS.white },
+  avatarText: { fontSize: FONT_SIZE.xxl, fontWeight: '800', color: colors.white },
   avatarInfo: { flex: 1, justifyContent: 'center' },
-  name: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: COLORS.text },
-  ageText: { fontSize: FONT_SIZE.md, color: COLORS.textLight },
-  dob: { fontSize: FONT_SIZE.sm, color: COLORS.placeholder },
+  name: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: colors.text },
+  ageText: { fontSize: FONT_SIZE.md, color: colors.textLight },
+  dob: { fontSize: FONT_SIZE.sm, color: colors.placeholder },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  cardTitle: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: COLORS.text, marginBottom: SPACING.sm },
+  cardTitle: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: colors.text, marginBottom: SPACING.sm },
   infoRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
-    paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight,
+    paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.borderLight,
   },
-  infoLabel: { fontSize: FONT_SIZE.sm, color: COLORS.textLight, flex: 1 },
-  infoValue: { fontSize: FONT_SIZE.sm, color: COLORS.text, flex: 2, textAlign: 'right' },
+  infoLabel: { fontSize: FONT_SIZE.sm, color: colors.textLight, flex: 1 },
+  infoValue: { fontSize: FONT_SIZE.sm, color: colors.text, flex: 2, textAlign: 'right' },
   actions: { flexDirection: 'row', gap: SPACING.sm },
   actionBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: SPACING.xs, padding: SPACING.sm, borderRadius: RADIUS.md,
-    borderWidth: 1.5, backgroundColor: COLORS.white,
+    borderWidth: 1.5, backgroundColor: colors.white,
   },
   actionText: { fontSize: FONT_SIZE.sm, fontWeight: '600' },
   section: { gap: SPACING.sm },
-  sectionTitle: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: COLORS.text },
+  sectionTitle: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: colors.text },
   visitaCard: { padding: SPACING.sm },
   visitaRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   visitaIcon: { width: 32, alignItems: 'center' },
   visitaInfo: { flex: 1 },
-  visitaDate: { fontSize: FONT_SIZE.md, fontWeight: '600', color: COLORS.text },
-  visitaObs: { fontSize: FONT_SIZE.sm, color: COLORS.textLight },
+  visitaDate: { fontSize: FONT_SIZE.md, fontWeight: '600', color: colors.text },
+  visitaObs: { fontSize: FONT_SIZE.sm, color: colors.textLight },
 });

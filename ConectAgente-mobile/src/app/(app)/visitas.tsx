@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl,
 } from 'react-native';
@@ -13,11 +13,14 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { formatDate } from '../../utils/formatters';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 type Aba = 'realizadas' | 'agendadas' | 'metas';
 
 export default function Visitas() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const { visitas, agendamentos, estatisticas, isLoading, carregar, cancelarAgendamento } = useVisitas();
   const [aba, setAba] = useState<Aba>('realizadas');
   const [refreshing, setRefreshing] = useState(false);
@@ -98,7 +101,7 @@ export default function Visitas() {
               renderItem={({ item }) => (
                 <Card style={styles.agendCard}>
                   <View style={styles.agendHeader}>
-                    <Ionicons name="calendar-outline" size={20} color={COLORS.warning} />
+                    <Ionicons name="calendar-outline" size={20} color={colors.warning} />
                     <View style={styles.agendInfo}>
                       <Text style={styles.agendDate}>{formatDate(item.data_agendada)}</Text>
                       <Text style={styles.agendMotivo}>{item.motivo}</Text>
@@ -107,7 +110,7 @@ export default function Visitas() {
                       onPress={() => cancelarAgendamento(item.id)}
                       style={styles.cancelBtn}
                     >
-                      <Ionicons name="close-circle-outline" size={22} color={COLORS.error} />
+                      <Ionicons name="close-circle-outline" size={22} color={colors.error} />
                     </TouchableOpacity>
                   </View>
                 </Card>
@@ -127,7 +130,7 @@ export default function Visitas() {
 
       {/* FAB */}
       <TouchableOpacity style={styles.fab} onPress={() => router.push('/(app)/visita/nova')}>
-        <Ionicons name="add" size={28} color={COLORS.white} />
+        <Ionicons name="add" size={28} color={colors.white} />
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -139,6 +142,8 @@ const MOTIVOS_LABEL: Record<string, string> = {
 };
 
 function VisitaCard({ visita }: { visita: Visita }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const subtitulo = visita.motivo_visita
     ? MOTIVOS_LABEL[visita.motivo_visita] ?? visita.motivo_visita
     : visita.observacoes;
@@ -151,7 +156,7 @@ function VisitaCard({ visita }: { visita: Visita }) {
       <Card style={styles.visitaCard}>
         <View style={styles.visitaRow}>
           <View style={styles.visitaIconBox}>
-            <Ionicons name="checkmark-circle" size={22} color={COLORS.success} />
+            <Ionicons name="checkmark-circle" size={22} color={colors.success} />
           </View>
           <View style={styles.visitaInfo}>
             <Text style={styles.visitaDate}>{formatDate(visita.data_visita)}</Text>
@@ -164,7 +169,7 @@ function VisitaCard({ visita }: { visita: Visita }) {
               label={traduzirStatus(visita.status)}
               variant={visita.status === 'realizada' ? 'success' : 'warning'}
             />
-            <Ionicons name="chevron-forward" size={16} color={COLORS.textLight} />
+            <Ionicons name="chevron-forward" size={16} color={colors.textLight} />
           </View>
         </View>
       </Card>
@@ -176,6 +181,8 @@ function ScrollViewMetas({ stats, onNavigate }: {
   stats: ReturnType<typeof useVisitas>['estatisticas'];
   onNavigate: () => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   if (!stats) return null;
   return (
     <View style={styles.metasContainer}>
@@ -197,7 +204,7 @@ function ScrollViewMetas({ stats, onNavigate }: {
         </Text>
         <TouchableOpacity onPress={onNavigate} style={styles.metaLink}>
           <Text style={styles.metaLinkText}>Configurar metas</Text>
-          <Ionicons name="arrow-forward" size={16} color={COLORS.primary} />
+          <Ionicons name="arrow-forward" size={16} color={colors.primary} />
         </TouchableOpacity>
       </Card>
 
@@ -211,6 +218,8 @@ function ScrollViewMetas({ stats, onNavigate }: {
 }
 
 function StatBox({ label, value }: { label: string; value: number }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   return (
     <Card style={styles.statBox}>
       <Text style={styles.statValue}>{value}</Text>
@@ -220,48 +229,50 @@ function StatBox({ label, value }: { label: string; value: number }) {
 }
 
 function traduzirStatus(status: string): string {
+  const { colors } = useTheme();
   return { realizada: 'Realizada', agendada: 'Agendada', cancelada: 'Cancelada', nao_encontrado: 'N/E' }[status] ?? status;
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  tabs: { flexDirection: 'row', backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  tabs: { flexDirection: 'row', backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   tab: { flex: 1, paddingVertical: SPACING.sm, alignItems: 'center' },
-  tabActive: { borderBottomWidth: 2.5, borderBottomColor: COLORS.primary },
-  tabText: { fontSize: FONT_SIZE.sm, color: COLORS.textLight, fontWeight: '600' },
-  tabTextActive: { color: COLORS.primary },
-  tabBadge: { color: COLORS.warning },
+  tabActive: { borderBottomWidth: 2.5, borderBottomColor: colors.primary },
+  tabText: { fontSize: FONT_SIZE.sm, color: colors.textLight, fontWeight: '600' },
+  tabTextActive: { color: colors.primary },
+  tabBadge: { color: colors.warning },
   list: { padding: SPACING.md, gap: SPACING.sm, paddingBottom: 80 },
   visitaCard: { gap: 4 },
   visitaRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   visitaIconBox: { width: 36, alignItems: 'center' },
   visitaInfo: { flex: 1 },
   visitaRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  visitaDate: { fontSize: FONT_SIZE.md, fontWeight: '700', color: COLORS.text },
-  visitaObs: { fontSize: FONT_SIZE.sm, color: COLORS.textLight },
+  visitaDate: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.text },
+  visitaObs: { fontSize: FONT_SIZE.sm, color: colors.textLight },
   agendCard: { gap: 4 },
   agendHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   agendInfo: { flex: 1 },
-  agendDate: { fontSize: FONT_SIZE.md, fontWeight: '700', color: COLORS.text },
-  agendMotivo: { fontSize: FONT_SIZE.sm, color: COLORS.textLight },
+  agendDate: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.text },
+  agendMotivo: { fontSize: FONT_SIZE.sm, color: colors.textLight },
   cancelBtn: { padding: 4 },
   fab: {
     position: 'absolute', bottom: SPACING.xl, right: SPACING.md,
     width: 56, height: 56, borderRadius: 28,
-    backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
     elevation: 6,
   },
   metasContainer: { padding: SPACING.md, gap: SPACING.md },
-  metasTitle: { fontSize: FONT_SIZE.xl, fontWeight: '700', color: COLORS.text, marginBottom: SPACING.sm },
+  metasTitle: { fontSize: FONT_SIZE.xl, fontWeight: '700', color: colors.text, marginBottom: SPACING.sm },
   metaBarContainer: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  metaBar: { flex: 1, height: 12, backgroundColor: COLORS.borderLight, borderRadius: 6, overflow: 'hidden' },
-  metaBarFill: { height: '100%', backgroundColor: COLORS.primary, borderRadius: 6 },
-  metaPercent: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: COLORS.primary },
-  metaNumbers: { fontSize: FONT_SIZE.md, color: COLORS.textLight },
+  metaBar: { flex: 1, height: 12, backgroundColor: colors.borderLight, borderRadius: 6, overflow: 'hidden' },
+  metaBarFill: { height: '100%', backgroundColor: colors.primary, borderRadius: 6 },
+  metaPercent: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: colors.primary },
+  metaNumbers: { fontSize: FONT_SIZE.md, color: colors.textLight },
   metaLink: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: SPACING.sm },
-  metaLinkText: { color: COLORS.primary, fontSize: FONT_SIZE.md, fontWeight: '600' },
+  metaLinkText: { color: colors.primary, fontSize: FONT_SIZE.md, fontWeight: '600' },
   statsRow: { flexDirection: 'row', gap: SPACING.sm },
   statBox: { flex: 1, alignItems: 'center', gap: 4 },
-  statValue: { fontSize: FONT_SIZE.xxl, fontWeight: '800', color: COLORS.primary },
-  statLabel: { fontSize: FONT_SIZE.xs, color: COLORS.textLight },
+  statValue: { fontSize: FONT_SIZE.xxl, fontWeight: '800', color: colors.primary },
+  statLabel: { fontSize: FONT_SIZE.xs, color: colors.textLight },
 });

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
@@ -19,7 +19,8 @@ import { Badge } from '../../../components/ui/Badge';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { calcularIdade, formatDateInput } from '../../../utils/formatters';
 import { validarDataBR } from '../../../utils/validators';
-import { COLORS, SPACING, FONT_SIZE, RADIUS, ESPECIALIDADES } from '../../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS, ESPECIALIDADES } from '../../../utils/constants';
+import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
 
 type Step = 'saude' | 'gestante' | 'puericultura' | 'mulher' | 'social' | 'medicamentos';
 
@@ -33,6 +34,8 @@ const STEPS: { key: Step; label: string; icon: string }[] = [
 ];
 
 export default function ProntuarioScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const { moradorId } = useLocalSearchParams<{ moradorId: string }>();
   const { agente } = useAuth();
   const [morador, setMorador] = useState<Morador | null>(null);
@@ -210,7 +213,7 @@ export default function ProntuarioScreen() {
             <Ionicons
               name={step.icon as keyof typeof Ionicons.glyphMap}
               size={14}
-              color={currentStep === step.key ? COLORS.primary : COLORS.textLight}
+              color={currentStep === step.key ? colors.primary : colors.textLight}
             />
             <Text
               style={[styles.stepTabText, currentStep === step.key && styles.stepTabTextActive]}
@@ -468,7 +471,7 @@ export default function ProntuarioScreen() {
           <View style={styles.form}>
             <Text style={styles.sectionTitle}>Medicamentos e dúvidas</Text>
             <View style={styles.medicamentosInfo}>
-              <Ionicons name="information-circle-outline" size={20} color={COLORS.info} />
+              <Ionicons name="information-circle-outline" size={20} color={colors.info} />
               <Text style={styles.medicamentosText}>
                 Registre dúvidas do paciente sobre medicamentos. O médico pode responder
                 na próxima visita, ficando salvo no histórico.
@@ -489,39 +492,41 @@ export default function ProntuarioScreen() {
 }
 
 function traduzirSexo(sexo: string): string {
+  const { colors } = useTheme();
   return { masculino: 'Masculino', feminino: 'Feminino', outro: 'Outro' }[sexo] ?? sexo;
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   patientBar: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    backgroundColor: COLORS.white, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
-    borderBottomWidth: 1, borderBottomColor: COLORS.borderLight,
+    backgroundColor: colors.white, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
+    borderBottomWidth: 1, borderBottomColor: colors.borderLight,
   },
   patientInfo: { flex: 1 },
-  patientName: { fontSize: FONT_SIZE.md, fontWeight: '700', color: COLORS.text },
-  patientMeta: { fontSize: FONT_SIZE.xs, color: COLORS.textLight },
+  patientName: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.text },
+  patientMeta: { fontSize: FONT_SIZE.xs, color: colors.textLight },
   conditionBadges: { flexDirection: 'row', gap: 4 },
-  versao: { fontSize: FONT_SIZE.xs, color: COLORS.placeholder },
-  stepsNav: { backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight, maxHeight: 52 },
+  versao: { fontSize: FONT_SIZE.xs, color: colors.placeholder },
+  stepsNav: { backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.borderLight, maxHeight: 52 },
   stepsNavContent: { paddingHorizontal: SPACING.sm, paddingVertical: SPACING.xs, gap: SPACING.xs, flexDirection: 'row', alignItems: 'center' },
   stepTab: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     paddingHorizontal: SPACING.sm, paddingVertical: 6,
-    borderRadius: RADIUS.full, borderWidth: 1.5, borderColor: COLORS.borderLight,
+    borderRadius: RADIUS.full, borderWidth: 1.5, borderColor: colors.borderLight,
     flexShrink: 0,
   },
-  stepTabActive: { borderColor: COLORS.primary, backgroundColor: COLORS.infoLight },
-  stepTabText: { fontSize: FONT_SIZE.xs, color: COLORS.textLight, fontWeight: '600' },
-  stepTabTextActive: { color: COLORS.primary },
+  stepTabActive: { borderColor: colors.primary, backgroundColor: colors.infoLight },
+  stepTabText: { fontSize: FONT_SIZE.xs, color: colors.textLight, fontWeight: '600' },
+  stepTabTextActive: { color: colors.primary },
   content: { padding: SPACING.md, paddingBottom: SPACING.xl },
   form: { gap: SPACING.md },
-  sectionTitle: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: COLORS.primary, marginTop: SPACING.sm },
+  sectionTitle: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: colors.primary, marginTop: SPACING.sm },
   row: { flexDirection: 'row', gap: SPACING.sm },
   medicamentosInfo: {
     flexDirection: 'row', gap: SPACING.sm, alignItems: 'flex-start',
-    backgroundColor: COLORS.infoLight, padding: SPACING.md, borderRadius: RADIUS.sm,
+    backgroundColor: colors.infoLight, padding: SPACING.md, borderRadius: RADIUS.sm,
   },
-  medicamentosText: { flex: 1, fontSize: FONT_SIZE.sm, color: COLORS.text, lineHeight: 20 },
+  medicamentosText: { flex: 1, fontSize: FONT_SIZE.sm, color: colors.text, lineHeight: 20 },
 });

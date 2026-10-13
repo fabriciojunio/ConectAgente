@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   TextInput, RefreshControl, Alert, Platform, Modal, ScrollView,
@@ -9,11 +9,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { agenteRepository } from '../../database/repositories/agenteRepository';
 import { visitaRepository } from '../../database/repositories/visitaRepository';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 type AgenteStats = Awaited<ReturnType<typeof agenteRepository.listarTodos>>[number];
 
 export default function AdminAgentes() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const [agentes, setAgentes] = useState<AgenteStats[]>([]);
   const [filtrados, setFiltrados] = useState<AgenteStats[]>([]);
   const [query, setQuery] = useState('');
@@ -96,7 +99,7 @@ export default function AdminAgentes() {
             <StatPill icon="clipboard-outline" value={item.visitas_mes} label="vis./mês" accent />
           </View>
         </View>
-        <Ionicons name="chevron-forward" size={16} color={COLORS.textLight} />
+        <Ionicons name="chevron-forward" size={16} color={colors.textLight} />
       </TouchableOpacity>
     );
   }
@@ -112,18 +115,18 @@ export default function AdminAgentes() {
 
       {/* Search */}
       <View style={styles.searchWrap}>
-        <Ionicons name="search-outline" size={18} color={COLORS.textLight} style={styles.searchIcon} />
+        <Ionicons name="search-outline" size={18} color={colors.textLight} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="Buscar por nome, área ou unidade..."
-          placeholderTextColor={COLORS.placeholder}
+          placeholderTextColor={colors.placeholder}
           value={query}
           onChangeText={onSearch}
           returnKeyType="search"
         />
         {query.length > 0 && (
           <TouchableOpacity onPress={() => onSearch('')} hitSlop={8}>
-            <Ionicons name="close-circle" size={18} color={COLORS.textLight} />
+            <Ionicons name="close-circle" size={18} color={colors.textLight} />
           </TouchableOpacity>
         )}
       </View>
@@ -138,7 +141,7 @@ export default function AdminAgentes() {
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Ionicons name="people-outline" size={48} color={COLORS.disabled} />
+            <Ionicons name="people-outline" size={48} color={colors.disabled} />
             <Text style={styles.emptyText}>Nenhum agente encontrado</Text>
           </View>
         }
@@ -160,7 +163,7 @@ export default function AdminAgentes() {
                       <Text style={styles.modalSub}>{selecionado.email}</Text>
                     </View>
                     <TouchableOpacity onPress={fecharDetalhes} hitSlop={8}>
-                      <Ionicons name="close" size={22} color={COLORS.textLight} />
+                      <Ionicons name="close" size={22} color={colors.textLight} />
                     </TouchableOpacity>
                   </View>
 
@@ -169,14 +172,14 @@ export default function AdminAgentes() {
                     <InfoRow label="Área de atuação" value={selecionado.area_atuacao} />
                     <InfoRow label="Unidade de saúde" value={selecionado.unidade_saude} />
                     {selecionado.telefone && <InfoRow label="Telefone" value={selecionado.telefone} />}
-                    <InfoRow label="Status" value={selecionado.ativo ? 'Ativo' : 'Inativo'} valueColor={selecionado.ativo ? COLORS.success : COLORS.error} />
+                    <InfoRow label="Status" value={selecionado.ativo ? 'Ativo' : 'Inativo'} valueColor={selecionado.ativo ? colors.success : colors.error} />
                     <InfoRow label="Membro desde" value={new Date(selecionado.created_at).toLocaleDateString('pt-BR')} />
                   </View>
 
                   <Text style={styles.statsTitle}>Estatísticas</Text>
                   <View style={styles.statsBoxRow}>
-                    <StatsBox label="Residências" value={selecionado.total_residencias} color={COLORS.info} />
-                    <StatsBox label="Moradores" value={selecionado.total_moradores} color={COLORS.success} />
+                    <StatsBox label="Residências" value={selecionado.total_residencias} color={colors.info} />
+                    <StatsBox label="Moradores" value={selecionado.total_moradores} color={colors.success} />
                     <StatsBox label="Visitas/mês" value={selecionado.visitas_mes} color="#7B1FA2" />
                   </View>
 
@@ -206,7 +209,7 @@ export default function AdminAgentes() {
             <TextInput
               style={styles.metaInput}
               placeholder="Número de visitas"
-              placeholderTextColor={COLORS.placeholder}
+              placeholderTextColor={colors.placeholder}
               keyboardType="number-pad"
               value={metaInput}
               onChangeText={setMetaInput}
@@ -244,25 +247,30 @@ function StatPill({ icon, value, label, accent }: {
   label: string;
   accent?: boolean;
 }) {
+  const { colors } = useTheme();
+  const sp = useMemo(() => criarSp(colors), [colors]);
   return (
     <View style={[sp.pill, accent && sp.accentPill]}>
-      <Ionicons name={icon} size={11} color={accent ? '#7B1FA2' : COLORS.textLight} />
+      <Ionicons name={icon} size={11} color={accent ? '#7B1FA2' : colors.textLight} />
       <Text style={[sp.text, accent && sp.accentText]}>{value} {label}</Text>
     </View>
   );
 }
-const sp = StyleSheet.create({
+const criarSp = (colors: ThemeColors) =>
+  StyleSheet.create({
   pill: {
     flexDirection: 'row', alignItems: 'center', gap: 2,
-    backgroundColor: COLORS.background, borderRadius: RADIUS.full,
+    backgroundColor: colors.background, borderRadius: RADIUS.full,
     paddingHorizontal: 6, paddingVertical: 2,
   },
-  accentPill: { backgroundColor: '#F3E5F5' },
-  text: { fontSize: 10, color: COLORS.textLight },
+  accentPill: { backgroundColor: colors.accentLight },
+  text: { fontSize: 10, color: colors.textLight },
   accentText: { color: '#7B1FA2', fontWeight: '700' },
 });
 
 function InfoRow({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
+  const { colors } = useTheme();
+  const ir = useMemo(() => criarIr(colors), [colors]);
   return (
     <View style={ir.row}>
       <Text style={ir.label}>{label}</Text>
@@ -270,13 +278,16 @@ function InfoRow({ label, value, valueColor }: { label: string; value: string; v
     </View>
   );
 }
-const ir = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
-  label: { fontSize: FONT_SIZE.sm, color: COLORS.textLight },
-  value: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: COLORS.text, maxWidth: '60%', textAlign: 'right' },
+const criarIr = (colors: ThemeColors) =>
+  StyleSheet.create({
+  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  label: { fontSize: FONT_SIZE.sm, color: colors.textLight },
+  value: { fontSize: FONT_SIZE.sm, fontWeight: '600', color: colors.text, maxWidth: '60%', textAlign: 'right' },
 });
 
 function StatsBox({ label, value, color }: { label: string; value: number; color: string }) {
+  const { colors } = useTheme();
+  const stb = useMemo(() => criarStb(colors), [colors]);
   return (
     <View style={[stb.box, { borderTopColor: color }]}>
       <Text style={[stb.value, { color }]}>{value}</Text>
@@ -284,40 +295,42 @@ function StatsBox({ label, value, color }: { label: string; value: number; color
     </View>
   );
 }
-const stb = StyleSheet.create({
+const criarStb = (colors: ThemeColors) =>
+  StyleSheet.create({
   box: {
-    flex: 1, backgroundColor: COLORS.background, borderRadius: RADIUS.md,
+    flex: 1, backgroundColor: colors.background, borderRadius: RADIUS.md,
     borderTopWidth: 3, alignItems: 'center', paddingVertical: SPACING.sm,
   },
   value: { fontSize: FONT_SIZE.xxl, fontWeight: '800' },
-  label: { fontSize: FONT_SIZE.xs, color: COLORS.textLight, marginTop: 2 },
+  label: { fontSize: FONT_SIZE.xs, color: colors.textLight, marginTop: 2 },
 });
 
 // ─── Styles ───────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.background },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.md },
-  headerTitle: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: COLORS.text },
-  headerCount: { fontSize: FONT_SIZE.sm, color: COLORS.textLight, marginTop: 2 },
+  headerTitle: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: colors.text },
+  headerCount: { fontSize: FONT_SIZE.sm, color: colors.textLight, marginTop: 2 },
 
   searchWrap: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: COLORS.card, marginHorizontal: SPACING.md,
+    backgroundColor: colors.card, marginHorizontal: SPACING.md,
     borderRadius: RADIUS.md, paddingHorizontal: SPACING.sm,
-    borderWidth: 1, borderColor: COLORS.borderLight, marginBottom: SPACING.sm,
+    borderWidth: 1, borderColor: colors.borderLight, marginBottom: SPACING.sm,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4 },
       android: { elevation: 2 },
     }),
   },
   searchIcon: { marginRight: SPACING.xs },
-  searchInput: { flex: 1, height: 44, fontSize: FONT_SIZE.md, color: COLORS.text },
+  searchInput: { flex: 1, height: 44, fontSize: FONT_SIZE.md, color: colors.text },
 
   list: { paddingHorizontal: SPACING.md, paddingBottom: SPACING.xl },
   card: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    backgroundColor: COLORS.card, borderRadius: RADIUS.md,
+    backgroundColor: colors.card, borderRadius: RADIUS.md,
     padding: SPACING.sm + 4, marginBottom: SPACING.sm,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4 },
@@ -326,28 +339,28 @@ const styles = StyleSheet.create({
   },
   avatar: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: '#EDE7F6', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.accentLight, alignItems: 'center', justifyContent: 'center',
   },
   avatarLg: { width: 56, height: 56, borderRadius: 28 },
   avatarText: { fontSize: FONT_SIZE.md, fontWeight: '800', color: '#7B1FA2' },
-  nome: { fontSize: FONT_SIZE.md, fontWeight: '700', color: COLORS.text },
-  area: { fontSize: FONT_SIZE.xs, color: COLORS.textLight, marginTop: 1, marginBottom: 4 },
+  nome: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.text },
+  area: { fontSize: FONT_SIZE.xs, color: colors.textLight, marginTop: 1, marginBottom: 4 },
   statsRow: { flexDirection: 'row', gap: SPACING.xs },
 
   empty: { alignItems: 'center', paddingTop: 60, gap: SPACING.sm },
-  emptyText: { fontSize: FONT_SIZE.md, color: COLORS.textLight },
+  emptyText: { fontSize: FONT_SIZE.md, color: colors.textLight },
 
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   modalContent: {
-    backgroundColor: COLORS.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: SPACING.md, maxHeight: '85%',
   },
   modalHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.md },
-  modalNome: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: COLORS.text },
-  modalSub: { fontSize: FONT_SIZE.sm, color: COLORS.textLight, marginTop: 2 },
+  modalNome: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: colors.text },
+  modalSub: { fontSize: FONT_SIZE.sm, color: colors.textLight, marginTop: 2 },
   infoGrid: { marginBottom: SPACING.md },
-  statsTitle: { fontSize: FONT_SIZE.md, fontWeight: '700', color: COLORS.text, marginBottom: SPACING.sm },
+  statsTitle: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.text, marginBottom: SPACING.sm },
   statsBoxRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.md },
 
   metaBtn: {
@@ -358,16 +371,16 @@ const styles = StyleSheet.create({
   metaBtnText: { fontSize: FONT_SIZE.md, fontWeight: '700', color: '#fff' },
 
   metaInput: {
-    borderWidth: 1, borderColor: COLORS.border, borderRadius: RADIUS.md,
+    borderWidth: 1, borderColor: colors.border, borderRadius: RADIUS.md,
     padding: SPACING.sm, fontSize: FONT_SIZE.xl, textAlign: 'center',
-    color: COLORS.text, marginVertical: SPACING.md,
+    color: colors.text, marginVertical: SPACING.md,
   },
   metaActions: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.sm },
   cancelBtn: {
-    flex: 1, borderWidth: 1, borderColor: COLORS.border, borderRadius: RADIUS.md,
+    flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: RADIUS.md,
     paddingVertical: SPACING.sm + 4, alignItems: 'center',
   },
-  cancelBtnText: { fontSize: FONT_SIZE.md, color: COLORS.textMedium, fontWeight: '600' },
+  cancelBtnText: { fontSize: FONT_SIZE.md, color: colors.textMedium, fontWeight: '600' },
   metaBtn2: {
     flex: 1, backgroundColor: '#7B1FA2', borderRadius: RADIUS.md,
     paddingVertical: SPACING.sm + 4, alignItems: 'center',

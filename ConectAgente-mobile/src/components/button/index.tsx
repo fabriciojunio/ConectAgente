@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { TouchableOpacity, TouchableOpacityProps, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, FONT_SIZE, RADIUS, SPACING } from '../../utils/constants';
+import { FONT_SIZE, RADIUS, SPACING } from '../../utils/constants';
+import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
 
@@ -13,19 +14,21 @@ interface ButtonProps extends TouchableOpacityProps {
 }
 
 export function Button({ title, variant = 'primary', loading, icon, disabled, ...rest }: ButtonProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const isDisabled = disabled || loading;
 
   if (variant === 'primary') {
     return (
       <TouchableOpacity style={styles.buttonContainer} disabled={isDisabled} {...rest}>
         <LinearGradient
-          colors={isDisabled ? [COLORS.disabled, COLORS.disabled] : COLORS.primaryGradient}
+          colors={isDisabled ? [colors.disabled, colors.disabled] : colors.primaryGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradient}
         >
           {loading ? (
-            <ActivityIndicator color={COLORS.white} size="small" />
+            <ActivityIndicator color={colors.white} size="small" />
           ) : (
             <>
               {icon}
@@ -57,7 +60,7 @@ export function Button({ title, variant = 'primary', loading, icon, disabled, ..
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === 'ghost' ? COLORS.primary : COLORS.white}
+          color={variant === 'ghost' ? colors.primary : colors.white}
           size="small"
         />
       ) : (
@@ -70,7 +73,8 @@ export function Button({ title, variant = 'primary', loading, icon, disabled, ..
   );
 }
 
-const styles = StyleSheet.create({
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
   buttonContainer: {
     borderRadius: RADIUS.full,
     overflow: 'hidden',
@@ -84,7 +88,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
   },
   primaryText: {
-    color: COLORS.white,
+    color: colors.white,
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
   },
@@ -98,31 +102,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
   },
   secondary: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: colors.secondary,
   },
   danger: {
-    backgroundColor: COLORS.error,
+    backgroundColor: colors.error,
   },
   ghost: {
     backgroundColor: 'transparent',
     borderWidth: 1.5,
-    borderColor: COLORS.primary,
+    borderColor: colors.primary,
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   secondaryText: {
-    color: COLORS.white,
+    color: colors.white,
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
   },
   dangerText: {
-    color: COLORS.white,
+    color: colors.white,
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
   },
   ghostText: {
-    color: COLORS.primary,
+    color: colors.primary,
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
   },

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity,
   ActivityIndicator,
@@ -15,11 +15,14 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { formatCPF, formatCartaoSUS, calcularIdade, stripCPF } from '../../utils/formatters';
 import { validarCPF, validarCartaoSUS } from '../../utils/validators';
-import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 type SearchMode = 'nome' | 'cpf' | 'sus';
 
 export default function Busca() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => criarStyles(colors), [colors]);
   const { backTo } = useLocalSearchParams<{ backTo?: string }>();
   const { agente } = useAuth();
   const [query, setQuery] = useState('');
@@ -91,7 +94,7 @@ export default function Busca() {
 
       {/* INPUT DE BUSCA */}
       <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={20} color={COLORS.textLight} />
+        <Ionicons name="search-outline" size={20} color={colors.textLight} />
         <TextInput
           style={styles.input}
           value={query}
@@ -101,7 +104,7 @@ export default function Busca() {
             : mode === 'cpf' ? 'Digite o CPF...'
             : 'Digite o número do Cartão SUS...'
           }
-          placeholderTextColor={COLORS.placeholder}
+          placeholderTextColor={colors.placeholder}
           keyboardType={mode === 'nome' ? 'default' : 'numeric'}
           returnKeyType="search"
           onSubmitEditing={buscar}
@@ -109,17 +112,17 @@ export default function Busca() {
         />
         {query.length > 0 && (
           <TouchableOpacity onPress={() => { setQuery(''); setResults([]); setSearched(false); }}>
-            <Ionicons name="close-circle" size={20} color={COLORS.textLight} />
+            <Ionicons name="close-circle" size={20} color={colors.textLight} />
           </TouchableOpacity>
         )}
       </View>
 
       <TouchableOpacity style={styles.searchBtn} onPress={buscar} disabled={isSearching}>
         {isSearching ? (
-          <ActivityIndicator color={COLORS.white} />
+          <ActivityIndicator color={colors.white} />
         ) : (
           <>
-            <Ionicons name="search" size={18} color={COLORS.white} />
+            <Ionicons name="search" size={18} color={colors.white} />
             <Text style={styles.searchBtnText}>Buscar</Text>
           </>
         )}
@@ -163,7 +166,7 @@ export default function Busca() {
                       {item.beneficio_bolsa_familia && <Badge label="Bolsa Família" variant="success" />}
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color={COLORS.textLight} />
+                  <Ionicons name="chevron-forward" size={18} color={colors.textLight} />
                 </View>
               </Card>
             </TouchableOpacity>
@@ -174,39 +177,40 @@ export default function Busca() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  modeContainer: { flexDirection: 'row', gap: SPACING.sm, padding: SPACING.md, backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
+const criarStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  modeContainer: { flexDirection: 'row', gap: SPACING.sm, padding: SPACING.md, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   modeBtn: {
     flex: 1, paddingVertical: SPACING.sm, borderRadius: RADIUS.full,
-    borderWidth: 1.5, borderColor: COLORS.borderLight, alignItems: 'center',
+    borderWidth: 1.5, borderColor: colors.borderLight, alignItems: 'center',
   },
-  modeBtnActive: { borderColor: COLORS.primary, backgroundColor: COLORS.infoLight },
-  modeBtnText: { fontSize: FONT_SIZE.sm, color: COLORS.textLight, fontWeight: '600' },
-  modeBtnTextActive: { color: COLORS.primary },
+  modeBtnActive: { borderColor: colors.primary, backgroundColor: colors.infoLight },
+  modeBtnText: { fontSize: FONT_SIZE.sm, color: colors.textLight, fontWeight: '600' },
+  modeBtnTextActive: { color: colors.primary },
   searchContainer: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    margin: SPACING.md, backgroundColor: COLORS.white, borderRadius: RADIUS.sm,
-    paddingHorizontal: SPACING.sm, borderWidth: 1.5, borderColor: COLORS.border, height: 48,
+    margin: SPACING.md, backgroundColor: colors.white, borderRadius: RADIUS.sm,
+    paddingHorizontal: SPACING.sm, borderWidth: 1.5, borderColor: colors.border, height: 48,
   },
-  input: { flex: 1, fontSize: FONT_SIZE.md, color: COLORS.text },
+  input: { flex: 1, fontSize: FONT_SIZE.md, color: colors.text },
   searchBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm,
-    marginHorizontal: SPACING.md, backgroundColor: COLORS.primary, borderRadius: RADIUS.full,
+    marginHorizontal: SPACING.md, backgroundColor: colors.primary, borderRadius: RADIUS.full,
     height: 48,
   },
-  searchBtnText: { color: COLORS.white, fontSize: FONT_SIZE.md, fontWeight: '700' },
+  searchBtnText: { color: colors.white, fontSize: FONT_SIZE.md, fontWeight: '700' },
   list: { padding: SPACING.md, gap: SPACING.sm },
   resultCard: {},
   resultRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   avatar: {
     width: 48, height: 48, borderRadius: 24,
-    backgroundColor: COLORS.primaryLight, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center',
   },
-  avatarText: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: COLORS.white },
+  avatarText: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: colors.white },
   resultInfo: { flex: 1 },
-  resultName: { fontSize: FONT_SIZE.md, fontWeight: '700', color: COLORS.text },
-  resultMeta: { fontSize: FONT_SIZE.sm, color: COLORS.textLight },
-  resultDoc: { fontSize: FONT_SIZE.xs, color: COLORS.placeholder },
+  resultName: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.text },
+  resultMeta: { fontSize: FONT_SIZE.sm, color: colors.textLight },
+  resultDoc: { fontSize: FONT_SIZE.xs, color: colors.placeholder },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 },
 });
