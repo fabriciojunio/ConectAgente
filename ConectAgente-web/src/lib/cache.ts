@@ -107,23 +107,3 @@ export function cacheSet<T>(key: string, data: T): void {
     }
   }
 }
-
-export function cacheInvalidate(prefix?: string): void {
-  if (!prefix) {
-    store.clear();
-    if (typeof window !== 'undefined') {
-      try {
-        Object.keys(localStorage)
-          .filter((k) => k.startsWith(STORAGE_PREFIX))
-          .forEach((k) => localStorage.removeItem(k));
-      } catch { /* ignore */ }
-    }
-    return;
-  }
-  for (const key of store.keys()) {
-    if (key.startsWith(prefix)) {
-      store.delete(key);
-      try { localStorage.removeItem(STORAGE_PREFIX + key); } catch { /* ignore */ }
-    }
-  }
-}

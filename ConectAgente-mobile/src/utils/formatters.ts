@@ -45,10 +45,6 @@ export function formatTelefone(value: string): string {
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
 
-export function stripTelefone(value: string): string {
-  return value.replace(/\D/g, '');
-}
-
 // ============================================================
 // CARTÃO SUS
 // ============================================================
@@ -140,10 +136,6 @@ export function generateUUID(): string {
 // ============================================================
 // NÚMERO
 // ============================================================
-
-export function formatNumero(value: string): string {
-  return value.replace(/\D/g, '');
-}
 
 // ============================================================
 // TEXTO

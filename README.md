@@ -174,9 +174,13 @@ localmente. A tradução e a remoção dos campos locais ficam num lugar só, em
 
 Honestidade sobre o estado, que vale mais que uma lista de recursos:
 
-- **A cifra dos campos no aparelho não dá autenticidade.** É SHA-256 em modo
-  contador, feita à mão porque o `expo-crypto` não expõe AES, e cifra de fluxo
-  sem MAC é maleável. Resolver custa migração do formato armazenado.
+- **Os campos de identificação ficam em texto puro no banco do aparelho.** O
+  módulo de cifra existe e nenhuma linha o chama, o que a documentação dizia
+  ao contrário até 13/10/2026. Ligar o que está escrito não resolveria: é
+  SHA-256 em modo contador sem MAC, e cifrar `nome` e `cpf` quebraria a busca
+  local que o agente usa em campo. A saída é SQLCipher, cifrando o banco
+  inteiro, e custa dependência nativa. Hoje quem protege o arquivo é a cifra
+  de disco do Android. Detalhe em [docs/seguranca.md](docs/seguranca.md).
 - **Não há segundo fator no painel**, que é onde se lê o prontuário de todos.
 - **Notificação e sincronização em segundo plano foram removidas.** O código
   existia e era coerente, mas dependia de quatro pacotes nativos não

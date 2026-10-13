@@ -51,8 +51,6 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 });
 
-export type Env = z.infer<typeof schema>;
-
 export interface ResultadoValidacao {
   valido: boolean;
   problemas: string[];
@@ -73,22 +71,6 @@ export function conferirEnv(fonte: NodeJS.ProcessEnv = process.env): ResultadoVa
     for (const m of mensagens ?? []) problemas.push(`${campo}: ${m}`);
   }
   return { valido: false, problemas };
-}
-
-/**
- * Confere o ambiente e encerra o processo se estiver errado.
- *
- * Para script operacional, onde tocar o banco com configuração errada é pior
- * que parar.
- */
-export function exigirEnv(): Env {
-  const parsed = schema.safeParse(process.env);
-  if (!parsed.success) {
-    const problemas = JSON.stringify(parsed.error.flatten().fieldErrors, null, 2);
-    process.stderr.write(`[FATAL] Variáveis de ambiente inválidas:\n${problemas}\n`);
-    process.exit(1);
-  }
-  return parsed.data;
 }
 
 /**

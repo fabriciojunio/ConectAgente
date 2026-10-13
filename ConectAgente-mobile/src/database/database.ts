@@ -53,13 +53,6 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   return _initPromise;
 }
 
-export async function closeDatabase(): Promise<void> {
-  if (_db) {
-    await _db.closeAsync();
-    _db = null;
-  }
-}
-
 /**
  * Helper para executar transação com rollback automático em caso de erro.
  */
