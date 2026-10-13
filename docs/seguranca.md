@@ -68,8 +68,25 @@ não há dado em vez de que não tem permissão.
 ### 3. Dado em repouso
 
 - Senha: hash com sal, comparação em tempo constante.
-- Campos de identificação no aparelho: cifrados com SHA-256 em modo contador,
-  chave no SecureStore (Keychain no iOS, Keystore no Android).
+- Campos de identificação no aparelho: **em texto puro no SQLite**. O módulo
+  `utils/encryption.ts` tem `encryptField` e `encryptSensitiveFields`, mas
+  nenhuma linha do aplicativo os chama. Medido por busca em todo o código:
+  o que se usa de lá é só o hash de senha e a limpeza do cache de chave.
+
+  Documentar isso como cifrado era falso, e falso sobre proteção de dado
+  sensível é pior que a lacuna. O que de fato protege o arquivo hoje é a
+  cifra de disco do próprio Android, que vem ligada desde o Android 10 e vale
+  enquanto o aparelho está bloqueado.
+
+  Ligar a cifra que está escrita **não** resolveria: é SHA-256 em modo
+  contador sem MAC, feita à mão porque o `expo-crypto` não expõe AES, e cifra
+  de fluxo sem autenticação é maleável. Além disso, cifrar `nome` e `cpf`
+  quebraria a busca local do aplicativo, que é o que o agente usa em campo.
+  A saída de verdade é SQLCipher, cifrando o banco inteiro: preserva a busca
+  dentro do aplicativo e é AEAD de verdade. Custa dependência nativa e build
+  de desenvolvimento, a mesma restrição da sincronização em segundo plano.
+- Chave de cifra e token de sessão: SecureStore (Keychain no iOS, Keystore no
+  Android).
 - `senha_hash` é ilegível pelo cliente: o `GRANT` de `agentes` é coluna por
   coluna, e essa coluna fica de fora.
 - Exclusão é lógica (`deleted_at`), não física.

@@ -82,52 +82,13 @@ export const PAGINATION = {
 // Criticidade Ranges
 // ---------------------------------------------------------------------------
 
-/** Day ranges for each criticality level */
-export const CRITICIDADE_RANGES = {
-  [NivelCriticidade.NORMAL]: { min: 0, max: 7 },
-  [NivelCriticidade.ATENCAO]: { min: 8, max: 15 },
-  [NivelCriticidade.ALERTA]: { min: 16, max: 30 },
-  [NivelCriticidade.CRITICO]: { min: 31, max: Infinity },
-} as const;
-
 // ---------------------------------------------------------------------------
 // Status Labels
 // ---------------------------------------------------------------------------
 
-/** Portuguese labels for visit statuses */
-export const STATUS_LABELS: Record<StatusVisita, string> = {
-  [StatusVisita.AGENDADA]: 'Agendada',
-  [StatusVisita.REALIZADA]: 'Realizada',
-  [StatusVisita.CANCELADA]: 'Cancelada',
-  [StatusVisita.NAO_ENCONTRADO]: 'Nao Encontrado',
-};
-
 // ---------------------------------------------------------------------------
 // Chart Colors
 // ---------------------------------------------------------------------------
-
-/**
- * Paleta das séries dos gráficos.
- *
- * Estas ficam em hexadecimal de propósito, e não viram variável de tema como
- * o resto do painel. A cor aqui codifica a categoria do dado, não a
- * aparência: se ela mudasse entre o tema claro e o escuro, a mesma série
- * trocaria de cor ao trocar o tema, e quem está lendo o gráfico perderia a
- * referência. Todas são tom 600, que tem contraste suficiente nos dois
- * fundos.
- */
-export const COLORS = [
-  '#2563eb', // blue-600
-  '#16a34a', // green-600
-  '#dc2626', // red-600
-  '#d97706', // amber-600
-  '#7c3aed', // violet-600
-  '#0891b2', // cyan-600
-  '#c026d3', // fuchsia-600
-  '#059669', // emerald-600
-  '#e11d48', // rose-600
-  '#4f46e5', // indigo-600
-] as const;
 
 // ---------------------------------------------------------------------------
 // Sidebar Navigation

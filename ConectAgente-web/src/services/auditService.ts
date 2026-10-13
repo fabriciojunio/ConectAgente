@@ -47,32 +47,3 @@ export async function registrarAcao(
     );
   }
 }
-
-/**
- * Retorna os logs de auditoria mais recentes.
- * Utiliza o cliente Supabase do servidor.
- *
- * @param limit Número máximo de logs a retornar (padrão: 50)
- */
-export async function getLogsRecentes(
-  limit: number = 50
-): Promise<AuditLog[]> {
-  try {
-    const supabase = await createClient();
-
-    const { data, error } = await supabase
-      .from('audit_log')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(limit);
-
-    if (error) {
-      throw new Error(`Erro ao buscar logs recentes: ${error.message}`);
-    }
-
-    return (data as AuditLog[]) ?? [];
-  } catch (err) {
-    if (err instanceof Error) throw err;
-    throw new Error('Erro inesperado ao buscar logs recentes');
-  }
-}

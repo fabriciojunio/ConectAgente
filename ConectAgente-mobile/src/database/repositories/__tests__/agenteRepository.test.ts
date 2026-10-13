@@ -28,7 +28,6 @@ import * as SecureStore from 'expo-secure-store';
 import { SECURE_KEYS } from '../../../utils/constants';
 import { getDatabase } from '../../../database/database';
 import { agenteRepository, loginRateStatus, _resetLoginAttemptsForTesting } from '../agenteRepository';
-import { clearEncryptionKeyCache } from '../../../utils/encryption';
 
 const mockedCrypto = Crypto as jest.Mocked<typeof Crypto>;
 const mockGetDatabase = getDatabase as jest.MockedFunction<typeof getDatabase>;
@@ -58,7 +57,6 @@ const agenteBase = {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  clearEncryptionKeyCache();
   _resetLoginAttemptsForTesting();
 
   // Restaura mock padrão que clearAllMocks pode ter limpado

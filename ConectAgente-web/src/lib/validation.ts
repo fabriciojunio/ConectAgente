@@ -11,26 +11,12 @@ export const uuidSchema = z.string().uuid('ID invalido');
 /** ISO date string (YYYY-MM-DD) */
 export const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data invalida (YYYY-MM-DD)');
 
-/** ISO datetime string */
-export const datetimeSchema = z.string().datetime({ message: 'Data/hora invalida' });
-
-/** CPF: exactly 11 digits */
-export const cpfSchema = z
-  .string()
-  .regex(/^\d{11}$/, 'CPF deve conter exatamente 11 digitos');
-
 /** Pagination parameters */
 export const paginationSchema = z.object({
   page: z.number().int().min(1).default(1),
   per_page: z.number().int().min(1).max(100).default(20),
 });
 
-/** Safe text: strips control characters and limits length */
-export const safeTextSchema = (maxLength: number = 500) =>
-  z
-    .string()
-    .max(maxLength, `Texto deve ter no maximo ${maxLength} caracteres`)
-    .transform((val) => val.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ''));
 
 /** User role */
 // Tem que casar com o CHECK de agentes.role no banco.

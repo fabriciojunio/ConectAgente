@@ -186,19 +186,7 @@ export const visitaSchema = z.object({
   especialidade_agendamento: z.string().optional(),
 });
 
-export const agendamentoSchema = z.object({
-  residencia_id: z.string().uuid('Residência inválida'),
-  morador_id: z.string().uuid().optional(),
-  data_agendada: z
-    .string()
-    .min(1, 'Data obrigatória')
-    .refine(validarDataBR, 'Data inválida (use DD/MM/AAAA)'),
-  motivo: z.string().min(3, 'Motivo obrigatório'),
-  observacoes: z.string().optional(),
-});
-
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type ResidenciaFormDataValidated = z.infer<typeof residenciaSchema>;
 export type MoradorFormDataValidated = z.infer<typeof moradorSchema>;
 export type VisitaFormDataValidated = z.infer<typeof visitaSchema>;
-export type AgendamentoFormDataValidated = z.infer<typeof agendamentoSchema>;

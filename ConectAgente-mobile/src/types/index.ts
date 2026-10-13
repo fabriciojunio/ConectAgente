@@ -97,28 +97,6 @@ export interface Agente {
   updated_at: string;
 }
 
-export interface AgenteCadastro {
-  nome: string;
-  cpf: string;
-  email: string;
-  senha: string;
-  telefone?: string;
-  area_atuacao: string;
-  unidade_saude: string;
-}
-
-export interface AgenteLogin {
-  cpf: string;
-  senha: string;
-}
-
-export interface AuthToken {
-  token: string;
-  refresh_token: string;
-  expires_at: string;
-  agente: Agente;
-}
-
 // ============================================================
 // RESIDÊNCIA
 // ============================================================
@@ -329,22 +307,6 @@ export interface ProntuarioSocial {
 // MEDICAMENTO / DÚVIDA
 // ============================================================
 
-export interface Medicamento {
-  id: string;
-  morador_id: string;
-  nome: string;
-  dosagem?: string;
-  frequencia?: string;
-  duvida?: string;
-  duvida_respondida: boolean;
-  resposta_medico?: string;
-  data_resposta?: string;
-  agente_id: string;
-  status_sync: StatusSync;
-  created_at: string;
-  updated_at: string;
-}
-
 // ============================================================
 // VACINA
 // ============================================================
@@ -412,24 +374,6 @@ export interface Visita {
   morador?: Morador;
 }
 
-export interface VisitaFormData {
-  residencia_id: string;
-  morador_id?: string;
-  data_visita: string;
-  status: StatusVisita;
-  motivo_visita?: string;
-  queixas?: string;
-  observacoes?: string;
-  pa_visita?: string;
-  glicemia_visita?: string;
-  peso_visita?: string;
-  medicamentos_em_dia?: boolean;
-  cartao_vacinas_em_dia?: boolean;
-  encaminhamentos?: string;
-  precisa_agendamento: boolean;
-  especialidade_agendamento?: string;
-}
-
 // ============================================================
 // AGENDAMENTO
 // ============================================================
@@ -471,15 +415,6 @@ export interface Agendamento {
 // ============================================================
 // METAS
 // ============================================================
-
-export interface MetaVisita {
-  id: string;
-  agente_id: string;
-  mes: number;
-  ano: number;
-  meta_total: number;
-  created_at: string;
-}
 
 export interface EstatisticasVisitas {
   total_realizadas: number;
@@ -554,31 +489,6 @@ export interface EnderecoViaCep {
 // FILTROS E PAGINAÇÃO
 // ============================================================
 
-export interface FiltroVisitas {
-  data_inicio?: string;
-  data_fim?: string;
-  status?: StatusVisita;
-  residencia_id?: string;
-}
-
-export interface PaginacaoParams {
-  pagina: number;
-  por_pagina: number;
-}
-
-export interface ResultadoPaginado<T> {
-  dados: T[];
-  total: number;
-  pagina: number;
-  por_pagina: number;
-  total_paginas: number;
-}
-
 // ============================================================
 // BUSCA
 // ============================================================
-
-export interface ResultadoBusca {
-  moradores: Morador[];
-  residencias: Residencia[];
-}

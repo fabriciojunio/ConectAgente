@@ -7,7 +7,6 @@ import * as SecureStore from 'expo-secure-store';
 import { agenteRepository } from '../database/repositories/agenteRepository';
 import { Agente } from '../types';
 import { SECURE_KEYS, SESSION_TIMEOUT_MS } from '../utils/constants';
-import { clearEncryptionKeyCache } from '../utils/encryption';
 import { isoNow } from '../utils/formatters';
 import { supabase } from '../lib/supabase';
 import { ACOES_AUDITORIA, auditRepository } from '../database/repositories/auditRepository';
@@ -157,7 +156,9 @@ export const authService = {
    * Logout, limpa todos os dados de sessão.
    */
   async logout(): Promise<void> {
-    clearEncryptionKeyCache();
+    // Nao ha mais cache de chave de cifra para limpar: a cifra de campo foi
+    // removida porque nenhuma linha a chamava. O que o logout apaga e a
+    // sessao, que e o que de fato existe.
     await SecureStore.deleteItemAsync(SECURE_KEYS.AUTH_TOKEN);
     await SecureStore.deleteItemAsync(SECURE_KEYS.REFRESH_TOKEN);
     await SecureStore.deleteItemAsync(SECURE_KEYS.AGENTE_ID);
