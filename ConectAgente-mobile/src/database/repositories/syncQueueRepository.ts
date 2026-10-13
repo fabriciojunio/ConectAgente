@@ -38,6 +38,21 @@ export const RENOMEAR_PARA_SERVIDOR: Record<string, string> = {
 };
 
 /**
+ * Campos que o aparelho guarda como texto e o servidor espera como JSON.
+ *
+ * No SQLite não existe tipo JSON, então `dados_novos` e `dados_anteriores` da
+ * trilha de auditoria são TEXT com o JSON serializado dentro. No PostgreSQL as
+ * mesmas colunas são JSONB.
+ *
+ * Mandando a string sem converter, o PostgREST aceita e grava um JSONB que é
+ * uma string, não um objeto: `"{\"origem\":\"tela\"}"` em vez de
+ * `{"origem": "tela"}`. Não dá erro, e a consulta por campo dentro do JSON
+ * deixa de encontrar qualquer coisa. É do tipo de defeito que só aparece
+ * quando alguém precisa investigar um incidente e a trilha não responde.
+ */
+export const CAMPOS_JSON_NO_SERVIDOR = ['dados_novos', 'dados_anteriores'] as const;
+
+/**
  * Deixa o payload no formato que o servidor aceita.
  *
  * A limpeza fica aqui, num lugar só, de propósito. Antes cada repositório
@@ -54,7 +69,23 @@ export function prepararPayloadParaServidor(payload: unknown): unknown {
 
   for (const [campo, valor] of Object.entries(entrada)) {
     if ((CAMPOS_SO_LOCAIS as readonly string[]).includes(campo)) continue;
-    saida[RENOMEAR_PARA_SERVIDOR[campo] ?? campo] = valor;
+
+    let convertido = valor;
+    if (
+      (CAMPOS_JSON_NO_SERVIDOR as readonly string[]).includes(campo) &&
+      typeof valor === 'string' &&
+      valor.length > 0
+    ) {
+      try {
+        convertido = JSON.parse(valor);
+      } catch {
+        // Texto que não é JSON vai como está. Recusar aqui perderia a linha
+        // inteira da trilha por causa de um campo de contexto.
+        convertido = valor;
+      }
+    }
+
+    saida[RENOMEAR_PARA_SERVIDOR[campo] ?? campo] = convertido;
   }
 
   return saida;

@@ -8,6 +8,7 @@ import { apenasData, isoNow } from '../../utils/formatters';
 import { LGPD } from '../../utils/constants';
 import type { Consentimento } from '../../types';
 import { ACOES_AUDITORIA, auditRepository } from './auditRepository';
+import { syncQueueRepository } from './syncQueueRepository';
 
 /**
  * Consentimento, anonimização e retenção.
@@ -87,6 +88,16 @@ export const lgpdRepository = {
           consentimento.dados_coletados,
         ]
       );
+      // Vai para a fila: a prova do aceite nao pode ficar so no aparelho. Se
+      // o celular sumir, some junto a demonstracao de que o titular foi
+      // informado, e e justamente ela que o orgao precisa ter.
+      await syncQueueRepository.enqueue(
+        'consentimentos',
+        'insert',
+        consentimento.id,
+        consentimento
+      );
+
       return consentimento;
     } catch (erro) {
       // Mesma regra da auditoria: não derruba o cadastro que já aconteceu.

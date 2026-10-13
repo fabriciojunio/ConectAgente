@@ -72,6 +72,11 @@ const TABELAS_SINCRONIZADAS = [
   'prontuario_mulher',
   'prontuario_social',
   'metas_visitas',
+  // Entraram em 13/10/2026, junto com a trilha de auditoria e o registro de
+  // consentimento. Antes disso os dois ficavam so no aparelho: a prova do
+  // aceite e o rastro de quem abriu o prontuario sumiam com o celular.
+  'consentimentos',
+  'audit_log',
 ] as const;
 
 /** Palavras que abrem cláusula de tabela e não nome de coluna. */
