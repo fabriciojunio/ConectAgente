@@ -107,3 +107,33 @@ export async function getEstatisticasMoradores(): Promise<{
     return result;
   });
 }
+
+/**
+ * Lê o cadastro de um morador pela função do banco, que registra a leitura.
+ *
+ * Por que não é um `select` direto. O art. 37 da Lei 13.709/2018 obriga a
+ * manter registro das operações de tratamento, e aqui o navegador fala direto
+ * com o PostgREST: não há servidor nosso no meio onde gravar. Gravar pelo
+ * cliente seria teatro, porque bastaria não chamar.
+ *
+ * `fn_ler_morador` grava o registro na mesma transação da leitura, repete a
+ * regra da policy `moradores_select` por dentro, e devolve `null` quando quem
+ * chama não pode ver aquele morador, gravando a tentativa negada. Varredura de
+ * id passa a deixar marca.
+ *
+ * Não entra no cache: cada abertura de ficha é um acesso, e acesso que vem do
+ * cache é acesso que não foi registrado.
+ */
+export async function getMoradorAuditado(
+  moradorId: string
+): Promise<MoradorComDetalhes | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc('fn_ler_morador', {
+    p_morador_id: moradorId,
+  });
+
+  if (error) {
+    throw new Error(`Erro ao abrir a ficha do paciente: ${error.message}`);
+  }
+  return (data as MoradorComDetalhes | null) ?? null;
+}
