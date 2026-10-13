@@ -1,5 +1,6 @@
 import { getDatabase } from '../database';
 import { generateUUID, isoNow } from '../../utils/formatters';
+import { syncQueueRepository } from './syncQueueRepository';
 
 /**
  * Trilha de auditoria da LGPD.
@@ -70,19 +71,38 @@ export const auditRepository = {
   async registrar(registro: RegistroDeAuditoria): Promise<boolean> {
     try {
       const db = await getDatabase();
+      const id = generateUUID();
+      const quando = isoNow();
+      const contexto = registro.contexto ? JSON.stringify(registro.contexto) : null;
+
       await db.runAsync(
         `INSERT INTO audit_log (id, agente_id, acao, tabela, registro_id, dados_novos, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
-          generateUUID(),
+          id,
           registro.agenteId,
           registro.acao,
           registro.tabela,
           registro.registroId,
-          registro.contexto ? JSON.stringify(registro.contexto) : null,
-          isoNow(),
+          contexto,
+          quando,
         ]
       );
+
+      // A trilha do aparelho sobe para o servidor. A policy de la exige
+      // `agente_id = auth.uid()`, entao o aparelho so consegue gravar evento
+      // em nome de quem esta de fato autenticado: trilha vinda do cliente nao
+      // vira porta para forjar acao de outro agente.
+      await syncQueueRepository.enqueue('audit_log', 'insert', id, {
+        id,
+        agente_id: registro.agenteId,
+        acao: registro.acao,
+        tabela: registro.tabela,
+        registro_id: registro.registroId,
+        dados_novos: contexto,
+        created_at: quando,
+      });
+
       return true;
     } catch (erro) {
       // Sem `throw`: ver o cabeçalho deste arquivo.

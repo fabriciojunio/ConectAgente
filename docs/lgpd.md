@@ -69,6 +69,23 @@ DEFINER` com `search_path` preso, que grava o registro na mesma transação em
 que lê. Ela também grava `LEITURA_NEGADA` quando recusa: sem isso, varrer
 identificadores não deixaria marca nenhuma.
 
+### A trilha e o consentimento chegam ao servidor
+
+Os dois entram na fila de sincronização. A prova do aceite não pode ficar só
+no aparelho: se o celular sumir, some junto a demonstração de que o titular foi
+informado.
+
+A trilha vinda do aparelho não é porta para forjar ação de outro agente: a
+policy de inserção do servidor exige `agente_id = auth.uid()`, então o
+aplicativo só grava evento em nome de quem está de fato autenticado.
+
+Uma diferença de tipo precisou de tradução. No SQLite não existe JSON, e o
+contexto do registro é TEXT com o JSON serializado dentro; no PostgreSQL a
+coluna é JSONB. Mandando a string crua, o servidor aceita e grava um JSONB que
+é uma string, não um objeto, e a consulta por campo dentro do JSON deixa de
+encontrar qualquer coisa. Sem erro nenhum. É o tipo de defeito que só aparece
+quando alguém precisa investigar um incidente e a trilha não responde.
+
 ### O que a trilha não guarda
 
 Conteúdo. O registro diz qual tabela e qual identificador foram tocados, e um
@@ -86,13 +103,6 @@ pode perder a visita registrada porque o log falhou.
 ---
 
 ## O que continua faltando
-
-**`consentimentos` só existe no banco local.** A tabela não está no servidor
-nem na fila de sincronização, então a prova do aceite fica no aparelho. Para o
-órgão, o registro precisa chegar ao servidor.
-
-**`audit_log` do aparelho não sobe.** Mesma coisa: a trilha local não está na
-fila de sincronização, e as colunas dos dois lados não batem.
 
 **Art. 48, notificação de incidente.** Não há procedimento documentado nem
 canal definido. É decisão administrativa com a secretaria, não de código.
