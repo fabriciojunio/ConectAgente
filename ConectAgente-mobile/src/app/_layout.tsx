@@ -12,6 +12,12 @@ import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { getDatabase } from '../database/database';
 import { agenteRepository } from '../database/repositories/agenteRepository';
 import { registrarSincronizacaoEmSegundoPlano } from '../tasks/backgroundSync';
+import { aplicarMensagensEmPortugues } from '../utils/mensagensDeValidacao';
+
+// O mapa precisa estar no lugar antes de o primeiro formulario validar, e por
+// isso roda na importacao do modulo, nao dentro de um efeito. Sem ele, campo
+// sem mensagem propria mostra "Required" em ingles numa tela em portugues.
+aplicarMensagensEmPortugues();
 
 export default function RootLayout() {
   useEffect(() => {
