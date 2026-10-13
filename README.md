@@ -189,7 +189,11 @@ localmente. A tradução e a remoção dos campos locais ficam num lugar só, em
   referências a `auth.uid()` nas policies, a autenticação dos dois aplicativos
   e o substituto que as suítes de banco usam. O risco mora no RLS, que é o que
   separa o prontuário de um agente do de outro. A suspensão é resolvida com um
-  ping semanal, que está em `.github/workflows/keep-alive.yml`.
+  ping semanal, que está em `.github/workflows/keep-alive.yml`, com os segredos
+  `SUPABASE_URL` e `SUPABASE_ANON_KEY` já configurados no repositório. A
+  primeira execução respondeu HTTP 200 em 13/10/2026. O workflow também roda
+  quando o próprio arquivo muda, para um erro de digitação em nome de segredo
+  aparecer na hora e não na segunda-feira seguinte.
 
 ---
 
