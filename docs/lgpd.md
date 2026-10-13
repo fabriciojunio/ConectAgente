@@ -40,72 +40,69 @@ O código declara isso em `ConectAgente-mobile/src/utils/lgpd.ts`, na constante
 
 ---
 
-## O que está escrito e não é usado
+## O que foi ligado, e como se confere
 
-Estas funções existem em `utils/lgpd.ts` e **nenhuma tela ou serviço as
-chama**. Foi medido com busca por referência em todo o código:
+Até 13/10/2026 as funções deste módulo existiam e **nenhuma tela as chamava**.
+O sistema dizia estar em conformidade na tela do agente e não tinha prova de
+consentimento, trilha de acesso nem caminho para o direito de eliminação.
 
-| Função | Para que serviria | Situação |
+Situação agora, por obrigação legal:
+
+| Obrigação | Onde está | Como se confere |
 |---|---|---|
-| `criarAuditLog` | registrar acesso e alteração | nunca chamada |
-| `criarConsentimento` | registrar consentimento por morador e tipo de dado | nunca chamada |
-| `anonimizarMorador` | atender o direito de eliminação do art. 18, VI | nunca chamada |
-| `minimizarParaLista` | reduzir o dado exibido em lista | nunca chamada |
-| `calcularDataExpiracao` | aplicar prazo de retenção | nunca chamada |
+| Art. 37, registro das operações | `auditRepository` no aplicativo; `fn_ler_morador` no banco | `rodar-testes-leitura.sh`, 10 verificações |
+| Art. 7º/11, prova do consentimento | `lgpdRepository.registrarConsentimento`, no cadastro do morador | `lgpdRepository.test.ts` |
+| Art. 18, IV, eliminação | `lgpdRepository.anonimizar`, na ficha do morador | `lgpdRepository.test.ts` |
+| Art. 16, retenção | `lgpdRepository.levantarVencidos`, no painel do gerente | `lgpdRepository.test.ts` |
 
-A tabela `consentimentos` existe no banco local, não existe no servidor, e não
-está na lista de tabelas que a fila de sincronização envia. Nada escreve nela.
+### Os eventos que entram na trilha
 
-No painel web, `auditService.registrarAcao` também **não é chamada por nenhuma
-tela**. A única escrita real em `audit_log` acontece na troca de senha do
-aplicativo, em `agenteRepository.resetarSenha`.
+No aplicativo: entrar no sistema, abrir prontuário, exportar relatório e
+anonimizar morador. No painel: aprovar e rejeitar cadastro, e abrir a ficha de
+um paciente.
+
+A leitura no painel precisou de solução diferente das outras. Lá o navegador
+fala direto com o PostgREST usando a chave `anon`, sob RLS, e não existe
+servidor nosso no meio onde gravar. Gravar pelo cliente seria teatro, porque
+bastaria não chamar. A saída foi `fn_ler_morador`, uma função `SECURITY
+DEFINER` com `search_path` preso, que grava o registro na mesma transação em
+que lê. Ela também grava `LEITURA_NEGADA` quando recusa: sem isso, varrer
+identificadores não deixaria marca nenhuma.
+
+### O que a trilha não guarda
+
+Conteúdo. O registro diz qual tabela e qual identificador foram tocados, e um
+contexto curto. Trilha que copia o prontuário multiplica o problema que
+deveria vigiar, e há teste conferindo campo a campo que nenhum dado clínico
+aparece no que foi gravado.
+
+### Falhar ao auditar não desfaz a operação
+
+Nenhuma chamada usa `await`. A razão é concreta: a auditoria já quebrou neste
+projeto por nome de coluna errado, a exceção subiu, e a tela disse que a troca
+de senha não deu certo depois de ela ter acontecido. O agente em campo não
+pode perder a visita registrada porque o log falhou.
 
 ---
 
-## As consequências práticas
+## O que continua faltando
 
-**Art. 37, registro das operações de tratamento.** O controlador precisa manter
-registro das operações. Hoje, abrir o prontuário de um morador não deixa
-rastro: não há como saber quem leu o quê. Para um sistema em que o agente de
-uma microárea não deveria ver o paciente de outra, a ausência de trilha é o que
-impede tanto a auditoria quanto a investigação de um incidente.
+**`consentimentos` só existe no banco local.** A tabela não está no servidor
+nem na fila de sincronização, então a prova do aceite fica no aparelho. Para o
+órgão, o registro precisa chegar ao servidor.
 
-**Art. 7º, I e art. 11, I, consentimento.** A base legal escolhida é política
-pública e tutela da saúde, que dispensa consentimento para o tratamento em si.
-Mas a tabela de consentimento foi criada no projeto, o que indica a intenção de
-registrar ciência do titular, e isso não acontece.
-
-**Art. 18, VI, eliminação.** Não há tela, ação administrativa ou rotina que
-chame a anonimização. O direito não é exercível pelo sistema: dependeria de
-alguém mexer no banco à mão.
-
-**Art. 16, retenção.** `calcularDataExpiracao` prevê 20 anos para dado de saúde
-e 5 para os demais. Nada aplica esse prazo: não há rotina de expurgo nem marca
-de expiração nas linhas.
+**`audit_log` do aparelho não sobe.** Mesma coisa: a trilha local não está na
+fila de sincronização, e as colunas dos dois lados não batem.
 
 **Art. 48, notificação de incidente.** Não há procedimento documentado nem
-canal definido. `SECURITY.md` trata de falha de software, que é outra coisa.
+canal definido. É decisão administrativa com a secretaria, não de código.
 
----
+**Encarregado e canal do titular.** Sem definição, os pedidos de titular não
+têm a quem responder. Também é decisão administrativa.
 
-## O que fazer, em ordem de valor
-
-1. **Ligar a trilha de auditoria nas operações de prontuário.** É a lacuna de
-   maior impacto e a mais barata: as funções já existem e o lugar certo é o
-   ponto único por onde as gravações passam, como foi feito com a tradução do
-   payload de sincronização. Precisa também acrescentar `audit_log` à fila,
-   para a trilha do aparelho chegar ao servidor, e acertar a diferença de
-   colunas entre os dois lados.
-2. **Definir o encarregado e o canal de titular** junto com a secretaria. É
-   decisão administrativa, não de código, e sem ela os endpoints de titular não
-   têm a quem responder.
-3. **Criar a ação de eliminação** para gerente ou admin, chamando
-   `anonimizarMorador`, com registro na trilha.
-4. **Levar `consentimentos` para o servidor** e registrar a ciência do titular
-   no cadastro do morador, ou remover a tabela e a função, se a decisão for que
-   a base legal dispensa.
-5. **Escrever o procedimento de incidente**, com prazo e responsável, conforme
-   o art. 48.
+**Prazo vencido não apaga nada.** É deliberado: o painel conta e mostra, e
+quem decide eliminar é a coordenação. Um sistema que apaga prontuário sozinho
+é pior que um que guarda demais.
 
 ---
 
@@ -115,6 +112,10 @@ canal definido. `SECURITY.md` trata de falha de software, que é outra coisa.
 ConectAgente-mobile/src/utils/lgpd.ts              funções e base legal
 ConectAgente-mobile/src/utils/__tests__/lgpd.test.ts
 ConectAgente-mobile/src/database/schema.ts         audit_log, consentimentos
+ConectAgente-mobile/src/database/repositories/lgpdRepository.ts   consentimento, eliminacao, retencao
+ConectAgente-mobile/src/database/repositories/auditRepository.ts  trilha do aplicativo
 ConectAgente-web/src/services/auditService.ts      leitura e escrita da trilha
+ConectAgente-web/supabase/migration_auditoria_leitura.sql  fn_ler_morador
 ConectAgente-web/supabase/migration_rls_completo.sql  policies e imutabilidade
+ConectAgente-web/supabase/testes/rodar-testes-leitura.sh   prova da leitura auditada
 ```
