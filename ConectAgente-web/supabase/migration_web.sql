@@ -52,7 +52,9 @@ CREATE INDEX IF NOT EXISTS idx_prontuarios_morador_id ON prontuarios (morador_id
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION _get_user_role()
 RETURNS TABLE (user_role TEXT, user_unidade TEXT)
-LANGUAGE sql STABLE SECURITY DEFINER AS $$
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
   SELECT role, unidade_saude
   FROM agentes
   WHERE id = auth.uid()
@@ -338,6 +340,26 @@ CREATE POLICY "prontuarios_delete" ON prontuarios FOR DELETE USING (
 -- data suitable for dashboards and reports. No raw PII is exposed.
 -- ---------------------------------------------------------------------------
 
+-- ---------------------------------------------------------------------------
+-- conta_ativa
+-- ---------------------------------------------------------------------------
+-- Diz se quem chama tem cadastro ativo. `agentes.ativo` existia mas nenhuma
+-- policy nem função o consultava: desativar um agente só o tirava das listas,
+-- e a sessão aberta continuava lendo e gravando. SECURITY DEFINER para ler
+-- `agentes` sem recursar no RLS dela.
+CREATE OR REPLACE FUNCTION public.conta_ativa()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT EXISTS (SELECT 1 FROM public.agentes WHERE id = auth.uid() AND ativo)
+$$;
+
+REVOKE ALL ON FUNCTION public.conta_ativa() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.conta_ativa() TO anon, authenticated;
+
 -- === fn_dashboard_stats ===
 -- Returns key statistics for the dashboard overview.
 CREATE OR REPLACE FUNCTION fn_dashboard_stats(
@@ -345,7 +367,9 @@ CREATE OR REPLACE FUNCTION fn_dashboard_stats(
   p_agente_id UUID DEFAULT NULL
 )
 RETURNS JSON
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 DECLARE
   v_role TEXT;
   v_unidade TEXT;
@@ -354,6 +378,13 @@ BEGIN
   -- Get caller's role and unidade_saude
   SELECT role, unidade_saude INTO v_role, v_unidade
   FROM agentes WHERE id = auth.uid();
+
+  -- Sem cadastro ativo não há alcance a decidir: a função recusa. Até
+  -- 28/10/2026 o papel nulo não casava com nenhum IF abaixo e caía no ramo
+  -- de gerente, devolvendo os números da cidade inteira.
+  IF v_role IS NULL OR NOT public.conta_ativa() THEN
+    RAISE EXCEPTION 'sem permissao' USING ERRCODE = '42501';
+  END IF;
 
   -- Agentes can only see their own stats
   IF v_role = 'agente' THEN
@@ -460,13 +491,22 @@ RETURNS TABLE (
   canceladas BIGINT,
   nao_encontrado BIGINT
 )
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 DECLARE
   v_role TEXT;
   v_unidade TEXT;
 BEGIN
   SELECT role, unidade_saude INTO v_role, v_unidade
   FROM agentes WHERE id = auth.uid();
+
+  -- Sem cadastro ativo não há alcance a decidir: a função recusa. Até
+  -- 28/10/2026 o papel nulo não casava com nenhum IF abaixo e caía no ramo
+  -- de gerente, devolvendo os números da cidade inteira.
+  IF v_role IS NULL OR NOT public.conta_ativa() THEN
+    RAISE EXCEPTION 'sem permissao' USING ERRCODE = '42501';
+  END IF;
 
   IF v_role = 'coordenador' THEN
     p_unidade := v_unidade;
@@ -520,13 +560,22 @@ RETURNS TABLE (
   pendentes BIGINT,
   taxa NUMERIC
 )
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 DECLARE
   v_role TEXT;
   v_unidade TEXT;
 BEGIN
   SELECT role, unidade_saude INTO v_role, v_unidade
   FROM agentes WHERE id = auth.uid();
+
+  -- Sem cadastro ativo não há alcance a decidir: a função recusa. Até
+  -- 28/10/2026 o papel nulo não casava com nenhum IF abaixo e caía no ramo
+  -- de gerente, devolvendo os números da cidade inteira.
+  IF v_role IS NULL OR NOT public.conta_ativa() THEN
+    RAISE EXCEPTION 'sem permissao' USING ERRCODE = '42501';
+  END IF;
 
   IF v_role = 'coordenador' THEN
     p_unidade := v_unidade;
@@ -590,13 +639,22 @@ RETURNS TABLE (
   total_familias BIGINT,
   cobertura_pct NUMERIC
 )
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 DECLARE
   v_role TEXT;
   v_unidade TEXT;
 BEGIN
   SELECT role, unidade_saude INTO v_role, v_unidade
   FROM agentes WHERE id = auth.uid();
+
+  -- Sem cadastro ativo não há alcance a decidir: a função recusa. Até
+  -- 28/10/2026 o papel nulo não casava com nenhum IF abaixo e caía no ramo
+  -- de gerente, devolvendo os números da cidade inteira.
+  IF v_role IS NULL OR NOT public.conta_ativa() THEN
+    RAISE EXCEPTION 'sem permissao' USING ERRCODE = '42501';
+  END IF;
 
   RETURN QUERY
     SELECT
@@ -642,13 +700,22 @@ RETURNS TABLE (
   dias_sem_visita INT,
   nivel_criticidade TEXT
 )
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 DECLARE
   v_role TEXT;
   v_unidade TEXT;
 BEGIN
   SELECT role, unidade_saude INTO v_role, v_unidade
   FROM agentes WHERE id = auth.uid();
+
+  -- Sem cadastro ativo não há alcance a decidir: a função recusa. Até
+  -- 28/10/2026 o papel nulo não casava com nenhum IF abaixo e caía no ramo
+  -- de gerente, devolvendo os números da cidade inteira.
+  IF v_role IS NULL OR NOT public.conta_ativa() THEN
+    RAISE EXCEPTION 'sem permissao' USING ERRCODE = '42501';
+  END IF;
 
   IF v_role = 'coordenador' THEN
     p_unidade := v_unidade;
@@ -698,13 +765,22 @@ RETURNS TABLE (
   familias_visitadas_30d BIGINT,
   cobertura_pct NUMERIC
 )
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 DECLARE
   v_role TEXT;
   v_unidade TEXT;
 BEGIN
   SELECT role, unidade_saude INTO v_role, v_unidade
   FROM agentes WHERE id = auth.uid();
+
+  -- Sem cadastro ativo não há alcance a decidir: a função recusa. Até
+  -- 28/10/2026 o papel nulo não casava com nenhum IF abaixo e caía no ramo
+  -- de gerente, devolvendo os números da cidade inteira.
+  IF v_role IS NULL OR NOT public.conta_ativa() THEN
+    RAISE EXCEPTION 'sem permissao' USING ERRCODE = '42501';
+  END IF;
 
   IF v_role = 'coordenador' THEN
     p_unidade := v_unidade;

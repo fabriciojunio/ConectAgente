@@ -10,6 +10,7 @@
 #   as colunas de lista continuam legíveis, sob RLS
 #   o aplicativo continua gravando com upsert e exclusão lógica
 #   a busca por documento é exata, respeita o papel e fica registrada
+#   conta desativada perde o acesso, e as funções de painel falham fechadas
 #
 # O banco imita o Supabase de verdade: lá, toda tabela nova nasce com
 # permissão total para anon e authenticated, por privilégio padrão. Sem
@@ -111,8 +112,10 @@ echo "  ok     fn_buscar_morador_por_documento existe"
 
 echo
 echo "==> exercitando as colunas sensiveis"
-saida=$("$PSQL" $H -d conectagente_colunas -t -A -v ON_ERROR_STOP=1 \
-        -f "$AQUI/06-colunas-sensiveis.sql" 2>&1 | tr -d '\r')
+saida=$( { "$PSQL" $H -d conectagente_colunas -t -A -v ON_ERROR_STOP=1 \
+            -f "$AQUI/06-colunas-sensiveis.sql" 2>&1
+          "$PSQL" $H -d conectagente_colunas -t -A -v ON_ERROR_STOP=1 \
+            -f "$AQUI/07-conta-ativa.sql" 2>&1; } | tr -d '\r')
 
 if echo "$saida" | grep -qiE "^ERRO|^ERROR|psql:.*ERROR"; then
   echo "  FALHA  o arquivo de casos nao rodou:"
@@ -134,7 +137,7 @@ if [ "$ok" -eq 0 ]; then
   echo "Nenhuma verificacao rodou. Saida crua:"; echo "$saida" | tail -10; exit 1
 fi
 if [ "$falhou" -eq 0 ]; then
-  echo "TUDO CERTO: $ok verificacoes de colunas sensiveis passaram."
+  echo "TUDO CERTO: $ok verificacoes de colunas sensiveis e conta ativa passaram."
   exit 0
 fi
 echo "$falhou de $((ok + falhou)) verificacoes falharam."
