@@ -171,10 +171,47 @@ painel, e nenhuma crítica no aplicativo.
 
 ---
 
+### A leitura auditada era contornável
+
+`fn_ler_morador` grava quem abriu a ficha, mas a tabela `moradores` tinha
+`SELECT` inteiro para `authenticated`. Qualquer usuário logado pedia `cpf`,
+`cartao_sus` ou `doencas` direto ao PostgREST e lia sem deixar rastro, e a tela
+da família do próprio painel fazia isso com `moradores(*)`.
+
+Corrigido em 28/10/2026 com `GRANT` coluna por coluna, como em
+`agentes.senha_hash`. As listas leem nome, idade e marcadores; o resto só sai
+pela função auditada. A busca por documento virou
+`fn_buscar_morador_por_documento`: comparação exata, para não servir de oráculo
+de prefixo, registrada sem guardar o documento.
+
+O teste de banco achou um efeito colateral antes de ir para produção: o
+Postgres exige ler as colunas que um `INSERT ... ON CONFLICT DO UPDATE`
+atualiza, e o aplicativo sincronizava morador com upsert. A mensagem foi
+`permission denied for table moradores`. O aplicativo passou a gravar com
+INSERT e, na retentativa, UPDATE pelo id. Suíte: `rodar-testes-colunas.sh`.
+
+### Conta desativada continuava com acesso
+
+`agentes.ativo` não era consultado por nenhuma policy. Desativar um agente o
+tirava das listas, e a sessão aberta continuava lendo prontuário. Corrigido
+com uma policy `RESTRICTIVE` por tabela de dado, que o Postgres soma com E às
+policies que já existiam, sem reescrevê-las.
+
+### Funções de painel falhavam abertas
+
+As seis funções de indicadores são `SECURITY DEFINER` e escolhiam o alcance
+pelo papel de quem chama. Papel nulo, de quem não tem login ou não tem
+cadastro, não casava com nenhum `IF` e caía no ramo de gerente: quatro delas
+devolviam os números da cidade inteira e o nome dos agentes para quem tivesse
+só a chave pública. Também estavam sem `search_path` travado. Agora recusam sem
+cadastro ativo, travam o `search_path` e não são executáveis por `anon`.
+Suíte: `07-conta-ativa.sql`, dentro de `rodar-testes-colunas.sh`.
+
 ## O que continua em aberto
 
-- **A trilha de auditoria não registra acesso a prontuário.** Ver
-  [lgpd.md](lgpd.md).
+- **As tabelas de prontuário ainda são legíveis direto pela API**, dentro do
+  RLS e sem registro. A saída é a mesma de `moradores`: leitura coluna a
+  coluna, função auditada e troca do upsert do aplicativo nessas tabelas.
 - **`braces`, `sprintf-js` e `node-forge` seguem vulneráveis** e sem versão
   corrigida publicada pelo mantenedor. São ferramenta de build, não entram no
   pacote entregue. `image-size` 2.x e `uuid` 11.x corrigiriam dois avisos, mas
