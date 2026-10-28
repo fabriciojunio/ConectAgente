@@ -75,6 +75,10 @@ BEGIN
     RAISE EXCEPTION 'sem sessao: busca por documento exige usuario autenticado';
   END IF;
 
+  IF NOT public.conta_ativa() THEN
+    RAISE EXCEPTION 'sem permissao' USING ERRCODE = '42501';
+  END IF;
+
   -- CPF tem 11 dígitos e o cartão do SUS 15. Menos que isso não é documento,
   -- é tentativa de varrer.
   IF length(v_digitos) NOT IN (11, 15) THEN

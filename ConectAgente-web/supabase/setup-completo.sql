@@ -426,7 +426,9 @@ CREATE INDEX IF NOT EXISTS idx_prontuarios_morador_id ON prontuarios (morador_id
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION _get_user_role()
 RETURNS TABLE (user_role TEXT, user_unidade TEXT)
-LANGUAGE sql STABLE SECURITY DEFINER AS $$
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
   SELECT role, unidade_saude
   FROM agentes
   WHERE id = auth.uid()
@@ -712,6 +714,26 @@ CREATE POLICY "prontuarios_delete" ON prontuarios FOR DELETE USING (
 -- data suitable for dashboards and reports. No raw PII is exposed.
 -- ---------------------------------------------------------------------------
 
+-- ---------------------------------------------------------------------------
+-- conta_ativa
+-- ---------------------------------------------------------------------------
+-- Diz se quem chama tem cadastro ativo. `agentes.ativo` existia mas nenhuma
+-- policy nem função o consultava: desativar um agente só o tirava das listas,
+-- e a sessão aberta continuava lendo e gravando. SECURITY DEFINER para ler
+-- `agentes` sem recursar no RLS dela.
+CREATE OR REPLACE FUNCTION public.conta_ativa()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT EXISTS (SELECT 1 FROM public.agentes WHERE id = auth.uid() AND ativo)
+$$;
+
+REVOKE ALL ON FUNCTION public.conta_ativa() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.conta_ativa() TO anon, authenticated;
+
 -- === fn_dashboard_stats ===
 -- Returns key statistics for the dashboard overview.
 CREATE OR REPLACE FUNCTION fn_dashboard_stats(
@@ -719,7 +741,9 @@ CREATE OR REPLACE FUNCTION fn_dashboard_stats(
   p_agente_id UUID DEFAULT NULL
 )
 RETURNS JSON
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 DECLARE
   v_role TEXT;
   v_unidade TEXT;
@@ -728,6 +752,13 @@ BEGIN
   -- Get caller's role and unidade_saude
   SELECT role, unidade_saude INTO v_role, v_unidade
   FROM agentes WHERE id = auth.uid();
+
+  -- Sem cadastro ativo não há alcance a decidir: a função recusa. Até
+  -- 28/10/2026 o papel nulo não casava com nenhum IF abaixo e caía no ramo
+  -- de gerente, devolvendo os números da cidade inteira.
+  IF v_role IS NULL OR NOT public.conta_ativa() THEN
+    RAISE EXCEPTION 'sem permissao' USING ERRCODE = '42501';
+  END IF;
 
   -- Agentes can only see their own stats
   IF v_role = 'agente' THEN
@@ -834,13 +865,22 @@ RETURNS TABLE (
   canceladas BIGINT,
   nao_encontrado BIGINT
 )
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 DECLARE
   v_role TEXT;
   v_unidade TEXT;
 BEGIN
   SELECT role, unidade_saude INTO v_role, v_unidade
   FROM agentes WHERE id = auth.uid();
+
+  -- Sem cadastro ativo não há alcance a decidir: a função recusa. Até
+  -- 28/10/2026 o papel nulo não casava com nenhum IF abaixo e caía no ramo
+  -- de gerente, devolvendo os números da cidade inteira.
+  IF v_role IS NULL OR NOT public.conta_ativa() THEN
+    RAISE EXCEPTION 'sem permissao' USING ERRCODE = '42501';
+  END IF;
 
   IF v_role = 'coordenador' THEN
     p_unidade := v_unidade;
@@ -894,13 +934,22 @@ RETURNS TABLE (
   pendentes BIGINT,
   taxa NUMERIC
 )
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 DECLARE
   v_role TEXT;
   v_unidade TEXT;
 BEGIN
   SELECT role, unidade_saude INTO v_role, v_unidade
   FROM agentes WHERE id = auth.uid();
+
+  -- Sem cadastro ativo não há alcance a decidir: a função recusa. Até
+  -- 28/10/2026 o papel nulo não casava com nenhum IF abaixo e caía no ramo
+  -- de gerente, devolvendo os números da cidade inteira.
+  IF v_role IS NULL OR NOT public.conta_ativa() THEN
+    RAISE EXCEPTION 'sem permissao' USING ERRCODE = '42501';
+  END IF;
 
   IF v_role = 'coordenador' THEN
     p_unidade := v_unidade;
@@ -964,13 +1013,22 @@ RETURNS TABLE (
   total_familias BIGINT,
   cobertura_pct NUMERIC
 )
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 DECLARE
   v_role TEXT;
   v_unidade TEXT;
 BEGIN
   SELECT role, unidade_saude INTO v_role, v_unidade
   FROM agentes WHERE id = auth.uid();
+
+  -- Sem cadastro ativo não há alcance a decidir: a função recusa. Até
+  -- 28/10/2026 o papel nulo não casava com nenhum IF abaixo e caía no ramo
+  -- de gerente, devolvendo os números da cidade inteira.
+  IF v_role IS NULL OR NOT public.conta_ativa() THEN
+    RAISE EXCEPTION 'sem permissao' USING ERRCODE = '42501';
+  END IF;
 
   RETURN QUERY
     SELECT
@@ -1016,13 +1074,22 @@ RETURNS TABLE (
   dias_sem_visita INT,
   nivel_criticidade TEXT
 )
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 DECLARE
   v_role TEXT;
   v_unidade TEXT;
 BEGIN
   SELECT role, unidade_saude INTO v_role, v_unidade
   FROM agentes WHERE id = auth.uid();
+
+  -- Sem cadastro ativo não há alcance a decidir: a função recusa. Até
+  -- 28/10/2026 o papel nulo não casava com nenhum IF abaixo e caía no ramo
+  -- de gerente, devolvendo os números da cidade inteira.
+  IF v_role IS NULL OR NOT public.conta_ativa() THEN
+    RAISE EXCEPTION 'sem permissao' USING ERRCODE = '42501';
+  END IF;
 
   IF v_role = 'coordenador' THEN
     p_unidade := v_unidade;
@@ -1072,13 +1139,22 @@ RETURNS TABLE (
   familias_visitadas_30d BIGINT,
   cobertura_pct NUMERIC
 )
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 DECLARE
   v_role TEXT;
   v_unidade TEXT;
 BEGIN
   SELECT role, unidade_saude INTO v_role, v_unidade
   FROM agentes WHERE id = auth.uid();
+
+  -- Sem cadastro ativo não há alcance a decidir: a função recusa. Até
+  -- 28/10/2026 o papel nulo não casava com nenhum IF abaixo e caía no ramo
+  -- de gerente, devolvendo os números da cidade inteira.
+  IF v_role IS NULL OR NOT public.conta_ativa() THEN
+    RAISE EXCEPTION 'sem permissao' USING ERRCODE = '42501';
+  END IF;
 
   IF v_role = 'coordenador' THEN
     p_unidade := v_unidade;
@@ -2072,6 +2148,12 @@ BEGIN
     RAISE EXCEPTION 'sem sessao: leitura de morador exige usuario autenticado';
   END IF;
 
+  -- Conta desativada não lê, nem deixa registro de tentativa: para ela o
+  -- sistema simplesmente não existe mais.
+  IF NOT public.conta_ativa() THEN
+    RAISE EXCEPTION 'sem permissao' USING ERRCODE = '42501';
+  END IF;
+
   SELECT * INTO v_morador FROM moradores WHERE id = p_morador_id;
 
   -- Mesma regra da policy `moradores_select`. Se ela mudar, esta muda junto:
@@ -2262,6 +2344,10 @@ BEGIN
     RAISE EXCEPTION 'sem sessao: busca por documento exige usuario autenticado';
   END IF;
 
+  IF NOT public.conta_ativa() THEN
+    RAISE EXCEPTION 'sem permissao' USING ERRCODE = '42501';
+  END IF;
+
   -- CPF tem 11 dígitos e o cartão do SUS 15. Menos que isso não é documento,
   -- é tentativa de varrer.
   IF length(v_digitos) NOT IN (11, 15) THEN
@@ -2317,3 +2403,66 @@ GRANT EXECUTE ON FUNCTION fn_buscar_morador_por_documento(TEXT) TO authenticated
 
 COMMENT ON FUNCTION fn_buscar_morador_por_documento(TEXT) IS
   'Busca morador por CPF ou cartao do SUS, com comparacao exata, devolve so colunas de lista e registra a busca no audit_log sem o documento.';
+
+-- ===========================================================================
+-- Conta desativada perde o acesso ao dado, e as funções de painel falham fechadas
+-- ===========================================================================
+--
+-- Dois problemas achados em 28/10/2026.
+--
+-- 1. `agentes.ativo` não protegia nada. Nenhuma policy o consultava, então
+--    desativar um agente desligado, ou o de um aparelho roubado, só o tirava
+--    das listas. Com a sessão aberta, ele continuava lendo prontuário.
+--
+--    A correção é uma policy RESTRICTIVE por tabela de dado. No Postgres, as
+--    policies permissivas se somam com OU e as restritivas com E: esta nega
+--    tudo para conta inativa sem precisar reescrever nenhuma das policies que
+--    já existem. Ficam de fora `agentes` (o login lê o próprio cadastro para
+--    dizer "conta inativa") e `solicitacoes_registro` (cadastro público).
+--
+-- 2. As seis funções de painel eram SECURITY DEFINER e decidiam o alcance
+--    pelo papel. Papel nulo (sem login, ou login sem cadastro) não casava com
+--    nenhum IF e caía no ramo de gerente: quatro delas devolviam os números da
+--    cidade inteira para quem tivesse só a chave pública. O corpo delas agora
+--    recusa papel nulo e conta inativa (no setup-completo.sql), trava o
+--    `search_path`, e aqui o EXECUTE sai de `anon`.
+--
+-- A função `conta_ativa()` é criada no setup-completo.sql antes das funções
+-- de painel, que a usam.
+-- ===========================================================================
+
+DO $$
+DECLARE
+  v_tabela TEXT;
+BEGIN
+  FOREACH v_tabela IN ARRAY ARRAY[
+    'residencias', 'moradores', 'visitas', 'agendamentos', 'metas_visitas',
+    'prontuarios', 'prontuario_saude', 'prontuario_gestante',
+    'prontuario_puericultura', 'prontuario_mulher', 'prontuario_social',
+    'consentimentos', 'audit_log'
+  ] LOOP
+    EXECUTE format('DROP POLICY IF EXISTS "conta_ativa" ON %I', v_tabela);
+    EXECUTE format(
+      'CREATE POLICY "conta_ativa" ON %I AS RESTRICTIVE FOR ALL TO authenticated '
+      'USING (public.conta_ativa()) WITH CHECK (public.conta_ativa())',
+      v_tabela);
+  END LOOP;
+END $$;
+
+-- Pelo catálogo, e não pela assinatura escrita à mão: um parâmetro a mais
+-- numa delas faria o REVOKE errar de função em silêncio.
+DO $$
+DECLARE
+  v_funcao REGPROCEDURE;
+BEGIN
+  FOR v_funcao IN
+    SELECT p.oid::REGPROCEDURE FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname IN (
+      'fn_dashboard_stats', 'fn_visitas_por_periodo', 'fn_visitas_por_agente',
+      'fn_visitas_por_bairro', 'fn_familias_em_atraso', 'fn_cobertura_por_microarea')
+  LOOP
+    EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon', v_funcao);
+    EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO authenticated', v_funcao);
+  END LOOP;
+END $$;
