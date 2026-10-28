@@ -7,8 +7,9 @@ name: CI
 # so apareceria num pull request, com tudo ja pronto, que e o momento mais caro
 # para descobrir problema.
 #
-# O repositorio e publico, entao minuto de Actions e gratuito, e o
-# `concurrency` abaixo cancela execucao de commit que ja foi substituido.
+# O repositorio e privado: o plano gratuito da conta da 2.000 minutos de
+# Actions por mes, e o `concurrency` abaixo cancela execucao de commit que ja
+# foi substituido para nao gastar minuto com resultado que ninguem vai ler.
 #
 # As duas branches tem acento no nome por decisao do dono do repositorio. O
 # `['**']` casa com qualquer uma, entao o gatilho de push nao depende disso,
@@ -39,8 +40,10 @@ jobs:
       run:
         working-directory: ConectAgente-mobile
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 20
           cache: npm
@@ -80,8 +83,10 @@ jobs:
       run:
         working-directory: ConectAgente-web
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 20
           cache: npm
@@ -112,7 +117,9 @@ jobs:
     name: Banco (permissao, sincronizacao, cadastro)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       # Os scripts sobem um cluster proprio numa porta propria e o destroem no
       # fim, entao nada depende de servico externo nem de senha. Mas eles
@@ -153,8 +160,10 @@ jobs:
     name: Vulnerabilidade em producao
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 20
 

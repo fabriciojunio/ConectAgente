@@ -28,6 +28,9 @@ on:
     paths:
       - '.github/workflows/keep-alive.yml'
 
+# So fala com o Supabase por HTTP; o token do GitHub nao serve para nada aqui.
+permissions: {}
+
 jobs:
   acordar:
     name: Manter o projeto ativo
