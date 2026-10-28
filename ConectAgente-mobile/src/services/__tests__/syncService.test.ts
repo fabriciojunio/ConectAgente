@@ -27,13 +27,16 @@ jest.mock('../../database/repositories/visitaRepository', () => ({
 const mockSupabaseUpsert = jest.fn().mockResolvedValue({ error: null });
 const mockSupabaseUpdate = jest.fn().mockResolvedValue({ error: null });
 const mockSupabaseDelete = jest.fn().mockResolvedValue({ error: null });
-const mockSupabaseEq = jest.fn().mockReturnThis();
+const mockSupabaseEq = jest.fn().mockResolvedValue({ error: null });
+const mockSupabaseInsert = jest.fn().mockResolvedValue({ error: null });
+const mockSupabaseUpdateComEq = jest.fn(() => ({ eq: mockSupabaseEq }));
 
 jest.mock('../../lib/supabase', () => ({
   supabase: {
     from: jest.fn(() => ({
       upsert: mockSupabaseUpsert,
-      update: jest.fn(() => ({ eq: mockSupabaseEq })),
+      insert: mockSupabaseInsert,
+      update: mockSupabaseUpdateComEq,
     })),
   },
   handleSupabaseError: jest.fn(),
@@ -77,6 +80,8 @@ beforeEach(() => {
   mockedQueue.marcarErro.mockResolvedValue(undefined);
   mockedQueue.limparSincronizados.mockResolvedValue(undefined);
   mockSupabaseUpsert.mockResolvedValue({ error: null });
+  mockSupabaseInsert.mockResolvedValue({ error: null });
+  mockSupabaseEq.mockResolvedValue({ error: null });
 });
 
 describe('syncService.contarPendentes', () => {
@@ -134,8 +139,63 @@ describe('syncService.sincronizar', () => {
 
     await syncService.sincronizar();
 
-    expect(mockSupabaseUpsert).toHaveBeenCalledTimes(2);
+    expect(mockSupabaseUpsert).toHaveBeenCalledTimes(1);
+    expect(mockSupabaseInsert).toHaveBeenCalledTimes(1);
     expect(mockedQueue.marcarSucesso).toHaveBeenCalledTimes(2);
+  });
+});
+
+// O servidor fecha a leitura de cpf, cartão do SUS, doença e medicação, e o
+// Postgres recusa upsert que atualize coluna que o usuário não pode ler.
+describe('syncService.sincronizar - morador sem upsert', () => {
+  const itemMorador = {
+    ...itemSyncBase,
+    id: 'sync-m',
+    tabela: 'moradores',
+    registro_id: 'mor-1',
+    payload: JSON.stringify({ nome: 'Dados simulados', cpf: '11144477735' }),
+  };
+
+  it('insere o morador novo sem usar upsert', async () => {
+    mockedQueue.listarPendentes.mockResolvedValue([itemMorador]);
+
+    await syncService.sincronizar();
+
+    expect(mockSupabaseUpsert).not.toHaveBeenCalled();
+    expect(mockSupabaseInsert).toHaveBeenCalledWith({ nome: 'Dados simulados', cpf: '11144477735', id: 'mor-1' });
+    expect(mockSupabaseUpdateComEq).not.toHaveBeenCalled();
+    expect(mockedQueue.marcarSucesso).toHaveBeenCalledWith('sync-m');
+  });
+
+  it('na retentativa, chave repetida vira update pelo id', async () => {
+    mockedQueue.listarPendentes.mockResolvedValue([itemMorador]);
+    mockSupabaseInsert.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+
+    await syncService.sincronizar();
+
+    expect(mockSupabaseUpdateComEq).toHaveBeenCalledWith({ nome: 'Dados simulados', cpf: '11144477735' });
+    expect(mockSupabaseEq).toHaveBeenCalledWith('id', 'mor-1');
+    expect(mockedQueue.marcarSucesso).toHaveBeenCalledWith('sync-m');
+  });
+
+  it('outro erro no insert não vira update e marca erro', async () => {
+    mockedQueue.listarPendentes.mockResolvedValue([itemMorador]);
+    mockSupabaseInsert.mockResolvedValueOnce({ error: { code: '42501', message: 'permission denied' } });
+
+    await syncService.sincronizar();
+
+    expect(mockSupabaseUpdateComEq).not.toHaveBeenCalled();
+    expect(mockedQueue.marcarErro).toHaveBeenCalledWith('sync-m', 'permission denied');
+  });
+
+  it('erro no update da retentativa marca erro', async () => {
+    mockedQueue.listarPendentes.mockResolvedValue([itemMorador]);
+    mockSupabaseInsert.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+    mockSupabaseEq.mockResolvedValueOnce({ error: { message: 'Conexão recusada' } });
+
+    await syncService.sincronizar();
+
+    expect(mockedQueue.marcarErro).toHaveBeenCalledWith('sync-m', 'Conexão recusada');
   });
 });
 
