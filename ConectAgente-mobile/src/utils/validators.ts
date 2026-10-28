@@ -111,7 +111,7 @@ export const residenciaSchema = z.object({
   cidade: z.string().min(2, 'Cidade obrigatória'),
   estado: z.string().length(2, 'Estado inválido'),
   tipo_imovel: z.enum(['proprio', 'alugado', 'cedido', 'outros']),
-  num_comodos: z.coerce.number({ invalid_type_error: 'Número de cômodos inválido' }).min(1, 'Mínimo 1 cômodo').max(50, 'Máximo 50 cômodos'),
+  num_comodos: z.coerce.number({ error: 'Número de cômodos inválido' }).min(1, 'Mínimo 1 cômodo').max(50, 'Máximo 50 cômodos'),
   tem_animais: z.boolean(),
   animais_info: z.string().optional(),
   nivel_risco: z.enum(['nenhum', 'baixo', 'medio', 'alto', 'critico']).optional(),
@@ -188,5 +188,8 @@ export const visitaSchema = z.object({
 
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type ResidenciaFormDataValidated = z.infer<typeof residenciaSchema>;
+// O que o formulário guarda antes de validar: `num_comodos` chega como texto e o
+// `z.coerce` converte. O resolver precisa dos dois tipos separados.
+export type ResidenciaFormInput = z.input<typeof residenciaSchema>;
 export type MoradorFormDataValidated = z.infer<typeof moradorSchema>;
 export type VisitaFormDataValidated = z.infer<typeof visitaSchema>;

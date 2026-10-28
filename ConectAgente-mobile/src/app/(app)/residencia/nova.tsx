@@ -14,7 +14,7 @@ import { SwitchField } from '../../../components/forms/SwitchField';
 import { Button } from '../../../components/button';
 import { PageHeader } from '../../../components/ui/PageHeader';
 import { cepService } from '../../../services/cepService';
-import { residenciaSchema, ResidenciaFormDataValidated } from '../../../utils/validators';
+import { residenciaSchema, ResidenciaFormDataValidated, ResidenciaFormInput } from '../../../utils/validators';
 import { formatCEP, stripCEP } from '../../../utils/formatters';
 import { TIPO_IMOVEL_OPTIONS, ESTADOS_BRASIL, RISCO_OPTIONS, SPACING, FONT_SIZE } from '../../../utils/constants';
 import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
@@ -26,7 +26,7 @@ export default function NovaResidencia() {
   const [isLoading, setIsLoading] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
 
-  const { control, handleSubmit, setValue, watch } = useForm<ResidenciaFormDataValidated>({
+  const { control, handleSubmit, setValue, watch } = useForm<ResidenciaFormInput, unknown, ResidenciaFormDataValidated>({
     resolver: zodResolver(residenciaSchema),
     mode: 'onBlur',
     defaultValues: {
