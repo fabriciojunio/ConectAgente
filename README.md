@@ -75,22 +75,24 @@ npx expo export --platform android --output-dir /tmp/saida
 cd ConectAgente-web && npx tsc --noEmit && npm run lint && npm test -- --ci
 npm run build
 
-# Banco de verdade: permissão, sincronização e cadastro
+# Banco de verdade: permissão, sincronização, cadastro, leitura auditada,
+# colunas sensíveis e conta desativada
 bash ConectAgente-web/supabase/testes/rodar-todos.sh
 ```
 
-Estado medido na última validação completa:
+Estado medido em 28/10/2026:
 
 | O que | Resultado |
 |---|---|
-| Testes do aplicativo | 331 em 23 suítes |
-| Testes do painel | 256 em 24 suítes |
-| Verificações em banco de verdade | 61 em 3 suítes |
+| Testes do aplicativo | 638 em 33 suítes |
+| Testes do painel | 333 em 30 suítes |
+| Verificações em banco de verdade | 106 em 6 suítes, mais a de instalação repetida |
 | Erros de tipo | 0 nos dois projetos |
-| Avisos de ESLint | 0 |
-| Vulnerabilidade em produção | 0 no painel, 0 crítica no aplicativo |
+| Avisos de ESLint | 3, todos de import sem uso, anteriores |
+| Vulnerabilidade (OSV-Scanner) | 0 sem aceite; as de ferramenta de build têm motivo e prazo em `osv-scanner.toml` |
+| Análise estática (Semgrep) | 0 achados em 218 arquivos |
 
-As três suítes de banco sobem um PostgreSQL descartável numa porta própria,
+As suítes de banco sobem um PostgreSQL descartável numa porta própria,
 aplicam o schema e as migrações, exercitam um caminho real e se autodestroem.
 Nada toca banco existente.
 
@@ -202,6 +204,13 @@ localmente. A tradução e a remoção dos campos locais ficam num lugar só, em
 
 Honestidade sobre o estado, que vale mais que uma lista de recursos:
 
+- **A senha local do aplicativo é SHA-256 com sal, numa passada só.** É
+  rápida demais para senha. A troca por PBKDF2 em JavaScript puro foi medida
+  e descartada: sem JIT, como o Hermes roda, 100 mil iterações levaram 41 s.
+  O caminho é a derivação nativa (`react-native-quick-crypto`), validada no
+  Android de verdade, com migração do hash no próximo login.
+- **As tabelas de prontuário ainda são legíveis direto pela API**, dentro do
+  RLS e sem registro. A correção é a mesma feita em `moradores`.
 - **Os campos de identificação ficam em texto puro no banco do aparelho.**
   Havia um módulo de cifra que nenhuma linha chamava, e três documentos diziam
   o contrário; ele foi removido em 13/10/2026 junto com a correção dos
@@ -239,10 +248,10 @@ Antes dela, contribuíram:
 
 O histórico original continua em
 [CamilaRaimundo/ConectAgente](https://github.com/CamilaRaimundo/ConectAgente).
-Os commits de lá não foram trazidos para cá: as duas histórias não têm ancestral
-comum e o conteúdo foi reescrito, então importá-los daria um gráfico de
-contribuição que não corresponde a este código. O crédito fica aqui, por
-escrito, e no `CITATION.cff`.
+Os 20 commits de lá entraram aqui em 13/10/2026 como ancestrais, por um merge
+com estratégia `ours`: a autoria e as datas são de quem os fez, e nenhum
+arquivo deste código mudou com isso. O crédito também fica por escrito aqui e
+no `CITATION.cff`.
 
 ---
 

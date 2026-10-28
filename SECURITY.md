@@ -82,17 +82,17 @@ o banco devolveu em cada caso, em [docs/seguranca.md](docs/seguranca.md).
 Registradas porque omitir limitação em sistema de órgão público é pior que
 tê-la.
 
-- **O banco local do aparelho não é cifrado pelo aplicativo.** Existe em
-  `utils/encryption.ts` uma cifra de campo, mas nenhuma tela a chama, e ela é
-  SHA-256 em modo contador, construída à mão, e **não** AES-256. O `expo-crypto` não expõe AES, o que explica a
-  escolha. A construção é razoável para confidencialidade, mas **não oferece
-  autenticidade**: cifra de fluxo sem MAC é maleável, e inverter um bit do
-  texto cifrado inverte o bit correspondente do texto claro. O comentário no
-  código dizia que a posse da chave garantiria autenticidade, o que é
-  equívoco: a posse da chave garante confidencialidade. Ligá-la também
-  quebraria a busca por nome em campo. A saída certa é SQLCipher, cifrando o
-  banco inteiro com AEAD de verdade (detalhe em
-  [docs/seguranca.md](docs/seguranca.md)).
+- **O banco local do aparelho não é cifrado pelo aplicativo.** Havia uma
+  cifra de campo feita à mão (SHA-256 em modo contador, sem MAC, maleável) que
+  nenhuma tela chamava; foi removida em 13/10/2026 em vez de ligada, porque
+  também quebraria a busca por nome em campo. Quem protege o arquivo é a cifra
+  de disco do Android. A saída certa é SQLCipher no banco inteiro, com AEAD de
+  verdade (detalhe em [docs/seguranca.md](docs/seguranca.md)).
+- **A senha local do aplicativo usa SHA-256 com sal, numa passada só.** Serve
+  para o login sem rede, mas é rápida demais para senha: com o banco de um
+  aparelho roubado em mãos, testar senhas custa pouco. O certo é uma derivação
+  lenta (PBKDF2 com muitas iterações, scrypt ou Argon2), com migração do hash
+  no próximo login de cada agente.
 - **A leitura das tabelas de prontuário ainda não passa por função
   auditada no servidor.** No aplicativo a abertura do prontuário grava
   `LEITURA` na trilha local, e no painel a ficha do morador passa por
