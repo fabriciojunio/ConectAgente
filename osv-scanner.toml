@@ -1,0 +1,42 @@
+# Falhas aceitas com prazo. Vencido o ignoreUntil, o OSV volta a reprovar.
+# Cada uma foi conferida em 28/10/2026 com `npm ls`: nenhuma vai para o
+# aparelho do agente nem para o navegador do painel.
+
+# O SheetJS publica fora do npm; o pacote vem de cdn.sheetjs.com na 0.20.3.
+# A prototype pollution foi corrigida na 0.19.3 e o ReDoS na 0.20.2. O OSV só
+# conhece a linha antiga do npm e marca qualquer versão.
+[[IgnoredVulns]]
+id = "GHSA-4r6h-8v6p-xvw6"
+ignoreUntil = 2027-04-28
+reason = "Falso positivo: xlsx 0.20.3 do CDN do SheetJS já inclui a correção da 0.19.3."
+
+[[IgnoredVulns]]
+id = "GHSA-5pgg-2g8v-p4x9"
+ignoreUntil = 2027-04-28
+reason = "Falso positivo: xlsx 0.20.3 do CDN do SheetJS já inclui a correção da 0.20.2."
+
+# Ferramentas de build, sem versão corrigida que funcione aqui.
+[[IgnoredVulns]]
+id = "GHSA-gcqx-w48m-w2h4"
+ignoreUntil = 2027-01-28
+reason = "deepmerge vem do Jest, só nos testes; não há versão corrigida."
+
+[[IgnoredVulns]]
+id = "GHSA-86w9-cpqp-85rv"
+ignoreUntil = 2027-01-28
+reason = "node-forge vem da CLI do Expo (@expo/cli), roda só na máquina de quem empacota; não há versão corrigida."
+
+[[IgnoredVulns]]
+id = "GHSA-w5hq-g745-h8pq"
+ignoreUntil = 2027-01-28
+reason = "uuid 7 vem do xcode, dentro do @expo/config-plugins, no build; o uuid 11 quebra o Metro (medido)."
+
+[[IgnoredVulns]]
+id = "GHSA-5p2g-fcmc-qvqq"
+ignoreUntil = 2027-01-28
+reason = "image-size 1 vem do Metro, no build; o 2.x quebra o empacotamento (TypeError SharedArrayBuffer, medido)."
+
+[[IgnoredVulns]]
+id = "GHSA-w3rx-r6r6-pgpr"
+ignoreUntil = 2027-01-28
+reason = "image-size 1 vem do Metro, no build; o 2.x quebra o empacotamento (TypeError SharedArrayBuffer, medido)."

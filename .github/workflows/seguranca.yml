@@ -1,0 +1,63 @@
+name: Segurança
+
+# Tudo aqui é gratuito para repositório privado de conta pessoal: gitleaks,
+# OSV-Scanner e Semgrep na edição comunitária. O CodeQL ficou de fora porque,
+# em repositório privado, ele exige o GitHub Advanced Security, que é pago.
+on:
+  push:
+    branches: ["produção", "homologação"]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  segredos:
+    name: Varredura de segredos (gitleaks)
+    runs-on: ubuntu-latest
+    # Em pull request a action lista os commits do PR pela API; sem esta
+    # leitura ela recebe 403.
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependencias:
+    name: Vulnerabilidades em dependências (osv-scanner)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+        with:
+          scan-args: |-
+            --config=osv-scanner.toml
+            -L ConectAgente-web/package-lock.json
+            -L ConectAgente-mobile/package-lock.json
+
+  sast:
+    name: Análise estática (Semgrep)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Versão fixa e sem telemetria. Qualquer achado reprova: as regras são
+      # de segurança, não de estilo.
+      - name: Rodar o Semgrep
+        run: |
+          pipx run --spec semgrep==1.181.0 semgrep scan             --config p/typescript --config p/react --config p/nextjs             --config p/secrets --config p/sql-injection             --metrics=off --error             --exclude node_modules --exclude __tests__ --exclude "*.test.ts" .
