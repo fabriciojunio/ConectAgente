@@ -16,7 +16,7 @@ const registroSchema = z.object({
   telefone: z.string().optional(),
   // Tem que casar com o CHECK de solicitacoes_registro.cargo_pretendido.
   cargo_pretendido: z.enum(['coordenador', 'gerente', 'outro'], {
-    errorMap: () => ({ message: 'Selecione um cargo válido' }),
+    error: 'Selecione um cargo válido',
   }),
   cargo_outro: z.string().optional(),
   unidade_saude: z.string().min(2, 'Informe a unidade de saúde'),
@@ -56,7 +56,7 @@ export async function criarSolicitacao(formData: {
 
     const parsed = registroSchema.safeParse(formData);
     if (!parsed.success) {
-      return { success: false, error: parsed.error.errors[0].message };
+      return { success: false, error: parsed.error.issues[0].message };
     }
 
     const admin = createAdminClient();
