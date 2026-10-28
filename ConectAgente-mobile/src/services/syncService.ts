@@ -93,6 +93,20 @@ function conflitoDa(tabela: SupabaseTable): string {
  * no servidor, o UPDATE afeta zero linhas e o PostgREST não devolve erro.
  * Como UPSERT, o primeiro envio cria e os seguintes atualizam.
  */
+/**
+ * Tabelas com colunas que o servidor não deixa ler direto.
+ *
+ * Em `moradores`, cpf, cartão do SUS, doença e medicação só saem pela leitura
+ * auditada (`fn_ler_morador`). O Postgres exige permissão de leitura nas
+ * colunas que um `INSERT ... ON CONFLICT DO UPDATE` atualiza, então o upsert
+ * passou a ser recusado. INSERT e UPDATE separados não leem nada, e dão o
+ * mesmo resultado: o primeiro envio insere, a retentativa atualiza.
+ */
+const GRAVADAS_SEM_UPSERT = new Set<SupabaseTable>(['moradores']);
+
+/** Código do Postgres para chave primária repetida. */
+const CHAVE_REPETIDA = '23505';
+
 const SALVAS_POR_UPSERT = new Set<SupabaseTable>([
   'prontuario_saude',
   'prontuario_gestante',
@@ -184,6 +198,10 @@ async function syncParaSupabase(
       // o registro no servidor tenha o mesmo id do local e para que a
       // retentativa atualize em vez de duplicar.
       const comChave = { ...payload, [chave]: registroId };
+      if (GRAVADAS_SEM_UPSERT.has(tabela)) {
+        await inserirOuAtualizar(tabela, chave, registroId, comChave);
+        break;
+      }
       const { error } = await supabase
         .from(tabela)
         .upsert(comChave, { onConflict: conflitoDa(tabela) });
@@ -214,4 +232,25 @@ async function syncParaSupabase(
     default:
       throw new Error(`Operação desconhecida: ${operacao}`);
   }
+}
+
+async function inserirOuAtualizar(
+  tabela: SupabaseTable,
+  chave: string,
+  registroId: string,
+  linha: Record<string, unknown>
+): Promise<void> {
+  const { error } = await supabase.from(tabela).insert(linha);
+  if (!error) return;
+  if (error.code !== CHAVE_REPETIDA) throw new Error(error.message);
+
+  // Já existe: é a retentativa de um envio que chegou ao servidor e cuja
+  // resposta se perdeu. Atualiza pelo mesmo id.
+  const alteracao = { ...linha };
+  delete alteracao[chave];
+  const { error: erroAoAtualizar } = await supabase
+    .from(tabela)
+    .update(alteracao)
+    .eq(chave, registroId);
+  if (erroAoAtualizar) throw new Error(erroAoAtualizar.message);
 }

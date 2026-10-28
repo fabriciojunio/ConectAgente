@@ -13,6 +13,7 @@ import type {
   PaginationParams,
   PaginatedResult,
 } from '@/types';
+import { MORADOR_COLUNAS_LISTA } from './moradorColunas';
 
 export async function getAgentes(
   filters?: GlobalFilters,
@@ -181,7 +182,7 @@ export async function getAgenteFamilias(id: string): Promise<ResidenciaComDetalh
     const supabase = createClient();
     const { data, error } = await supabase
       .from('residencias')
-      .select(`*, agente:agentes(id, nome, area_atuacao), moradores(*)`)
+      .select(`*, agente:agentes(id, nome, area_atuacao), moradores(${MORADOR_COLUNAS_LISTA})`)
       .eq('agente_id', id).is('deleted_at', null).order('logradouro', { ascending: true });
 
     if (error) throw new Error(`Erro ao buscar famílias do agente: ${error.message}`);

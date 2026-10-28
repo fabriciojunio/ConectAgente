@@ -9,6 +9,7 @@ import type {
   PaginationParams,
   PaginatedResult,
 } from '@/types';
+import { MORADOR_COLUNAS_LISTA } from './moradorColunas';
 
 interface MoradorComDetalhes extends Morador {
   residencia?: {
@@ -26,7 +27,7 @@ interface MoradorComDetalhes extends Morador {
 
 export type { MoradorComDetalhes };
 
-const MORADOR_SELECT = `*, residencia:residencias(id, logradouro, numero, bairro, cidade), agente:agentes(id, nome)`;
+const MORADOR_SELECT = `${MORADOR_COLUNAS_LISTA}, residencia:residencias(id, logradouro, numero, bairro, cidade), agente:agentes(id, nome)`;
 
 export async function getMoradores(
   filters?: GlobalFilters,
@@ -136,4 +137,26 @@ export async function getMoradorAuditado(
     throw new Error(`Erro ao abrir a ficha do paciente: ${error.message}`);
   }
   return (data as MoradorComDetalhes | null) ?? null;
+}
+
+/**
+ * Busca morador por CPF ou cartão do SUS pela função do banco.
+ *
+ * O documento não é mais legível pela tabela, então a busca não pode filtrar
+ * no navegador. A função compara o documento inteiro (pedaço não acha nada,
+ * para não servir de varredura), devolve só as colunas de lista e registra a
+ * busca na trilha, sem guardar o documento procurado.
+ */
+export async function buscarMoradoresPorDocumento(
+  documento: string
+): Promise<MoradorComDetalhes[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc('fn_buscar_morador_por_documento', {
+    p_documento: documento,
+  });
+
+  if (error) {
+    throw new Error(`Erro ao buscar por documento: ${error.message}`);
+  }
+  return (data as MoradorComDetalhes[] | null) ?? [];
 }

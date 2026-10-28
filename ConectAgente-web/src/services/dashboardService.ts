@@ -130,7 +130,7 @@ export async function getVisitasRecentes(
     const supabase = createClient();
     const { data, error } = await supabase
       .from('visitas')
-      .select(`*, agente:agentes(id, nome, area_atuacao), residencia:residencias(id, logradouro, numero, bairro, cidade), morador:moradores(id, nome, cpf)`)
+      .select(`*, agente:agentes(id, nome, area_atuacao), residencia:residencias(id, logradouro, numero, bairro, cidade), morador:moradores(id, nome)`)
       .order('data_visita', { ascending: false })
       .limit(limit);
 

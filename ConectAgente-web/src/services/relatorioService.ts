@@ -11,6 +11,7 @@ import type {
   CoberturaMicroarea,
   GlobalFilters,
 } from '@/types';
+import { MORADOR_COLUNAS_LISTA } from './moradorColunas';
 
 /**
  * Gera dados de relatório de visitas com base nos filtros informados.
@@ -24,7 +25,7 @@ export async function gerarRelatorioVisitas(
     let query = supabase
       .from('visitas')
       .select(
-        `*, agente:agentes(id, nome, area_atuacao), residencia:residencias(id, logradouro, numero, bairro, cidade), morador:moradores(id, nome, cpf)`
+        `*, agente:agentes(id, nome, area_atuacao), residencia:residencias(id, logradouro, numero, bairro, cidade), morador:moradores(id, nome)`
       );
 
     if (filtros.periodo_inicio) {
@@ -141,7 +142,7 @@ export async function gerarRelatorioFamilias(
 
     let query = supabase
       .from('residencias')
-      .select(`*, agente:agentes(id, nome, area_atuacao), moradores(*)`)
+      .select(`*, agente:agentes(id, nome, area_atuacao), moradores(${MORADOR_COLUNAS_LISTA})`)
       .is('deleted_at', null);
 
     if (filtros.bairro) {
