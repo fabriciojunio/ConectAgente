@@ -81,6 +81,29 @@ Atalho por junction não resolve, porque o autolinking grava o caminho real.
 A saída é copiar o projeto para uma pasta curta, por exemplo `C:\ca`, e
 compilar de lá.
 
+**Espaço no caminho do Android SDK quebra o link do C++.** Em máquina cujo
+usuário tem espaço no nome (`C:\Users\Win 10`), o CMake passa a chamar o
+compilador pelo nome curto do Windows (`CLANG_~1.EXE`), que pode cair no
+`clang` em vez do `clang++`. A compilação nativa vai até o fim e o link morre
+com dezenas de `undefined symbol: operator new(unsigned long)`. Mover o SDK
+não é necessário: mapeie a pasta numa letra de unidade, só para a sessão, e
+aponte o build para ela.
+
+```powershell
+subst S: "C:\Users\Win 10\AppData\Local\Android\Sdk"
+```
+
+```bash
+export ANDROID_HOME='S:\' ANDROID_SDK_ROOT='S:\'
+echo 'sdk.dir=S\:/' > android/local.properties
+./gradlew clean && ./gradlew assembleRelease --no-daemon --max-workers=2
+```
+
+O `clean` antes é obrigatório pelo mesmo motivo dos `.cxx` abaixo. Medido em
+29/10/2026: o primeiro build falhou depois de 45 minutos; com o `S:` passou.
+O `--max-workers=2` evita o outro erro desta máquina, o processo do Gradle que
+não responde em 120 segundos quando a máquina está carregada.
+
 **O cache do Gradle também conta no limite.** O padrão fica em
 `~/scoop/apps/gradle/current/.gradle`, e os caminhos de `prefab` dentro dele
 passam de 260. Use um cache curto, só para o comando:
@@ -224,12 +247,19 @@ release, a cada prebuild. Como passo manual isso seria esquecido, porque o
 prebuild roda de novo a cada pacote nativo novo.
 
 A chave e a senha ficam em `ConectAgente-mobile/chaves/`, que está no
-`.gitignore`. O APK atual sai assinado como:
+`.gitignore`. Desde a versão 1.1.0 o APK sai assinado como:
 
 ```
 CN=ConectAgente, OU=Iniciacao Cientifica, O=UNISAGRADO, L=Bauru, ST=SP, C=BR
-SHA-256 19edbcfc6072aac79b4f18ed9cb1606d37788992bc6de05aeb85695e91e06886
+SHA-256 54afdf5fd9089ceb1a6283450f85fdddce36f193ba5d04cf92d92595ed4a4b7c
 ```
+
+A chave da 1.0.0 (`19edbcfc...`) ficou na máquina onde foi criada e não pôde
+ser recuperada. Por isso a 1.1.0 foi assinada com uma chave nova, gerada em
+29/10/2026 com RSA de 4096 bits, e **não instala por cima da 1.0.0**: cada
+aparelho precisa sincronizar o que estiver pendente, desinstalar a 1.0.0 e
+instalar a 1.1.0. A release explica o passo a passo. É exatamente o problema
+que o aviso abaixo descreve, e ele aconteceu.
 
 **Guarde uma cópia da pasta `chaves/` fora desta máquina.** Perder esse arquivo
 não tem conserto: qualquer APK novo passa a ser recusado como atualização, e
