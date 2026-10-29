@@ -18,8 +18,8 @@ compliance without it is worse than recording the gap.
 | Item | Definition |
 |---|---|
 | Purpose | primary health care, follow-up by Community Health Agents |
-| Legal basis, ordinary data | art. 7, II: execution of public policy by the administration |
-| Legal basis, sensitive data | art. 11, II, "a" and "b": health protection |
+| Legal basis, ordinary data | art. 7, III: execution of public policy by the administration; VIII: health protection |
+| Legal basis, sensitive data | art. 11, II, "b": public policy; "f": health protection |
 | Controller | the municipal health department that deploys it |
 | Data protection officer | to be appointed by the department before deployment |
 
