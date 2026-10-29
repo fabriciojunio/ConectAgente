@@ -50,6 +50,11 @@ const nextConfig: NextConfig = {
           key: 'Permissions-Policy',
           value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
         },
+        // Isola a página de outras origens. `credentialless` em vez de
+        // `require-corp` porque as imagens do Supabase não mandam CORP.
+        { key: 'Cross-Origin-Embedder-Policy', value: 'credentialless' },
+        { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+        { key: 'Cross-Origin-Resource-Policy', value: 'same-origin' },
         // Sistema interno com dados de saúde: não deve ser indexado
         { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' },
         {
