@@ -124,7 +124,7 @@
     "baseline-browser-mapping": "^2.11.28",
     "@xmldom/xmldom": "^0.8.15",
     "@expo/code-signing-certificates": "^0.0.7",
-    "decode-uri-component": "^0.5.0",
+    "decode-uri-component": "^0.5.1",
     "@react-navigation/core": "^7.23.0"
   }
 }
