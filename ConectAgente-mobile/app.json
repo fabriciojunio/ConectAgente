@@ -28,7 +28,13 @@
         "POST_NOTIFICATIONS",
         "ACCESS_NETWORK_STATE"
       ],
-      "versionCode": 2
+      "versionCode": 2,
+      "allowBackup": false,
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -52,7 +58,8 @@
           "defaultChannel": "lembretes"
         }
       ],
-      "./plugins/assinatura-release"
+      "./plugins/assinatura-release",
+      "./plugins/endurecer-manifesto"
     ],
     "experiments": {
       "typedRoutes": true
