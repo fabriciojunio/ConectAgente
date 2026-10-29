@@ -8,6 +8,7 @@ import {
   getMoradores,
   getEstatisticasMoradores,
   getMoradorAuditado,
+  buscarMoradoresPorDocumento,
 } from '@/services/moradorService';
 import type { MoradorComDetalhes } from '@/services/moradorService';
 import { cacheGetStale } from '@/lib/cache';
@@ -124,15 +125,30 @@ export default function MoradoresPage() {
     fetchData();
   }, [fetchData]);
 
-  const filteredMoradores = search
-    ? moradores.filter(
-        (m) =>
-          m.nome?.toLowerCase().includes(search.toLowerCase()) ||
-          m.cpf?.includes(search.replace(/\D/g, '')) ||
-          m.cartao_sus?.includes(search.replace(/\D/g, '')) ||
-          m.residencia?.bairro?.toLowerCase().includes(search.toLowerCase())
-      )
-    : moradores;
+  // CPF tem 11 dígitos e cartão do SUS 15. Só documento inteiro vai ao banco:
+  // a lista não traz mais o documento, e a busca fica registrada na trilha.
+  const digitosDaBusca = search.replace(/\D/g, '');
+  const buscaPorDocumento = digitosDaBusca.length === 11 || digitosDaBusca.length === 15;
+  const [achadosPorDocumento, setAchadosPorDocumento] = useState<MoradorComDetalhes[]>([]);
+
+  useEffect(() => {
+    if (!buscaPorDocumento) return;
+    let cancelado = false;
+    buscarMoradoresPorDocumento(digitosDaBusca)
+      .then((achados) => { if (!cancelado) setAchadosPorDocumento(achados); })
+      .catch((err) => { if (!cancelado) setError(err instanceof Error ? err.message : 'Erro na busca.'); });
+    return () => { cancelado = true; };
+  }, [buscaPorDocumento, digitosDaBusca]);
+
+  const filteredMoradores = buscaPorDocumento
+    ? achadosPorDocumento
+    : search
+      ? moradores.filter(
+          (m) =>
+            m.nome?.toLowerCase().includes(search.toLowerCase()) ||
+            m.residencia?.bairro?.toLowerCase().includes(search.toLowerCase())
+        )
+      : moradores;
 
   const statCards = [
     { label: 'Total de Pacientes', value: estatisticas.total, icon: Users, color: 'text-primary-600 bg-primary-50' },
@@ -178,7 +194,7 @@ export default function MoradoresPage() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--marcador)]" />
         <input
           type="text"
-          placeholder="Buscar por nome, CPF, SUS ou bairro..."
+          placeholder="Nome, bairro, ou CPF/SUS completo"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full pl-10 pr-4 py-2 rounded-lg border border-[var(--borda)] text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none"
@@ -200,7 +216,6 @@ export default function MoradoresPage() {
               <thead>
                 <tr className="border-b bg-[var(--superficie-alt)]">
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Nome</th>
-                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden md:table-cell">CPF</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden lg:table-cell">Idade</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden lg:table-cell">Bairro</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden xl:table-cell">Agente</th>
@@ -215,7 +230,8 @@ export default function MoradoresPage() {
                   if (morador.is_diabetico) condicoes.push('DM');
                   if (morador.is_gestante) condicoes.push('Gestante');
                   if (morador.is_domiciliado) condicoes.push('Domiciliado');
-                  if (morador.tem_doenca && morador.doencas) condicoes.push(morador.doencas);
+                  // O nome da doença só aparece na ficha, que registra a leitura.
+                  if (morador.tem_doenca) condicoes.push('Outras condições');
 
                   return (
                     <tr
@@ -232,9 +248,6 @@ export default function MoradoresPage() {
                             </span>
                           )}
                         </div>
-                      </td>
-                      <td className="px-4 py-3 hidden md:table-cell text-[var(--texto-claro)]">
-                        {formatCPF(morador.cpf)}
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell">
                         {idade !== null ? `${idade} anos` : '-'}

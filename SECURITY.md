@@ -37,8 +37,29 @@ O destino é uso por secretaria municipal de saúde.
   ilegível pelo cliente por `GRANT` coluna a coluna.
 - **Limite de tentativa de login**: cinco falhas bloqueiam o CPF por 15
   minutos.
-- **Campos de identificação cifrados no aparelho**, chave no SecureStore
-  (Keychain no iOS, Keystore no Android).
+- **Documento, contato, doença e medicação do morador só saem pela leitura
+  auditada.** Desde 28/10/2026 a tabela `moradores` concede leitura coluna a
+  coluna: as listas do painel veem nome, idade e os marcadores de
+  acompanhamento; CPF, cartão do SUS, telefone, filiação, doença, medicação,
+  convênio, benefício e escolaridade só saem por `fn_ler_morador`, que grava
+  quem leu na mesma transação. A busca por documento é `fn_buscar_morador_por_documento`:
+  comparação exata, registrada na trilha sem guardar o documento procurado.
+  Provado por `rodar-testes-colunas.sh`, inclusive que o aplicativo continua
+  gravando.
+- **Conta desativada perde o acesso na hora.** Desde 28/10/2026 cada tabela
+  de dado tem uma policy restritiva `conta_ativa`, somada com E às demais:
+  com `agentes.ativo = false`, a sessão que ainda estiver aberta não lê nem
+  grava mais nada, e as funções auditadas recusam. Antes, desativar só tirava
+  a pessoa das listas.
+- **Funções de painel falham fechadas.** As seis funções de indicadores são
+  `SECURITY DEFINER` e decidiam o alcance pelo papel; papel nulo caía no ramo
+  de gerente e via a cidade inteira. Agora recusam sem cadastro ativo, têm
+  `search_path` travado e não são executáveis pela chave anônima. Provado em
+  `07-conta-ativa.sql`.
+- **Token de sessão e chave local no SecureStore** (Keychain no iOS, Keystore
+  no Android). Os campos do banco local do aparelho **não** são cifrados pelo
+  aplicativo: quem protege o arquivo é a cifra de disco do Android, ligada
+  desde o Android 10. Ver limitações abaixo.
 - **Trilha de auditoria imutável**: `audit_log` aceita inserção e leitura,
   `UPDATE` e `DELETE` são revogados, e a leitura é restrita a gerente e admin.
 - **Exclusão lógica** (`deleted_at`), não física.
@@ -46,7 +67,10 @@ O destino é uso por secretaria municipal de saúde.
   com a identidade vindo do cookie de sessão e nunca de parâmetro.
 - **Portão de vulnerabilidade no CI**: `npm audit` sem dependência de
   desenvolvimento tem que ficar em zero no painel, e nenhuma crítica no
-  aplicativo.
+  aplicativo. Desde 28/10/2026 também OSV-Scanner nos dois lockfiles, Semgrep
+  (análise estática) e gitleaks (segredo no histórico) a cada push, tudo
+  gratuito; aceites de risco com prazo em `osv-scanner.toml`. Actions fixadas
+  por SHA e Dependabot com espera de sete dias.
 
 Detalhamento, incluindo os defeitos encontrados e corrigidos com a mensagem que
 o banco devolveu em cada caso, em [docs/seguranca.md](docs/seguranca.md).
@@ -58,31 +82,35 @@ o banco devolveu em cada caso, em [docs/seguranca.md](docs/seguranca.md).
 Registradas porque omitir limitação em sistema de órgão público é pior que
 tê-la.
 
-- **A cifra dos campos no aparelho é SHA-256 em modo contador**, construída à
-  mão, e **não** AES-256. O `expo-crypto` não expõe AES, o que explica a
-  escolha. A construção é razoável para confidencialidade, mas **não oferece
-  autenticidade**: cifra de fluxo sem MAC é maleável, e inverter um bit do
-  texto cifrado inverte o bit correspondente do texto claro. O comentário no
-  código dizia que a posse da chave garantiria autenticidade, o que é
-  equívoco: a posse da chave garante confidencialidade. Acrescentar HMAC
-  resolveria, ao custo de uma migração do formato armazenado.
-- **A trilha de auditoria quase não registra nada.** Só a troca de senha grava
-  evento. Abrir o prontuário de um morador não deixa rastro, o que contraria o
-  art. 37 da LGPD e inviabiliza a investigação de incidente. É a lacuna de
-  maior impacto. Ver [docs/lgpd.md](docs/lgpd.md).
-- **O direito de eliminação do art. 18, VI não é exercível pelo sistema.** A
-  função de anonimização existe e nenhuma tela a chama.
-- **Consentimento não é registrado.** A tabela existe no banco local e nada
-  escreve nela.
+- **O banco local do aparelho não é cifrado pelo aplicativo.** Havia uma
+  cifra de campo feita à mão (SHA-256 em modo contador, sem MAC, maleável) que
+  nenhuma tela chamava; foi removida em 13/10/2026 em vez de ligada, porque
+  também quebraria a busca por nome em campo. Quem protege o arquivo é a cifra
+  de disco do Android. A saída certa é SQLCipher no banco inteiro, com AEAD de
+  verdade (detalhe em [docs/seguranca.md](docs/seguranca.md)).
+- **A senha local do aplicativo usa SHA-256 com sal, numa passada só.** Serve
+  para o login sem rede, mas é rápida demais para senha: com o banco de um
+  aparelho roubado em mãos, testar senhas custa pouco. O certo é uma derivação
+  lenta (PBKDF2 com muitas iterações, scrypt ou Argon2), com migração do hash
+  no próximo login de cada agente.
+- **A leitura das tabelas de prontuário ainda não passa por função
+  auditada no servidor.** No aplicativo a abertura do prontuário grava
+  `LEITURA` na trilha local, e no painel a ficha do morador passa por
+  `fn_ler_morador`. Mas um usuário logado consegue ler `prontuario_saude` e as
+  outras fichas direto pela API, dentro do que o RLS permite, sem registro. A
+  saída é a mesma aplicada a `moradores` em 28/10/2026: leitura coluna a
+  coluna e função auditada. Ela exige trocar o upsert do aplicativo nessas
+  tabelas, porque o Postgres recusa upsert que atualiza coluna que o usuário
+  não pode ler.
 - **Não há segundo fator** para o painel web, que é onde se lê o prontuário de
   todos os pacientes.
 - **O limite de taxa é em memória do processo.** Com mais de uma instância do
   painel, cada uma conta separado.
-- **Três dependências de build seguem vulneráveis** (`braces`, `sprintf-js`,
-  `node-forge`) e não têm versão corrigida publicada pelo mantenedor. São
-  ferramenta que roda na máquina de quem desenvolve, não código entregue.
-- **Não há procedimento de notificação de incidente** conforme o art. 48. Este
-  arquivo trata de falha de software, que é outra coisa.
+- **Dependências de build com falha conhecida** (`node-forge`, `uuid` 7,
+  `image-size` 1 e `deepmerge`) vêm da CLI do Expo, do Metro e do Jest. Ou
+  não têm versão corrigida, ou a corrigida quebra o empacotamento (medido).
+  Rodam na máquina de quem empacota, não no aparelho. Cada uma está aceita com
+  motivo e prazo em [`osv-scanner.toml`](osv-scanner.toml).
 
 ---
 
@@ -90,6 +118,5 @@ tê-la.
 
 1. Definir o encarregado pelo tratamento e o canal de atendimento ao titular.
 2. Resolver a trilha de auditoria de acesso a prontuário.
-3. Criar a ação administrativa de eliminação.
-4. Escrever o procedimento de incidente, com prazo e responsável.
-5. Rotacionar qualquer chave que tenha circulado em ambiente de teste.
+3. Preencher os nomes e contatos do [procedimento de incidente](docs/incidente.md).
+4. Rotacionar qualquer chave que tenha circulado em ambiente de teste.

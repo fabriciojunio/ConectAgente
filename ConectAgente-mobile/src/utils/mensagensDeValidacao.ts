@@ -18,50 +18,46 @@ import { z } from 'zod';
  * As mensagens específicas que cada schema já declara continuam valendo: o
  * mapa só responde quando não há uma.
  */
-const mapa: z.ZodErrorMap = (issue, ctx) => {
+const mapa: z.core.$ZodErrorMap = (issue) => {
   switch (issue.code) {
-    case z.ZodIssueCode.invalid_type:
+    case 'invalid_type':
       // `undefined` é campo não preenchido; `null` é campo limpo. Para quem
       // está olhando a tela, os dois querem dizer a mesma coisa.
-      if (issue.received === 'undefined' || issue.received === 'null') {
-        return { message: 'Campo obrigatório' };
+      if (issue.input === undefined || issue.input === null) {
+        return 'Campo obrigatório';
       }
-      return { message: 'Valor inválido' };
+      return 'Valor inválido';
 
-    case z.ZodIssueCode.too_small:
-      if (issue.type === 'string') {
-        return issue.minimum === 1
-          ? { message: 'Campo obrigatório' }
-          : { message: `Mínimo de ${issue.minimum} caracteres` };
+    case 'too_small':
+      if (issue.origin === 'string') {
+        return Number(issue.minimum) === 1 ? 'Campo obrigatório' : `Mínimo de ${issue.minimum} caracteres`;
       }
-      if (issue.type === 'number') return { message: `O mínimo é ${issue.minimum}` };
-      if (issue.type === 'array') return { message: `Selecione ao menos ${issue.minimum}` };
-      return { message: 'Valor abaixo do mínimo' };
+      if (issue.origin === 'number') return `O mínimo é ${issue.minimum}`;
+      if (issue.origin === 'array') return `Selecione ao menos ${issue.minimum}`;
+      return 'Valor abaixo do mínimo';
 
-    case z.ZodIssueCode.too_big:
-      if (issue.type === 'string') return { message: `Máximo de ${issue.maximum} caracteres` };
-      if (issue.type === 'number') return { message: `O máximo é ${issue.maximum}` };
-      return { message: 'Valor acima do máximo' };
+    case 'too_big':
+      if (issue.origin === 'string') return `Máximo de ${issue.maximum} caracteres`;
+      if (issue.origin === 'number') return `O máximo é ${issue.maximum}`;
+      return 'Valor acima do máximo';
 
-    case z.ZodIssueCode.invalid_string:
-      if (issue.validation === 'email') return { message: 'E-mail inválido' };
-      if (issue.validation === 'url') return { message: 'Endereço inválido' };
-      if (issue.validation === 'uuid') return { message: 'Identificador inválido' };
-      return { message: 'Formato inválido' };
+    case 'invalid_format':
+      if (issue.format === 'email') return 'E-mail inválido';
+      if (issue.format === 'url') return 'Endereço inválido';
+      if (issue.format === 'uuid' || issue.format === 'guid') return 'Identificador inválido';
+      return 'Formato inválido';
 
-    case z.ZodIssueCode.invalid_enum_value:
-      return { message: 'Escolha uma das opções' };
+    case 'invalid_value':
+      return 'Escolha uma das opções';
 
-    case z.ZodIssueCode.invalid_date:
-      return { message: 'Data inválida' };
-
-    case z.ZodIssueCode.custom:
+    case 'custom':
       // Regra escrita à mão sem mensagem. Genérica de propósito: inventar um
       // texto específico aqui seria adivinhar o que a regra queria dizer.
-      return { message: 'Valor inválido' };
+      return 'Valor inválido';
 
     default:
-      return { message: ctx.defaultError };
+      // Sem resposta aqui, o Zod usa a própria mensagem padrão.
+      return undefined;
   }
 };
 
@@ -73,7 +69,7 @@ const mapa: z.ZodErrorMap = (issue, ctx) => {
  * antes de o primeiro formulário validar.
  */
 export function aplicarMensagensEmPortugues(): void {
-  z.setErrorMap(mapa);
+  z.config({ customError: mapa });
 }
 
 export { mapa as mapaDeMensagens };

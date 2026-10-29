@@ -41,7 +41,7 @@ export default function LoginPage() {
     const stripped = stripCPF(cpf);
     const result = loginSchema.safeParse({ cpf: stripped, senha });
     if (!result.success) {
-      setError(result.error.errors[0].message);
+      setError(result.error.issues[0].message);
       return;
     }
 

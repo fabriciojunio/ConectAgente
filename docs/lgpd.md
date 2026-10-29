@@ -69,6 +69,12 @@ DEFINER` com `search_path` preso, que grava o registro na mesma transação em
 que lê. Ela também grava `LEITURA_NEGADA` quando recusa: sem isso, varrer
 identificadores não deixaria marca nenhuma.
 
+A função só vale se a ficha não puder ser lida por outro caminho. Desde
+28/10/2026 documento, contato, filiação, doença e medicação não saem por
+`SELECT` direto: o banco concede a leitura coluna por coluna, e o painel busca
+por documento pela função `fn_buscar_morador_por_documento`, que também grava
+na trilha (sem guardar o documento procurado).
+
 ### A trilha e o consentimento chegam ao servidor
 
 Os dois entram na fila de sincronização. A prova do aceite não pode ficar só
@@ -104,8 +110,14 @@ pode perder a visita registrada porque o log falhou.
 
 ## O que continua faltando
 
-**Art. 48, notificação de incidente.** Não há procedimento documentado nem
-canal definido. É decisão administrativa com a secretaria, não de código.
+**Art. 48, notificação de incidente.** O roteiro está em
+[incidente.md](incidente.md), com o prazo de três dias úteis da Resolução
+CD/ANPD nº 15/2024. Faltam os nomes e contatos, que são decisão administrativa
+da secretaria.
+
+**Leitura direta das tabelas de prontuário.** No aplicativo a abertura grava
+na trilha, mas pela API um usuário logado lê `prontuario_saude` e as outras
+fichas sem registro, dentro do RLS. Ver [seguranca.md](seguranca.md).
 
 **Encarregado e canal do titular.** Sem definição, os pedidos de titular não
 têm a quem responder. Também é decisão administrativa.

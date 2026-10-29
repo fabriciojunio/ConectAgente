@@ -11,7 +11,7 @@ import type {
   PaginatedResult,
 } from '@/types';
 
-const VISITA_SELECT = `*, agente:agentes(id, nome, area_atuacao), residencia:residencias(id, logradouro, numero, bairro, cidade), morador:moradores(id, nome, cpf)`;
+const VISITA_SELECT = `*, agente:agentes(id, nome, area_atuacao), residencia:residencias(id, logradouro, numero, bairro, cidade), morador:moradores(id, nome)`;
 
 export async function getVisitas(
   filters?: GlobalFilters,

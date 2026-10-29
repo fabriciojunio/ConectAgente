@@ -50,6 +50,12 @@ BEGIN
     RAISE EXCEPTION 'sem sessao: leitura de morador exige usuario autenticado';
   END IF;
 
+  -- Conta desativada não lê, nem deixa registro de tentativa: para ela o
+  -- sistema simplesmente não existe mais.
+  IF NOT public.conta_ativa() THEN
+    RAISE EXCEPTION 'sem permissao' USING ERRCODE = '42501';
+  END IF;
+
   SELECT * INTO v_morador FROM moradores WHERE id = p_morador_id;
 
   -- Mesma regra da policy `moradores_select`. Se ela mudar, esta muda junto:

@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getFamiliaById, getHistoricoVisitas } from '@/services/familiaService';
-import { formatDate, formatCPF, calcularDiasSemVisita, withTimeout } from '@/lib/utils';
-import type { ResidenciaComDetalhes, Visita } from '@/types';
+import { formatDate, calcularDiasSemVisita, withTimeout } from '@/lib/utils';
+import type { Morador, ResidenciaComDetalhes, Visita } from '@/types';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   Loader2,
@@ -26,6 +26,20 @@ const statusConfig: Record<string, { label: string; icon: typeof CheckCircle; cl
   cancelada: { label: 'Cancelada', icon: XCircle, className: 'text-red-600 bg-red-50' },
   nao_encontrado: { label: 'Não Encontrado', icon: AlertCircle, className: 'text-yellow-600 bg-yellow-50' },
 };
+
+/**
+ * Condições pelos marcadores de acompanhamento. O nome da doença e o documento
+ * não vêm mais na lista: saem só pela ficha, que registra quem leu.
+ */
+function condicoesDe(morador: Morador): string {
+  const condicoes: string[] = [];
+  if (morador.is_hipertenso) condicoes.push('HAS');
+  if (morador.is_diabetico) condicoes.push('DM');
+  if (morador.is_gestante) condicoes.push('Gestante');
+  if (morador.is_domiciliado) condicoes.push('Domiciliado');
+  if (morador.tem_doenca) condicoes.push('Outras condições');
+  return condicoes.length > 0 ? condicoes.join(', ') : '-';
+}
 
 export default function FamiliaDetailPage() {
   const params = useParams();
@@ -164,7 +178,6 @@ export default function FamiliaDetailPage() {
               <thead>
                 <tr className="border-b bg-[var(--superficie-alt)]">
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Nome</th>
-                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden md:table-cell">CPF</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden lg:table-cell">Data Nasc.</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden lg:table-cell">Condições</th>
                 </tr>
@@ -173,14 +186,11 @@ export default function FamiliaDetailPage() {
                 {familia.moradores.map((morador) => (
                   <tr key={morador.id} className="border-b last:border-0">
                     <td className="px-4 py-3 font-medium">{morador.nome}</td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      {morador.cpf ? formatCPF(morador.cpf) : '-'}
-                    </td>
                     <td className="px-4 py-3 hidden lg:table-cell">
                       {morador.data_nascimento ? formatDate(morador.data_nascimento) : '-'}
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">
-                      {morador.doencas || '-'}
+                      {condicoesDe(morador)}
                     </td>
                   </tr>
                 ))}

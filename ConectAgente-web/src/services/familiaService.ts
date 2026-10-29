@@ -12,8 +12,9 @@ import type {
   PaginationParams,
   PaginatedResult,
 } from '@/types';
+import { MORADOR_COLUNAS_LISTA } from './moradorColunas';
 
-const RESIDENCIA_SELECT = `*, agente:agentes(id, nome, area_atuacao), moradores(*)`;
+const RESIDENCIA_SELECT = `*, agente:agentes(id, nome, area_atuacao), moradores(${MORADOR_COLUNAS_LISTA})`;
 
 export async function getFamilias(
   filters?: GlobalFilters,
@@ -66,7 +67,7 @@ export async function getFamiliaById(id: string): Promise<ResidenciaComDetalhes 
     const supabase = createClient();
     const { data, error } = await supabase
       .from('residencias')
-      .select(`*, agente:agentes(id, nome, area_atuacao), moradores(*), visitas(*, agente:agentes(id, nome))`)
+      .select(`*, agente:agentes(id, nome, area_atuacao), moradores(${MORADOR_COLUNAS_LISTA}), visitas(*, agente:agentes(id, nome))`)
       .eq('id', id)
       .is('deleted_at', null)
       .single();
@@ -116,14 +117,14 @@ export async function getMoradoresByFamilia(residenciaId: string): Promise<Morad
     const supabase = createClient();
     const { data, error } = await supabase
       .from('moradores')
-      .select('*')
+      .select(MORADOR_COLUNAS_LISTA)
       .eq('residencia_id', residenciaId)
       .is('deleted_at', null)
       .order('nome', { ascending: true });
 
     if (error) throw new Error(`Erro ao buscar moradores: ${error.message}`);
 
-    const result = (data as Morador[]) ?? [];
+    const result = (data as unknown as Morador[]) ?? [];
     cacheSet(key, result);
     return result;
   } catch (err) {
