@@ -143,7 +143,8 @@ docs/                       (in Portuguese)
   lgpd.md                   what is implemented and what is not
 ```
 
-English versions of the security documents are in [docs/en/](docs/en/).
+English versions of the security documents are in [docs/en/](docs/en/), including the
+[MobSF analysis of the APK](docs/en/mobsf.md).
 
 ---
 
