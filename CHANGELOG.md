@@ -128,6 +128,26 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - Dois hooks que eram duplicatas mortas, chamando métodos inexistentes.
 - A pasta `landing/`, que só continha artefato de deploy vazio.
 
+## [1.1.0] - 2026-10-29 (pré-lançamento)
+
+### Segurança
+- Backup do Android desligado: o banco com dado de saúde não sai mais pelo
+  backup do Google nem por `adb backup`.
+- A tela de recorte de imagem deixou de ser exportada; outro aplicativo não
+  consegue mais abri-la.
+- Retiradas as permissões que nada usa: gravar áudio, desenhar sobre outros
+  apps e escrever no armazenamento externo.
+- Documento, cartão do SUS, doença e medicação do morador só saem pela
+  leitura auditada; conta desativada perde o acesso na hora.
+- `decode-uri-component` 0.5.1 (GHSA-qr28-fpjm-wq7f), zod 4,
+  @hookform/resolvers 5, undici e follow-redirects corrigidos.
+- Chave de assinatura nova; a 1.0.0 precisa ser desinstalada antes.
+
+### Corrigido
+- Base legal da LGPD: art. 7º, III e VIII, e art. 11, II, b e f.
+- A tela "Mais" mostrava um e-mail de encarregado inventado; agora diz que o
+  contato está a definir pela secretaria.
+
 ## [1.0.0] - 2026-05-19
 
 ### Adicionado
