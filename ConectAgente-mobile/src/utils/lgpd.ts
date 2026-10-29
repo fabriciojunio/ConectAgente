@@ -1,6 +1,6 @@
 /**
  * Utilitários de conformidade LGPD (Lei 13.709/2018).
- * - Base legal: saúde pública (Art. 7°, II e Art. 11, II, a)
+ * - Base legal: política pública de saúde (Art. 7°, III e VIII; Art. 11, II, b e f)
  * - Log de auditoria de todos os acessos
  * - Anonimização de dados
  * - Controle de consentimento
@@ -126,13 +126,15 @@ export function calcularDataExpiracao(tipo: 'saude' | 'geral'): string {
 // ============================================================
 // FINALIDADE
 // Base legal LGPD para este sistema:
-// Art. 7°, II: execução de políticas públicas pela administração pública
-// Art. 11, II, a, tutela da saúde nos dados sensíveis
+// Art. 7°, III: execução de políticas públicas pela administração pública
+// Art. 7°, VIII e Art. 11, II, f: tutela da saúde
+// Art. 11, II, b: política pública com dado sensível
 // ============================================================
 
 export const BASE_LEGAL_LGPD = {
-  ARTIGO: 'Art. 7°, II e Art. 11, II, a da Lei 13.709/2018 (LGPD)',
+  ARTIGO: 'Art. 7°, III e VIII, e Art. 11, II, b e f da Lei 13.709/2018 (LGPD)',
   FINALIDADE: 'Atenção básica à saúde - Acompanhamento de Agentes Comunitários de Saúde',
   CONTROLADOR: 'Secretaria Municipal de Saúde',
-  DPO_CONTATO: 'dpo@secretaria.saude.gov.br',
+  // Contato inventado na tela seria pior que a lacuna: quem nomeia o encarregado é a secretaria.
+  DPO_CONTATO: 'a definir pela secretaria antes do uso com dado real',
 } as const;
