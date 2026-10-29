@@ -47,10 +47,12 @@ const ROTAS_SEM_AUTENTICACAO = ['/api/health', '/robots.txt', '/favicon.ico'];
  * partir do script inicial. Sem ele, cada pedaco carregado dinamicamente
  * seria bloqueado.
  *
- * O `style-src` continua com `'unsafe-inline'`: o Tailwind e o `next/font`
- * injetam estilo embutido, e nao ha caminho de nonce para estilo no Next hoje.
- * Estilo injetado tem superficie de ataque muito menor que script, e o resto
- * da politica continua fechando o que importa.
+ * Estilo segue a mesma ideia: o Next carimba o nonce nas proprias folhas de
+ * estilo, entao `<style>` injetado por atacante fica bloqueado. Isso importa
+ * porque seletor de atributo em CSS consegue vazar valor de campo da tela.
+ * Atributo `style=""` continua liberado em `style-src-attr`: os componentes e
+ * os graficos renderizam estilo assim no servidor, e atributo de estilo nao
+ * carrega seletor.
  */
 function montarCsp(nonce: string, desenvolvimento: boolean): string {
   const script = desenvolvimento
@@ -63,9 +65,10 @@ function montarCsp(nonce: string, desenvolvimento: boolean): string {
   return [
     "default-src 'self'",
     script,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    desenvolvimento ? "style-src 'self' 'unsafe-inline'" : `style-src 'self' 'nonce-${nonce}'`,
+    "style-src-attr 'unsafe-inline'",
     "img-src 'self' data: blob: https://*.supabase.co",
-    "font-src 'self' https://fonts.gstatic.com",
+    "font-src 'self'",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
     "frame-ancestors 'none'",
     "object-src 'none'",
