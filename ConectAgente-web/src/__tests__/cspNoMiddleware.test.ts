@@ -92,6 +92,29 @@ describe('a política em si', () => {
     expect(linhaProducao).toContain('strict-dynamic');
   });
 
+  it('produção não aceita elemento <style> sem o nonce', () => {
+    // `<style>` injetado permite seletor de atributo, que vaza valor de campo
+    // da tela. Atributo `style=""` fica liberado à parte, em style-src-attr.
+    const trecho = FONTE.slice(
+      FONTE.indexOf('function montarCsp'),
+      FONTE.indexOf('export async function')
+    );
+    const linhaEstilo = trecho.split('\n').find((l) => l.includes('style-src') && l.includes('?'));
+
+    expect(linhaEstilo).toBeDefined();
+    const producao = linhaEstilo!.slice(linhaEstilo!.indexOf(':'));
+    expect(producao).toContain('nonce-');
+    expect(producao).not.toContain('unsafe-inline');
+    expect(trecho).toContain("\"style-src-attr 'unsafe-inline'\"");
+  });
+
+  it('a página fica isolada de outras origens', () => {
+    const config = readFileSync(join(__dirname, '..', '..', 'next.config.ts'), 'utf-8');
+    expect(config).toContain("key: 'Cross-Origin-Embedder-Policy', value: 'credentialless'");
+    expect(config).toContain("key: 'Cross-Origin-Opener-Policy', value: 'same-origin'");
+    expect(config).toContain("key: 'Cross-Origin-Resource-Policy', value: 'same-origin'");
+  });
+
   it('o nonce é sorteado por requisição, e não constante', () => {
     expect(FONTE).toMatch(/crypto\.randomUUID\(\)/);
   });
