@@ -1,5 +1,7 @@
 # ConectAgente
 
+*[Read this in English](README.en.md)*
+
 Sistema de apoio ao trabalho do Agente Comunitário de Saúde: um aplicativo que
 funciona sem internet para o registro em campo, e um painel web para a
 coordenação acompanhar.
@@ -80,12 +82,12 @@ npm run build
 bash ConectAgente-web/supabase/testes/rodar-todos.sh
 ```
 
-Estado medido em 28/10/2026:
+Estado medido em 29/10/2026:
 
 | O que | Resultado |
 |---|---|
 | Testes do aplicativo | 638 em 33 suítes |
-| Testes do painel | 333 em 30 suítes |
+| Testes do painel | 335 em 30 suítes |
 | Verificações em banco de verdade | 106 em 6 suítes, mais a de instalação repetida |
 | Erros de tipo | 0 nos dois projetos |
 | Avisos de ESLint | 3, todos de import sem uso, anteriores |
@@ -252,6 +254,13 @@ Os 20 commits de lá entraram aqui em 13/10/2026 como ancestrais, por um merge
 com estratégia `ours`: a autoria e as datas são de quem os fez, e nenhum
 arquivo deste código mudou com isso. O crédito também fica por escrito aqui e
 no `CITATION.cff`.
+
+---
+
+## Uso de IA
+
+Este projeto foi estruturado com apoio de ferramentas de IA generativa. Modelagem, regras de
+negócio, revisão do código e conclusões foram revisadas e validadas por Fabrício Júnio.
 
 ---
 
