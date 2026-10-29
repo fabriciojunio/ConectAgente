@@ -207,6 +207,33 @@ só a chave pública. Também estavam sem `search_path` travado. Agora recusam s
 cadastro ativo, travam o `search_path` e não são executáveis por `anon`.
 Suíte: `07-conta-ativa.sql`, dentro de `rodar-testes-colunas.sh`.
 
+### Painel publicado sem banco e sem as correções
+
+Em 29/10/2026 o painel em produção ainda servia a versão de maio. O projeto da
+Vercel tinha sido publicado à mão e não estava ligado ao repositório, então
+nenhum merge chegava ao ar, e as variáveis de ambiente eram os valores de
+exemplo: `/api/health` respondia `misconfigured`. Nenhuma correção deste
+documento valia para quem abria o site, e o DAST estava avaliando o código
+antigo.
+
+Corrigido: o projeto foi ligado ao repositório com a branch `produção` e a
+pasta `ConectAgente-web`, e as variáveis receberam os valores reais, com a
+chave de serviço como segredo. `/api/health` passou a responder `healthy`.
+
+### Estilo injetado liberado pela política de conteúdo
+
+O `style-src` tinha `'unsafe-inline'` porque o `globals.css` importava a fonte
+do Google, além do `next/font`. Com isso, um `<style>` injetado passava, e
+seletor de atributo em CSS vaza valor de campo da tela, um caractere por
+requisição. O import também mandava o IP de cada visitante ao Google.
+
+Corrigido em 29/10/2026: a fonte vem só do `next/font`, servida pelo próprio
+site; `style-src` aceita só o nonce da requisição; atributo `style=""` continua
+liberado em `style-src-attr`, porque os componentes e os gráficos renderizam
+estilo assim. Conferido no Chromium, sem violação em `/login`, `/registro` e
+`/demo`. Entraram também `Cross-Origin-Embedder-Policy: credentialless`,
+`Cross-Origin-Opener-Policy` e `Cross-Origin-Resource-Policy`.
+
 ## O que continua em aberto
 
 - **As tabelas de prontuário ainda são legíveis direto pela API**, dentro do

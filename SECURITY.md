@@ -1,5 +1,9 @@
 # Política de Segurança
 
+*English: email **junioad555@gmail.com** with the subject **[SECURITY] ConectAgente**; reply
+within 72 hours. Do not open a public issue for flaws that expose citizens' data. Full policy in
+[docs/en/security-policy.md](docs/en/security-policy.md).*
+
 ## Versões suportadas
 
 | Versão | Suporte |
@@ -63,6 +67,13 @@ O destino é uso por secretaria municipal de saúde.
 - **Trilha de auditoria imutável**: `audit_log` aceita inserção e leitura,
   `UPDATE` e `DELETE` são revogados, e a leitura é restrita a gerente e admin.
 - **Exclusão lógica** (`deleted_at`), não física.
+- **Política de conteúdo do painel com nonce** em script e em elemento de
+  estilo; só atributo `style=""` segue liberado, em `style-src-attr`. A fonte
+  é servida pelo próprio site e a página fica isolada de outras origens
+  (`Cross-Origin-Embedder-Policy`, `-Opener-Policy` e `-Resource-Policy`).
+  Conferida no Chromium, sem violação nas telas de entrada e de demonstração,
+  e pelo OWASP ZAP contra o site publicado em 29/10/2026: 64 regras, nenhum
+  aviso.
 - **Autorização verificada no servidor** nas Server Actions administrativas,
   com a identidade vindo do cookie de sessão e nunca de parâmetro.
 - **Portão de vulnerabilidade no CI**: `npm audit` sem dependência de
