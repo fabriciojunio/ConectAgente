@@ -722,13 +722,13 @@ O ConectAgente foi desenvolvido com conformidade à **Lei 13.709/2018**:
 | Requisito | Situação real |
 |---|---|
 | Finalidade (art. 6º, I) | declarada em `BASE_LEGAL_LGPD` e exibida na tela "Mais" |
-| Segurança (art. 46) | **implementado**: RLS em todas as tabelas, hash com sal, cifra dos campos de identificação, SecureStore |
-| Controle de acesso | **implementado**: policies por papel, com teste de contrato contra os guardas de tela |
-| Trilha imutável (art. 37) | **parcial**: `audit_log` é append-only, mas só a troca de senha grava evento |
-| Exclusão (art. 18, VI) | **parcial**: exclusão lógica existe, a anonimização está escrita e nunca é chamada |
-| Consentimento (art. 7º, I) | **não implementado**: a tabela existe no banco local e nada escreve nela |
-| Retenção (art. 16) | **não implementado**: o prazo é calculado por uma função que ninguém chama |
-| Notificação de incidente (art. 48) | **não implementado**: sem procedimento nem canal definido |
+| Segurança (art. 46) | **implementado**: RLS em todas as tabelas, hash com sal, SecureStore; os campos do banco do aparelho ficam em texto puro, protegidos pela cifra de disco do Android ([seguranca.md](seguranca.md)) |
+| Controle de acesso | **implementado**: policies por papel, com teste de contrato contra os guardas de tela; documento e doença do morador só pela leitura auditada |
+| Trilha imutável (art. 37) | **implementado**: login, abertura de prontuário, exportação e anonimização no aplicativo; aprovação, recusa e leitura de ficha no painel, por `fn_ler_morador` |
+| Exclusão (art. 18, VI) | **implementado**: `lgpdRepository.anonimizar`, na ficha do morador |
+| Consentimento (art. 7º, I) | **implementado**: `lgpdRepository.registrarConsentimento` no cadastro do morador, sincronizado com o servidor |
+| Retenção (art. 16) | **implementado sem apagar**: `levantarVencidos` mostra ao gerente o que venceu; quem decide eliminar é a coordenação |
+| Notificação de incidente (art. 48) | **roteiro pronto** em [incidente.md](incidente.md); faltam os nomes e contatos da secretaria |
 
 ### Audit Log
 
@@ -762,11 +762,11 @@ alteração de prontuário não deixam rastro. Ver [lgpd.md](lgpd.md).
 
 | Dado | Finalidade | Base Legal LGPD |
 |---|---|---|
-| Nome, CPF, data de nascimento | Identificação do morador | Art. 7º, II |
-| Condições de saúde, medicamentos | Acompanhamento clínico | Art. 11, II, b |
-| Vulnerabilidade social | Encaminhamento assistência social | Art. 7º, II |
-| Dados de gestante e puericultura | Atenção pré-natal e infantil | Art. 11, II, b |
-| Endereço | Planejamento de visitas domiciliares | Art. 7º, II |
+| Nome, CPF, data de nascimento | Identificação do morador | Art. 7º, III |
+| Condições de saúde, medicamentos | Acompanhamento clínico | Art. 11, II, b e f |
+| Vulnerabilidade social | Encaminhamento assistência social | Art. 7º, III |
+| Dados de gestante e puericultura | Atenção pré-natal e infantil | Art. 11, II, b e f |
+| Endereço | Planejamento de visitas domiciliares | Art. 7º, III |
 
 ---
 

@@ -17,8 +17,8 @@ registrar a lacuna.
 | Item | Definição |
 |---|---|
 | Finalidade | atenção básica à saúde, acompanhamento por Agente Comunitário de Saúde |
-| Base legal, dado comum | art. 7º, II: execução de política pública pela administração |
-| Base legal, dado sensível | art. 11, II, "a" e "b": tutela da saúde |
+| Base legal, dado comum | art. 7º, III: execução de política pública pela administração; VIII: tutela da saúde |
+| Base legal, dado sensível | art. 11, II, "b": política pública; "f": tutela da saúde |
 | Controlador | secretaria municipal de saúde que implantar |
 | Encarregado | a definir pela secretaria, antes da implantação |
 

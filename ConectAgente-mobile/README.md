@@ -336,17 +336,17 @@ O sistema implementa os principais requisitos da Lei Geral de Proteção de Dado
 | **Direito de exclusão** (Art. 18, VI) | Soft delete + anonimização do nome |
 | **Rastreabilidade** (Art. 37) | `audit_log` registra ações sensíveis (reset de senha, criação de agentes) |
 | **Consentimento** (Art. 7º, I) | Tabela `consentimentos` por tipo de dado |
-| **Bases legais** (Art. 7º, II) | Saúde pública: execução de políticas públicas |
+| **Bases legais** (Art. 7º, III e VIII) | Execução de política pública e tutela da saúde |
 
 ### Dados coletados e finalidade
 
 | Dado | Finalidade | Base Legal |
 |---|---|---|
-| Nome, CPF, data nascimento | Identificação do morador | Art. 7º, II (saúde pública) |
-| Condições de saúde, medicamentos | Acompanhamento clínico | Art. 11, II, b (saúde) |
-| Vulnerabilidade social | Encaminhamento assistência social | Art. 7º, II |
-| Dados de gestante, puericultura | Atenção pré-natal e infantil | Art. 11, II, b |
-| Localização (endereço) | Planejamento de visitas | Art. 7º, II |
+| Nome, CPF, data nascimento | Identificação do morador | Art. 7º, III (política pública) |
+| Condições de saúde, medicamentos | Acompanhamento clínico | Art. 11, II, b e f (política pública e tutela da saúde) |
+| Vulnerabilidade social | Encaminhamento assistência social | Art. 7º, III |
+| Dados de gestante, puericultura | Atenção pré-natal e infantil | Art. 11, II, b e f |
+| Localização (endereço) | Planejamento de visitas | Art. 7º, III |
 
 ---
 

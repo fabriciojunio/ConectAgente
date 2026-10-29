@@ -162,7 +162,7 @@ export default function RecuperarSenha() {
 
               <Text style={styles.lgpd}>
                 Os dados informados são usados exclusivamente para verificação de identidade
-                e não são compartilhados com terceiros (LGPD: Art. 7º, II).
+                e não são compartilhados com terceiros (LGPD: Art. 7º, III).
               </Text>
             </>
           )}

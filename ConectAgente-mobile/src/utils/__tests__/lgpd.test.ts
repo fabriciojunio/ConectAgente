@@ -210,13 +210,17 @@ describe('BASE_LEGAL_LGPD', () => {
   it('contém referência ao artigo correto da LGPD', () => {
     expect(BASE_LEGAL_LGPD.ARTIGO).toContain('13.709/2018');
     expect(BASE_LEGAL_LGPD.ARTIGO).toContain('Art. 7°');
+    // Inciso II do art. 7º é obrigação legal; política pública é o III, e tutela da saúde o VIII.
+    expect(BASE_LEGAL_LGPD.ARTIGO).toContain('Art. 7°, III e VIII');
+    expect(BASE_LEGAL_LGPD.ARTIGO).toContain('Art. 11, II, b e f');
   });
 
   it('contém finalidade de saúde pública', () => {
     expect(BASE_LEGAL_LGPD.FINALIDADE).toContain('saúde');
   });
 
-  it('contém contato do DPO', () => {
-    expect(BASE_LEGAL_LGPD.DPO_CONTATO).toContain('@');
+  it('não inventa contato do DPO', () => {
+    // Sem encarregado nomeado, a tela diz isso em vez de mostrar um e-mail inventado.
+    expect(BASE_LEGAL_LGPD.DPO_CONTATO).toContain('a definir');
   });
 });

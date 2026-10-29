@@ -1,0 +1,92 @@
+name: Análise do APK (MobSF)
+
+# Análise estática do APK publicado, a mesma que um pentest mobile faz primeiro: permissões,
+# componentes exportados, configuração de rede, segredo no pacote, assinatura e bibliotecas.
+# Roda numa release nova e sob demanda. O MobSF sobe num contêiner descartável, só nesta
+# máquina da CI; o APK não vai para nenhum serviço de fora.
+
+on:
+  # Também quando este arquivo muda, para um erro aparecer no PR e não na próxima release.
+  push:
+    paths: [".github/workflows/mobsf.yml"]
+  release:
+    types: [published, prereleased]
+  workflow_dispatch:
+    inputs:
+      versao:
+        description: "Tag da release com o APK"
+        required: true
+        default: "v1.1.0"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mobsf:
+    name: MobSF no APK da release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERSAO: ${{ github.event.release.tag_name || inputs.versao || 'v1.1.0' }}
+    steps:
+      - name: Baixar o APK da release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$VERSAO" -R "${{ github.repository }}" -p "*.apk" -p "*.apk.sha256" -D apk
+          cd apk && sha256sum -c ./*.sha256
+
+      - name: Subir o MobSF
+        run: |
+          # Chave sorteada a cada execução: a API só existe enquanto o job roda.
+          chave=$(openssl rand -hex 32)
+          echo "::add-mask::$chave"
+          echo "CHAVE=$chave" >> "$GITHUB_ENV"
+          docker run -d --name mobsf -p 127.0.0.1:8000:8000 -e MOBSF_API_KEY="$chave" \
+            opensecurity/mobile-security-framework-mobsf@sha256:5113fbad0727445dda01afdccafea5e107bfa8632ead8a169492f5caa8aa1b7c
+          for i in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:8000/login/ && exit 0; sleep 5; done
+          docker logs mobsf | tail -30; exit 1
+
+      - name: Enviar, analisar e baixar o relatório
+        run: |
+          set -euo pipefail
+          api=http://127.0.0.1:8000/api/v1
+          apk=$(ls apk/*.apk)
+          hash=$(curl -sf -H "Authorization: $CHAVE" -F "file=@$apk" "$api/upload" | jq -r .hash)
+          test -n "$hash" && test "$hash" != null
+          curl -sf -H "Authorization: $CHAVE" -d "hash=$hash" "$api/scan" > /dev/null
+          mkdir -p relatorio
+          curl -sf -H "Authorization: $CHAVE" -d "hash=$hash" "$api/report_json" > relatorio/mobsf.json
+          curl -sf -H "Authorization: $CHAVE" -d "hash=$hash" "$api/scorecard" > relatorio/scorecard.json
+          curl -sf -H "Authorization: $CHAVE" -d "hash=$hash" "$api/download_pdf" -o relatorio/mobsf.pdf
+
+      - name: Resumo
+        run: |
+          set -euo pipefail
+          {
+            echo "## MobSF, APK $VERSAO"
+            echo
+            echo "Nota de segurança: $(jq -r '.security_score' relatorio/scorecard.json)/100"
+            echo
+            echo "| Severidade | Achados |"
+            echo "|---|---|"
+            for nivel in high warning info secure hotspot; do
+              echo "| $nivel | $(jq -r --arg n "$nivel" '(.[$n] // []) | length' relatorio/scorecard.json) |"
+            done
+            echo
+            echo "### Achados altos"
+            jq -r '(.high // [])[] | "- \(.title)"' relatorio/scorecard.json
+          } | tee resumo.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: mobsf-${{ env.VERSAO }}
+          path: |
+            relatorio/
+            resumo.md
+          retention-days: 90
