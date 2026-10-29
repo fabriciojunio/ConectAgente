@@ -141,6 +141,7 @@ docs/
   arquitetura.md            visão geral de componentes
   seguranca.md              modelo de segurança e o que foi corrigido
   lgpd.md                   o que está implementado e o que não está
+  mobsf.md                  análise do APK com MobSF: o que foi corrigido e o que fica aceito
 ```
 
 ---
