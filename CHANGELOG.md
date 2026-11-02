@@ -6,6 +6,18 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Não Lançado]
 
+### Segurança
+
+- **Banco local cifrado com SQLCipher.** O arquivo do SQLite no aparelho passa a
+  ser cifrado inteiro, com chave de 256 bits guardada no Keystore. Substitui a
+  proteção que dependia só da cifra de disco do Android. Como o formato do
+  arquivo muda, atualizar de uma versão anterior exige nova instalação; o dado
+  volta do servidor na sincronização. Versão para 1.2.0 (`versionCode` 3).
+- **Certificate pinning do Supabase.** A sincronização só é aceita se a cadeia
+  TLS passar pela intermediária (Google Trust Services WE1) ou pela raiz (GTS
+  Root R4), fixadas pela configuração de segurança de rede do Android, com data
+  de expiração para não travar o app caso o Google rotacione a cadeia.
+
 ### Corrigido
 
 - **A área administrativa estava inalcançável numa instalação nova.** A conta

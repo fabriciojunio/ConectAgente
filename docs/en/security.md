@@ -64,18 +64,21 @@ user concludes there is no data instead of no permission.
 ### 3. Data at rest
 
 - Passwords: salted hash, constant-time comparison.
-- Identification fields on the device: **plain text in SQLite**. The `utils/encryption.ts` module had
-  `encryptField` and `encryptSensitiveFields`, but no line of the app called them. Documenting this
-  as encrypted was false, and a false statement about protecting sensitive data is worse than the
-  gap. What protects the file today is Android's own disk encryption, on since Android 10 and
-  effective while the device is locked.
+- Local database: **encrypted whole with SQLCipher**. The SQLite file on the device is now fully
+  encrypted, with a 256-bit key drawn on first run and kept in the device Keystore
+  (`database/chave.ts`); it is applied with `PRAGMA key` as the first operation on open
+  (`database/database.ts`), before any read. Enabled through `expo-sqlite`'s `useSQLCipher` in
+  `app.json`.
 
-  Switching on the written cipher would **not** fix it: it was SHA-256 in counter mode without a MAC,
-  hand-made because `expo-crypto` does not expose AES, and an unauthenticated stream cipher is
-  malleable. Encrypting `nome` and `cpf` would also break local search, which is what the agent uses
-  in the field. The real fix is SQLCipher, encrypting the whole database: it keeps search inside the
-  app and is real AEAD. It costs a native dependency and a development build, the same constraint as
-  background sync.
+  Encrypting the whole database, rather than field by field, was a decision: it keeps the local
+  search the agent uses in the field and is real AEAD. The earlier field cipher (`encryptField`,
+  hand-made SHA-256 in counter mode, no MAC) was removed, not switched on: an unauthenticated stream
+  is malleable, and encrypting `nome` and `cpf` would break search. Before SQLCipher the file was
+  protected only by Android's disk encryption, effective while the device is locked.
+
+  Because the file format changes, upgrading from a version without encryption needs a fresh install;
+  in an offline-first system the data comes back from the server on sync. That is why the version
+  moved to 1.2.0 (`versionCode` 3).
 - Encryption key and session token: SecureStore (Keychain on iOS, Keystore on Android).
 - `senha_hash` is unreadable by the client: the `GRANT` on `agentes` is column by column, and that
   column is left out.
@@ -90,6 +93,19 @@ columns one by one.
 `audit_log` is append-only on the server: it has INSERT and SELECT policies, and `REVOKE UPDATE,
 DELETE` on top, so not even the `authenticated` role can try to change an audit row. Reading is
 restricted to managers and admins.
+
+### 5. Data in transit
+
+All sync is over HTTPS. On top of the system trust store, the app **pins the Supabase certificate**
+through Android's network security config (`plugins/fixar-certificado.js`): a connection is accepted
+only if the TLS chain goes through one of two public keys, the Google Trust Services intermediate
+(WE1) that signs the host and the GTS Root R4 as a backup.
+
+Pinning the intermediate and the root, not the leaf, was a decision: the Supabase leaf rotates on its
+own, the two anchors do not, and two pins keep a rotation of one from taking sync down in the field.
+The `pin-set` has an `expiration`: if Google changes its own chain, past that date Android stops
+enforcing the pin instead of locking the agent out with no remote fix. Renewing means recomputing the
+pins with `openssl` and shipping a new version before the date; the procedure is in the plugin header.
 
 ---
 
