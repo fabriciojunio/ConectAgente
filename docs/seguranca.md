@@ -255,8 +255,10 @@ estilo assim. Conferido no Chromium, sem violação em `/login`, `/registro` e
   RLS e sem registro. A saída é a mesma de `moradores`: leitura coluna a
   coluna, função auditada e troca do upsert do aplicativo nessas tabelas.
 - **Dependências de build com aviso aberto:** `deepmerge` (do Jest), `uuid` 7 e
-  `image-size` 1 (do Metro e do config-plugins). São ferramenta de build, não
-  entram no pacote entregue. `image-size` 2.x e `uuid` 11.x corrigiriam os
+  `image-size` 1 (do Metro e do config-plugins), e `glob` e `minimatch` (ReDoS
+  que só dispara com padrão vindo de atacante; aqui o padrão é configuração fixa
+  das ferramentas, e a correção exige majors que elas não aceitam). São
+  ferramenta de build, não entram no pacote entregue. `image-size` 2.x e `uuid` 11.x corrigiriam os
   avisos, mas quebram o empacotamento do Metro, e isso foi medido: `TypeError:
   The "list" argument must be an instance of SharedArrayBuffer`. O `node-forge`
   saiu desta lista em 02/11/2026, com a 1.4.1, e `braces` e `sprintf-js` já não

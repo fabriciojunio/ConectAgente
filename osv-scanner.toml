@@ -35,3 +35,18 @@ reason = "image-size 1 vem do Metro, no build; o 2.x quebra o empacotamento (Typ
 id = "GHSA-w3rx-r6r6-pgpr"
 ignoreUntil = 2027-01-28
 reason = "image-size 1 vem do Metro, no build; o 2.x quebra o empacotamento (TypeError SharedArrayBuffer, medido)."
+
+# ReDoS que só dispara com padrão de glob vindo do atacante. Aqui glob e
+# minimatch entram pela CLI do Expo, config-plugins, fingerprint, Metro, Jest,
+# babel-jest e codegen do React Native, sempre com padrão fixo de configuração,
+# na máquina de quem empacota ou testa. A correção pede glob 14 e minimatch 11,
+# majors que essas ferramentas não aceitam.
+[[IgnoredVulns]]
+id = "GHSA-3g3m-2fjr-6pw4"
+ignoreUntil = 2027-05-02
+reason = "glob vem de ferramenta de build e teste (Expo CLI, Metro, Jest) com padrão fixo; não roda no aparelho; a correção exige a major 14."
+
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249"
+ignoreUntil = 2027-05-02
+reason = "minimatch vem de ferramenta de build e teste (Expo CLI, Metro, Jest, codegen do React Native) com padrão fixo; não roda no aparelho; a correção exige a major 11."

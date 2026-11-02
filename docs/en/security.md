@@ -224,7 +224,9 @@ because the components and charts render styles that way. Checked in Chromium wi
   logging. The fix is the same as for `moradores`: column-level reads, an audited function and
   replacing the app's upsert on those tables.
 - **Build dependencies with open advisories:** `deepmerge` (from Jest), `uuid` 7 and `image-size` 1
-  (from Metro and config-plugins). They are build tools and do not ship in the delivered bundle.
+  (from Metro and config-plugins), and `glob` and `minimatch` (a ReDoS that only fires with an
+  attacker-supplied pattern; here the pattern is fixed tool configuration, and the fix needs majors
+  the tools do not accept). They are build tools and do not ship in the delivered bundle.
   `image-size` 2.x and `uuid` 11.x would fix the advisories but break Metro bundling, and that was
   measured: `TypeError: The "list" argument must be an instance of SharedArrayBuffer`. `node-forge`
   left this list on 02/11/2026 with 1.4.1, and `braces` and `sprintf-js` no longer show up in OSV.
