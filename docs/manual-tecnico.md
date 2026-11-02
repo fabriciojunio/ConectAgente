@@ -261,7 +261,7 @@ ConectAgent/
 │   │
 │   ├── types/index.ts        # Todos os tipos, enums e interfaces
 │   └── utils/
-│       ├── encryption.ts     # SHA-256-CTR + hash com salt + SecureStore
+│       ├── encryption.ts     # hash de senha com salt + sorteio de senha inicial
 │       ├── validators.ts     # Zod schemas + validações + escapeForLike()
 │       ├── formatters.ts     # CPF, CEP, datas, máscaras
 │       ├── constants.ts      # Cores, chaves, limites
@@ -693,7 +693,8 @@ Logout:    limpa token + chave de criptografia + cache em memória
 | Timing attack (user enumeration) | `verificarSenha` sempre executada com hash dummy |
 | Brute force / força bruta | Rate limiting: 5 tentativas / bloqueio 15 min |
 | User enumeration na recuperação | Mensagem de erro genérica |
-| Dados em repouso | SHA-256-CTR com IV aleatório + chave no Keychain/Keystore |
+| Dados em repouso | banco local inteiro cifrado com SQLCipher, chave de 256 bits no Keystore |
+| Interceptação na sincronização | certificado do Supabase fixado (WE1 e GTS Root R4, expira em 01/05/2027) |
 | Token hijacking | expo-secure-store (TEE/Secure Enclave quando disponível) |
 | Sessão infinita | Timeout de 8 horas + logout automático |
 | Migração de hash inseguro | Formato legado migrado automaticamente no login |
@@ -703,10 +704,8 @@ Logout:    limpa token + chave de criptografia + cache em memória
 ### Atenção em produção
 
 - **RLS no Supabase**: obrigatório (ver seção 13)
-- **AES-256-GCM**: substituto recomendado ao SHA-256-CTR (cipher autenticado)
-- **Certificate pinning**: fixar certificado TLS para apps de saúde
-- **Root/jailbreak detection**: `expo-device` para dispositivos comprometidos
-- **ProGuard/Hermes**: ofuscação do bundle no build de produção
+- **Root/jailbreak detection**: ainda não implementada; `expo-device` para dispositivos comprometidos
+- **ProGuard/Hermes**: ofuscação do bundle no build de produção, ainda não ligada
 
 ---
 
@@ -798,7 +797,7 @@ junta.
 
 | Arquivo de teste | O que cobre |
 |---|---|
-| `utils/encryption.test.ts` | hashSHA256, hashSenha com salt, verificarSenha (novo + legado), SHA-256-CTR round-trip, IV aleatório, cache de chave, retrocompatibilidade XOR |
+| `utils/encryption.test.ts` | hashSHA256, hashSenha com salt, verificarSenha (novo + legado), sortearSenhaForte, e que a cifra de campo não voltou e a documentação diz a verdade |
 | `utils/validators.test.ts` | CPF, cartão SUS, CEP, email (TLD, subdomínio, trim), telefone, datas BR, escapeForLike (%, _, \\, múltiplos), schemas Zod |
 | `utils/formatters.test.ts` | Formatação de CPF, CEP, datas, máscaras numéricas |
 | `utils/lgpd.test.ts` | Anonimização de dados, utilitários de consentimento |
@@ -1105,7 +1104,8 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...
 - [x] CRUD completo: residências, moradores, visitas, prontuários
 - [x] Sincronização com Supabase (fila offline-first)
 - [x] Autenticação local com sessão de 8h
-- [x] Criptografia SHA-256-CTR + SecureStore
+- [x] Banco do aparelho cifrado com SQLCipher + chave no SecureStore
+- [x] Certificate pinning do Supabase (TLS)
 - [x] Conformidade LGPD (soft delete, anonimização, audit log, consentimento)
 - [x] Calendário de agendamentos
 - [x] Metas mensais de visitas
@@ -1138,8 +1138,6 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...
 
 ### Segurança: Backlog
 
-- [ ] Upgrade para AES-256-GCM (cipher autenticado: substitui SHA-256-CTR)
-- [ ] Certificate pinning (TLS)
 - [ ] Root/jailbreak detection
 - [ ] Ofuscação de código (ProGuard + Hermes)
 - [ ] Política de senha configurável (complexidade mínima)
