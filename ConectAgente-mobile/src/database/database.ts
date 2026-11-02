@@ -1,10 +1,16 @@
 /**
- * Conexão com banco de dados SQLite local (expo-sqlite v15).
+ * Conexão com banco de dados SQLite local, cifrado com SQLCipher.
  * Singleton pattern, uma única conexão por app.
+ *
+ * O banco inteiro é cifrado em repouso: a chave vem do Keystore (chave.ts) e é
+ * aplicada com `PRAGMA key` como a primeira operação, antes de qualquer leitura.
+ * Cifrar o banco todo, em vez de campo a campo, preserva a busca local que o
+ * agente usa em campo e dá AEAD de verdade. Ver docs/seguranca.md.
  */
 import * as SQLite from 'expo-sqlite';
 import { CREATE_TABLES_SQL } from './schema';
 import { DB_NAME } from '../utils/constants';
+import { obterChaveDoBanco } from './chave';
 
 let _db: SQLite.SQLiteDatabase | null = null;
 let _initPromise: Promise<SQLite.SQLiteDatabase> | null = null;
@@ -16,6 +22,11 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   if (!_initPromise) {
     _initPromise = (async () => {
       const db = await SQLite.openDatabaseAsync(DB_NAME);
+      // A chave do SQLCipher tem que ser a primeira operação: antes dela, o
+      // arquivo é ilegível, e qualquer outro comando falharia. x'...' passa a
+      // chave como 256 bits crus, sem derivação a partir de texto.
+      const chave = await obterChaveDoBanco();
+      await db.execAsync(`PRAGMA key = "x'${chave}'";`);
       await db.execAsync('PRAGMA journal_mode = WAL;');
       await db.execAsync('PRAGMA foreign_keys = ON;');
       await db.execAsync(CREATE_TABLES_SQL);
