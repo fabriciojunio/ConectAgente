@@ -117,8 +117,8 @@ tê-la.
   todos os pacientes.
 - **O limite de taxa é em memória do processo.** Com mais de uma instância do
   painel, cada uma conta separado.
-- **Dependências de build com falha conhecida** (`node-forge`, `uuid` 7,
-  `image-size` 1 e `deepmerge`) vêm da CLI do Expo, do Metro e do Jest. Ou
+- **Dependências de build com falha conhecida** (`uuid` 7, `image-size` 1 e
+  `deepmerge`) vêm do Metro, do config-plugins e do Jest. Ou
   não têm versão corrigida, ou a corrigida quebra o empacotamento (medido).
   Rodam na máquina de quem empacota, não no aparelho. Cada uma está aceita com
   motivo e prazo em [`osv-scanner.toml`](osv-scanner.toml).

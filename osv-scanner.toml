@@ -22,11 +22,6 @@ ignoreUntil = 2027-01-28
 reason = "deepmerge vem do Jest, só nos testes; não há versão corrigida."
 
 [[IgnoredVulns]]
-id = "GHSA-86w9-cpqp-85rv"
-ignoreUntil = 2027-01-28
-reason = "node-forge vem da CLI do Expo (@expo/cli), roda só na máquina de quem empacota; não há versão corrigida."
-
-[[IgnoredVulns]]
 id = "GHSA-w5hq-g745-h8pq"
 ignoreUntil = 2027-01-28
 reason = "uuid 7 vem do xcode, dentro do @expo/config-plugins, no build; o uuid 11 quebra o Metro (medido)."

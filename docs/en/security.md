@@ -223,10 +223,11 @@ because the components and charts render styles that way. Checked in Chromium wi
 - **Medical record tables can still be read directly through the API**, within RLS and without
   logging. The fix is the same as for `moradores`: column-level reads, an audited function and
   replacing the app's upsert on those tables.
-- **`braces`, `sprintf-js` and `node-forge` remain vulnerable** with no fixed version published by
-  the maintainer. They are build tools and do not ship in the delivered bundle. `image-size` 2.x and
-  `uuid` 11.x would fix two advisories but break Metro bundling, and that was measured:
-  `TypeError: The "list" argument must be an instance of SharedArrayBuffer`.
+- **Build dependencies with open advisories:** `deepmerge` (from Jest), `uuid` 7 and `image-size` 1
+  (from Metro and config-plugins). They are build tools and do not ship in the delivered bundle.
+  `image-size` 2.x and `uuid` 11.x would fix the advisories but break Metro bundling, and that was
+  measured: `TypeError: The "list" argument must be an instance of SharedArrayBuffer`. `node-forge`
+  left this list on 02/11/2026 with 1.4.1, and `braces` and `sprintf-js` no longer show up in OSV.
 - **Rate limiting is in process memory.** Fine for one server; with more than one instance, each
   counts separately.
 - **There is no second factor** for the panel, where everyone's records are read.

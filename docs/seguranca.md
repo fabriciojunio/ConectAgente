@@ -254,11 +254,13 @@ estilo assim. Conferido no Chromium, sem violação em `/login`, `/registro` e
 - **As tabelas de prontuário ainda são legíveis direto pela API**, dentro do
   RLS e sem registro. A saída é a mesma de `moradores`: leitura coluna a
   coluna, função auditada e troca do upsert do aplicativo nessas tabelas.
-- **`braces`, `sprintf-js` e `node-forge` seguem vulneráveis** e sem versão
-  corrigida publicada pelo mantenedor. São ferramenta de build, não entram no
-  pacote entregue. `image-size` 2.x e `uuid` 11.x corrigiriam dois avisos, mas
-  quebram o empacotamento do Metro, e isso foi medido: `TypeError: The "list"
-  argument must be an instance of SharedArrayBuffer`.
+- **Dependências de build com aviso aberto:** `deepmerge` (do Jest), `uuid` 7 e
+  `image-size` 1 (do Metro e do config-plugins). São ferramenta de build, não
+  entram no pacote entregue. `image-size` 2.x e `uuid` 11.x corrigiriam os
+  avisos, mas quebram o empacotamento do Metro, e isso foi medido: `TypeError:
+  The "list" argument must be an instance of SharedArrayBuffer`. O `node-forge`
+  saiu desta lista em 02/11/2026, com a 1.4.1, e `braces` e `sprintf-js` já não
+  aparecem no OSV.
 - **O limite de taxa é em memória do processo.** Serve para o caso de um
   servidor; com mais de uma instância, cada uma conta separado.
 - **Não há segundo fator** para o painel, que é onde se lê o prontuário de

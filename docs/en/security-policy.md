@@ -96,8 +96,8 @@ Recorded because omitting a limitation in a public-sector system is worse than h
   column the user cannot read.
 - **The web panel has no second factor**, and it is where every patient's record is read.
 - **Rate limiting is in process memory.** With more than one panel instance, each counts separately.
-- **Build dependencies with known flaws** (`node-forge`, `uuid` 7, `image-size` 1 and `deepmerge`)
-  come from the Expo CLI, Metro and Jest. Either they have no fixed version, or the fixed one breaks
+- **Build dependencies with known flaws** (`uuid` 7, `image-size` 1 and `deepmerge`) come from
+  Metro, config-plugins and Jest. Either they have no fixed version, or the fixed one breaks
   bundling (measured). They run on the packager's machine, not on the device. Each is accepted with a
   reason and deadline in [`osv-scanner.toml`](../../osv-scanner.toml).
 
