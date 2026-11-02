@@ -610,24 +610,24 @@ Verificação:
   válido       = computed === hash
 ```
 
-### Criptografia de campos PII (SHA-256-CTR)
+### Banco do aparelho cifrado com SQLCipher
 
-Campos sensíveis (CPF, cartão SUS, nome, telefone, nome do pai/mãe) são cifrados com **SHA-256 no modo CTR**:
+Desde a 1.2.0 o arquivo do SQLite no aparelho é cifrado inteiro com **SQLCipher**:
 
 ```
-Chave:    256 bits: gerada uma vez, armazenada no Keychain/Keystore
-IV:       16 bytes aleatórios por cifração
-Keystream: SHA256(key_hex || iv_hex || counter_hex_8) → 32 bytes por bloco
-Cifração: plaintext_byte XOR keystream_byte
-Formato:  "v2:" + base64(iv[16] || ciphertext[n])
-
-Retrocompatibilidade: dados sem "v2:" são descriptografados via XOR legado
+Chave:     256 bits, sorteada na primeira execução (expo-crypto)
+Guarda:    SecureStore, no Keystore do Android, presa ao aparelho
+           (WHEN_UNLOCKED_THIS_DEVICE_ONLY)
+Abertura:  PRAGMA key = "x'<64 hex>'" como primeira operação, antes de
+           qualquer leitura (database/database.ts)
+Ligado:    expo-sqlite com useSQLCipher no app.json
 ```
 
-Por que SHA-256-CTR e não XOR simples?
-- XOR com chave fixa é reversível e determinístico: mesma entrada, mesmo ciphertext
-- CTR com IV aleatório gera ciphertext diferente a cada cifração (semantic security)
-- Sem dependências externas além de `expo-crypto`
+Por que o banco inteiro e não campo a campo: cifrar `nome` e `cpf` quebraria a
+busca local que o agente usa em campo, e o SQLCipher é AEAD de verdade. A cifra
+de campos que existia antes (SHA-256 em modo contador feito à mão, sem MAC) foi
+removida em 13/10/2026: fluxo sem autenticação é maleável, e nenhuma linha do
+aplicativo a chamava.
 
 ### Rate Limiting
 
@@ -722,7 +722,7 @@ O ConectAgente foi desenvolvido com conformidade à **Lei 13.709/2018**:
 | Requisito | Situação real |
 |---|---|
 | Finalidade (art. 6º, I) | declarada em `BASE_LEGAL_LGPD` e exibida na tela "Mais" |
-| Segurança (art. 46) | **implementado**: RLS em todas as tabelas, hash com sal, SecureStore; os campos do banco do aparelho ficam em texto puro, protegidos pela cifra de disco do Android ([seguranca.md](seguranca.md)) |
+| Segurança (art. 46) | **implementado**: RLS em todas as tabelas, hash com sal, SecureStore; banco do aparelho cifrado inteiro com SQLCipher (chave no Keystore) e certificate pinning do Supabase ([seguranca.md](seguranca.md)) |
 | Controle de acesso | **implementado**: policies por papel, com teste de contrato contra os guardas de tela; documento e doença do morador só pela leitura auditada |
 | Trilha imutável (art. 37) | **implementado**: login, abertura de prontuário, exportação e anonimização no aplicativo; aprovação, recusa e leitura de ficha no painel, por `fn_ler_morador` |
 | Exclusão (art. 18, VI) | **implementado**: `lgpdRepository.anonimizar`, na ficha do morador |

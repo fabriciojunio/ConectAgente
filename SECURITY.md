@@ -61,9 +61,13 @@ O destino é uso por secretaria municipal de saúde.
   `search_path` travado e não são executáveis pela chave anônima. Provado em
   `07-conta-ativa.sql`.
 - **Token de sessão e chave local no SecureStore** (Keychain no iOS, Keystore
-  no Android). Os campos do banco local do aparelho **não** são cifrados pelo
-  aplicativo: quem protege o arquivo é a cifra de disco do Android, ligada
-  desde o Android 10. Ver limitações abaixo.
+  no Android).
+- **Banco local do aparelho cifrado inteiro com SQLCipher** desde a 1.2.0
+  (02/11/2026). A chave de 256 bits é sorteada no primeiro uso, fica no
+  Keystore e é aplicada com `PRAGMA key` antes de qualquer leitura.
+- **Certificado do Supabase fixado** no aplicativo pela configuração de
+  segurança de rede do Android: duas chaves públicas da cadeia, com data de
+  expiração para não travar o agente se o Google trocar a cadeia.
 - **Trilha de auditoria imutável**: `audit_log` aceita inserção e leitura,
   `UPDATE` e `DELETE` são revogados, e a leitura é restrita a gerente e admin.
 - **Exclusão lógica** (`deleted_at`), não física.
@@ -93,12 +97,10 @@ o banco devolveu em cada caso, em [docs/seguranca.md](docs/seguranca.md).
 Registradas porque omitir limitação em sistema de órgão público é pior que
 tê-la.
 
-- **O banco local do aparelho não é cifrado pelo aplicativo.** Havia uma
-  cifra de campo feita à mão (SHA-256 em modo contador, sem MAC, maleável) que
-  nenhuma tela chamava; foi removida em 13/10/2026 em vez de ligada, porque
-  também quebraria a busca por nome em campo. Quem protege o arquivo é a cifra
-  de disco do Android. A saída certa é SQLCipher no banco inteiro, com AEAD de
-  verdade (detalhe em [docs/seguranca.md](docs/seguranca.md)).
+- **Atualizar de uma versão sem cifra para a 1.2.0 pede reinstalação.** O
+  formato do arquivo muda e o banco antigo não abre com chave. Num sistema
+  offline-first o dado volta do servidor na sincronização, mas o que estiver
+  na fila sem sincronizar se perde: sincronizar antes de atualizar.
 - **A senha local do aplicativo usa SHA-256 com sal, numa passada só.** Serve
   para o login sem rede, mas é rápida demais para senha: com o banco de um
   aparelho roubado em mãos, testar senhas custa pouco. O certo é uma derivação
@@ -117,8 +119,9 @@ tê-la.
   todos os pacientes.
 - **O limite de taxa é em memória do processo.** Com mais de uma instância do
   painel, cada uma conta separado.
-- **Dependências de build com falha conhecida** (`node-forge`, `uuid` 7,
-  `image-size` 1 e `deepmerge`) vêm da CLI do Expo, do Metro e do Jest. Ou
+- **Dependências de build com falha conhecida** (`uuid` 7, `image-size` 1,
+  `deepmerge`, `glob` e `minimatch`) vêm da CLI do Expo, do Metro, do
+  config-plugins e do Jest. Ou
   não têm versão corrigida, ou a corrigida quebra o empacotamento (medido).
   Rodam na máquina de quem empacota, não no aparelho. Cada uma está aceita com
   motivo e prazo em [`osv-scanner.toml`](osv-scanner.toml).

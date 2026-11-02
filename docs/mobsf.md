@@ -45,8 +45,9 @@ a foto de perfil.
 ## Aceito, com prazo de decisão
 
 **`minSdk=24`: o app instala em Android 7.0.** É o único achado alto. Android 7 não recebe correção
-de segurança desde 2019, e aparelho antigo pode estar sem a cifra de disco, que é o que protege o
-banco local hoje (ver [seguranca.md](seguranca.md)).
+de segurança desde 2019, e aparelho antigo pode estar sem a cifra de disco. Desde a 1.2.0 o banco
+local é cifrado pelo próprio aplicativo com SQLCipher, então a cifra de disco deixou de ser a única
+barreira; o que sobra é o sistema sem correção (ver [seguranca.md](seguranca.md)).
 
 Subir o `minSdk` resolve, mas deixa de fora o agente que tem celular antigo, e isso é decisão da
 secretaria, não técnica. A recomendação é o `minSdk 29` (Android 10, em que a cifra passou a ser

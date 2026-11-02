@@ -68,23 +68,22 @@ não há dado em vez de que não tem permissão.
 ### 3. Dado em repouso
 
 - Senha: hash com sal, comparação em tempo constante.
-- Campos de identificação no aparelho: **em texto puro no SQLite**. O módulo
-  `utils/encryption.ts` tem `encryptField` e `encryptSensitiveFields`, mas
-  nenhuma linha do aplicativo os chama. Medido por busca em todo o código:
-  o que se usa de lá é só o hash de senha e a limpeza do cache de chave.
+- Banco local: **cifrado inteiro com SQLCipher**. A chave é de 256 bits,
+  sorteada na primeira execução e guardada no Keystore do aparelho
+  (`database/chave.ts`); é aplicada com `PRAGMA key` como a primeira operação da
+  abertura (`database/database.ts`), antes de qualquer leitura. Ligado pelo
+  `useSQLCipher` do `expo-sqlite` no `app.json`.
 
-  Documentar isso como cifrado era falso, e falso sobre proteção de dado
-  sensível é pior que a lacuna. O que de fato protege o arquivo hoje é a
-  cifra de disco do próprio Android, que vem ligada desde o Android 10 e vale
-  enquanto o aparelho está bloqueado.
+  Cifrar o banco inteiro, e não campo a campo, foi decisão: preserva a busca
+  local que o agente usa em campo e é AEAD de verdade. A cifra de campo que
+  existia antes (`encryptField`, SHA-256 em modo contador feito à mão, sem MAC)
+  foi removida, não ligada: fluxo sem autenticação é maleável, e cifrar `nome` e
+  `cpf` quebraria a busca. Antes do SQLCipher o que protegia o arquivo era só a
+  cifra de disco do Android, que vale enquanto o aparelho está bloqueado.
 
-  Ligar a cifra que está escrita **não** resolveria: é SHA-256 em modo
-  contador sem MAC, feita à mão porque o `expo-crypto` não expõe AES, e cifra
-  de fluxo sem autenticação é maleável. Além disso, cifrar `nome` e `cpf`
-  quebraria a busca local do aplicativo, que é o que o agente usa em campo.
-  A saída de verdade é SQLCipher, cifrando o banco inteiro: preserva a busca
-  dentro do aplicativo e é AEAD de verdade. Custa dependência nativa e build
-  de desenvolvimento, a mesma restrição da sincronização em segundo plano.
+  Como o formato do arquivo muda, atualizar de uma versão sem cifra exige nova
+  instalação; num sistema offline-first o dado volta do servidor na
+  sincronização. Por isso a versão subiu para 1.2.0 (`versionCode` 3).
 - Chave de cifra e token de sessão: SecureStore (Keychain no iOS, Keystore no
   Android).
 - `senha_hash` é ilegível pelo cliente: o `GRANT` de `agentes` é coluna por
@@ -102,6 +101,22 @@ revogar a tabela e conceder as colunas permitidas uma a uma.
 alterar linha de auditoria. A leitura é restrita a gerente e admin.
 
 O registro de evento ainda é raro na prática. Ver [lgpd.md](lgpd.md).
+
+### 5. Dado em trânsito
+
+Toda a sincronização é por HTTPS. Além da loja de confiança do sistema, o
+aplicativo **fixa o certificado** do Supabase pela configuração de segurança de
+rede do Android (`plugins/fixar-certificado.js`): a conexão só é aceita se a
+cadeia TLS passar por uma de duas chaves públicas, a intermediária do Google
+Trust Services (WE1) que assina o host e a raiz GTS Root R4 como reserva.
+
+Fixar a intermediária e a raiz, e não o certificado da folha, foi decisão: a
+folha do Supabase rotaciona sozinha, as duas âncoras não, e dois pinos evitam
+que a rotação de um derrube a sincronização em campo. O `pin-set` tem
+`expiration`: se o Google trocar a própria cadeia, depois da data o Android
+deixa de exigir o pino em vez de travar o agente sem conserto remoto. Renovar é
+recalcular os pinos com `openssl` e publicar uma versão nova antes da data; o
+procedimento está no cabeçalho do plugin.
 
 ---
 
@@ -239,11 +254,15 @@ estilo assim. Conferido no Chromium, sem violação em `/login`, `/registro` e
 - **As tabelas de prontuário ainda são legíveis direto pela API**, dentro do
   RLS e sem registro. A saída é a mesma de `moradores`: leitura coluna a
   coluna, função auditada e troca do upsert do aplicativo nessas tabelas.
-- **`braces`, `sprintf-js` e `node-forge` seguem vulneráveis** e sem versão
-  corrigida publicada pelo mantenedor. São ferramenta de build, não entram no
-  pacote entregue. `image-size` 2.x e `uuid` 11.x corrigiriam dois avisos, mas
-  quebram o empacotamento do Metro, e isso foi medido: `TypeError: The "list"
-  argument must be an instance of SharedArrayBuffer`.
+- **Dependências de build com aviso aberto:** `deepmerge` (do Jest), `uuid` 7 e
+  `image-size` 1 (do Metro e do config-plugins), e `glob` e `minimatch` (ReDoS
+  que só dispara com padrão vindo de atacante; aqui o padrão é configuração fixa
+  das ferramentas, e a correção exige majors que elas não aceitam). São
+  ferramenta de build, não entram no pacote entregue. `image-size` 2.x e `uuid` 11.x corrigiriam os
+  avisos, mas quebram o empacotamento do Metro, e isso foi medido: `TypeError:
+  The "list" argument must be an instance of SharedArrayBuffer`. O `node-forge`
+  saiu desta lista em 02/11/2026, com a 1.4.1, e `braces` e `sprintf-js` já não
+  aparecem no OSV.
 - **O limite de taxa é em memória do processo.** Serve para o caso de um
   servidor; com mais de uma instância, cada uma conta separado.
 - **Não há segundo fator** para o painel, que é onde se lê o prontuário de

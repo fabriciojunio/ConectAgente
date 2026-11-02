@@ -201,6 +201,21 @@ localmente. A tradução e a remoção dos campos locais ficam num lugar só, em
   quando o próprio arquivo muda, para um erro de digitação em nome de segredo
   aparecer na hora e não na segunda-feira seguinte.
 
+**Duas decisões de 02/11/2026, na versão 1.2.0.**
+
+- **O banco do aparelho é cifrado inteiro, com SQLCipher, e não campo a
+  campo.** A chave tem 256 bits, nasce na primeira execução e fica no Keystore,
+  presa ao aparelho. Cifrar campo a campo quebraria a busca local que o agente
+  usa em campo para achar o paciente; cifrar o arquivo todo preserva a busca e é
+  AEAD de verdade. O preço é que quem vem de uma versão sem cifra precisa
+  reinstalar, e no offline-first o dado volta do servidor na sincronização.
+- **O certificado do Supabase é fixado nas âncoras, não na folha.** O app só
+  aceita a cadeia que passa pela intermediária WE1 ou pela raiz GTS Root R4 do
+  Google Trust Services. A folha do Supabase rotaciona sozinha; as âncoras não.
+  O pin-set tem data de validade para não travar a sincronização em campo se o
+  Google trocar a própria cadeia; renovar antes da data está no cabeçalho de
+  `plugins/fixar-certificado.js`.
+
 ---
 
 ## O que ainda falta
@@ -214,12 +229,6 @@ Honestidade sobre o estado, que vale mais que uma lista de recursos:
   Android de verdade, com migração do hash no próximo login.
 - **As tabelas de prontuário ainda são legíveis direto pela API**, dentro do
   RLS e sem registro. A correção é a mesma feita em `moradores`.
-- **Os campos de identificação ficam em texto puro no banco do aparelho.**
-  Havia um módulo de cifra que nenhuma linha chamava, e três documentos diziam
-  o contrário; ele foi removido em 13/10/2026 junto com a correção dos
-  documentos. Quem protege o arquivo hoje é a cifra de disco do Android. Se a
-  secretaria exigir mais, a saída é SQLCipher no banco inteiro, e custa
-  dependência nativa. Detalhe em [docs/seguranca.md](docs/seguranca.md).
 - **Não há segundo fator no painel**, que é onde se lê o prontuário de todos.
 - **A classificação de risco do time já está aqui**, portada do commit do Luan
   em vez de fundida, porque a linha deles carrega junto 97 arquivos de

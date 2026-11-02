@@ -51,9 +51,13 @@ It is meant for use by a municipal health department.
   their scope by role; a null role fell into the manager branch and saw the whole city. They now
   refuse without an active account, have a locked `search_path` and cannot be executed with the
   anonymous key. Proven in `07-conta-ativa.sql`.
-- **Session token and local key in SecureStore** (Keychain on iOS, Keystore on Android). Fields in
-  the device's local database are **not** encrypted by the app: the file is protected by Android
-  disk encryption, on since Android 10. See limitations below.
+- **Session token and local key in SecureStore** (Keychain on iOS, Keystore on Android).
+- **The device's local database is encrypted whole with SQLCipher** since 1.2.0 (02/11/2026). The
+  256-bit key is drawn on first run, kept in the Keystore and applied with `PRAGMA key` before any
+  read.
+- **The Supabase certificate is pinned** in the app through Android's network security config: two
+  public keys from the chain, with an expiration date so agents are not locked out if Google changes
+  the chain.
 - **Immutable audit trail**: `audit_log` accepts inserts and reads, `UPDATE` and `DELETE` are
   revoked, and reading is restricted to managers and admins.
 - **Soft deletion** (`deleted_at`), not physical.
@@ -78,11 +82,9 @@ case, in [security.md](security.md).
 
 Recorded because omitting a limitation in a public-sector system is worse than having it.
 
-- **The device's local database is not encrypted by the app.** There was a hand-made field cipher
-  (SHA-256 in counter mode, no MAC, malleable) that no screen called; it was removed on 13/10/2026
-  instead of switched on, because it would also break name search in the field. The file is
-  protected by Android disk encryption. The right fix is SQLCipher for the whole database, with real
-  AEAD.
+- **Upgrading from an unencrypted version to 1.2.0 needs a reinstall.** The file format changes and
+  the old database does not open with a key. In an offline-first system the data comes back from the
+  server on sync, but anything still queued is lost: sync before upgrading.
 - **The app's local password uses salted SHA-256, single pass.** It serves offline login, but it is
   too fast for a password: with a stolen device's database in hand, guessing passwords is cheap. The
   right approach is slow derivation (PBKDF2 with many iterations, scrypt or Argon2), migrating each
@@ -96,8 +98,8 @@ Recorded because omitting a limitation in a public-sector system is worse than h
   column the user cannot read.
 - **The web panel has no second factor**, and it is where every patient's record is read.
 - **Rate limiting is in process memory.** With more than one panel instance, each counts separately.
-- **Build dependencies with known flaws** (`node-forge`, `uuid` 7, `image-size` 1 and `deepmerge`)
-  come from the Expo CLI, Metro and Jest. Either they have no fixed version, or the fixed one breaks
+- **Build dependencies with known flaws** (`uuid` 7, `image-size` 1, `deepmerge`, `glob` and
+  `minimatch`) come from the Expo CLI, Metro, config-plugins and Jest. Either they have no fixed version, or the fixed one breaks
   bundling (measured). They run on the packager's machine, not on the device. Each is accepted with a
   reason and deadline in [`osv-scanner.toml`](../../osv-scanner.toml).
 
