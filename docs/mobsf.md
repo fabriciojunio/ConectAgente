@@ -4,16 +4,16 @@
 
 O MobSF 4.5.3 roda na CI contra o APK de cada release (workflow `mobsf.yml`), num contêiner
 descartável: o APK não sai para serviço de fora. Este documento é a triagem da versão 1.1.0, com o
-que foi corrigido, o que é da biblioteca e o que fica aceito.
+que foi corrigido, o que é da biblioteca e o que fica aceito, e do que mudou na 1.2.0.
 
 ## Antes e depois
 
-| | APK 1.1.0 antes | APK 1.1.0 publicado |
-|---|---|---|
-| Nota do MobSF | 55/100 | 56/100 |
-| Achados altos | 1 | 1 |
-| Avisos | 13 | 11 |
-| Permissões perigosas | 6 | 3 |
+| | APK 1.1.0 antes | APK 1.1.0 publicado | APK 1.2.0 publicado |
+|---|---|---|---|
+| Nota do MobSF | 55/100 | 56/100 | 56/100 |
+| Achados altos | 1 | 1 | 1 |
+| Avisos | 13 | 11 | 12 |
+| Permissões perigosas | 6 | 3 | 3 |
 
 A nota do MobSF quase não se mexe com correção de manifesto: ela pesa sobretudo o `minSdk`. O que
 importa está nas linhas de baixo.
@@ -28,6 +28,18 @@ importa está nas linhas de baixo.
 
 As três permissões perigosas que ficaram são usadas: notificação de lembrete, câmera e galeria para
 a foto de perfil.
+
+## O que mudou na 1.2.0
+
+Os dois achados novos vêm do certificado fixado, e nenhum pede correção.
+
+| Achado | Severidade | Leitura |
+|---|---|---|
+| `supabase.co` confia nos certificados do sistema | aviso | regra genérica do MobSF para qualquer `<certificates src="system"/>`. O `pin-set` vale por cima: até a expiração, certificado de outra CA do sistema que não passe pela WE1 ou pela GTS Root R4 é recusado. O trecho só repete o padrão do Android 7 em diante e deixa de fora CA instalada pelo usuário |
+| O pin expira em 01/05/2027 | informativo | decisão de projeto: passada a data o Android deixa de exigir o pin em vez de travar o agente sem saída remota. Renovar antes, com o procedimento do cabeçalho de `plugins/fixar-certificado.js` |
+
+Execução: [MobSF na release v1.2.0](https://github.com/fabriciojunio/ConectAgente/actions/runs/41493336633),
+relatório completo no artefato `mobsf-v1.2.0`.
 
 ## Da biblioteca, sem efeito no ConectAgente
 
