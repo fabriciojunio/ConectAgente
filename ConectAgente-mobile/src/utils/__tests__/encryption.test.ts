@@ -290,4 +290,14 @@ describe('a cifra de campo não voltou, e a documentação diz a verdade', () =>
     expect(manual).not.toContain('são cifrados com **SHA-256 no modo CTR**');
     expect(leiaMe).not.toContain('ficam em texto puro no banco do aparelho');
   });
+
+  it('a política de segurança, nas duas línguas, não diz mais que o banco local está sem cifra', () => {
+    const politica = readFileSync(join(RAIZ, 'SECURITY.md'), 'utf-8');
+    const policy = readFileSync(join(RAIZ, 'docs', 'en', 'security-policy.md'), 'utf-8');
+
+    expect(politica).toContain('cifrado inteiro com SQLCipher');
+    expect(politica).not.toContain('não é cifrado pelo aplicativo');
+    expect(policy).toContain('encrypted whole with SQLCipher');
+    expect(policy).not.toContain('not encrypted by the app');
+  });
 });

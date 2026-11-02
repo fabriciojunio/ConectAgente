@@ -45,8 +45,9 @@ profile photo.
 ## Accepted, with a decision deadline
 
 **`minSdk=24`: the app installs on Android 7.0.** The only high finding. Android 7 has not received
-security patches since 2019, and an old device may lack disk encryption, which is what protects the
-local database today (see [security.md](security.md)).
+security patches since 2019, and an old device may lack disk encryption. Since 1.2.0 the app
+encrypts the local database itself with SQLCipher, so disk encryption is no longer the only barrier;
+what remains is an unpatched system (see [security.md](security.md)).
 
 Raising `minSdk` fixes it but excludes agents with old phones, and that is the health department's
 decision, not a technical one. The recommendation is `minSdk 29` (Android 10, where encryption became
