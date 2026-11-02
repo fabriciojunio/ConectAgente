@@ -4,16 +4,16 @@
 
 MobSF 4.5.3 runs in CI against each release's APK (workflow `mobsf.yml`), in a throwaway container:
 the APK is not sent to any outside service. This document is the triage of version 1.1.0, with what
-was fixed, what belongs to libraries and what is accepted.
+was fixed, what belongs to libraries and what is accepted, and of what changed in 1.2.0.
 
 ## Before and after
 
-| | APK 1.1.0 before | Published APK 1.1.0 |
-|---|---|---|
-| MobSF score | 55/100 | 56/100 |
-| High findings | 1 | 1 |
-| Warnings | 13 | 11 |
-| Dangerous permissions | 6 | 3 |
+| | APK 1.1.0 before | Published APK 1.1.0 | Published APK 1.2.0 |
+|---|---|---|---|
+| MobSF score | 55/100 | 56/100 | 56/100 |
+| High findings | 1 | 1 | 1 |
+| Warnings | 13 | 11 | 12 |
+| Dangerous permissions | 6 | 3 | 3 |
 
 MobSF's score barely moves with manifest fixes: it weighs `minSdk` heavily. What matters is in the
 rows below.
@@ -28,6 +28,18 @@ rows below.
 
 The three remaining dangerous permissions are used: reminder notifications, camera and gallery for the
 profile photo.
+
+## What changed in 1.2.0
+
+Both new findings come from certificate pinning, and neither calls for a fix.
+
+| Finding | Severity | Reading |
+|---|---|---|
+| `supabase.co` trusts system certificates | warning | MobSF's generic rule for any `<certificates src="system"/>`. The `pin-set` applies on top: until it expires, a certificate from another system CA that does not chain through WE1 or GTS Root R4 is rejected. The block only restates the default from Android 7 onwards and leaves out user-installed CAs |
+| The pin expires on 2027-05-01 | info | a design decision: past that date Android stops enforcing the pin instead of locking agents out with no remote fix. Renew before then, following the header of `plugins/fixar-certificado.js` |
+
+Run: [MobSF on release v1.2.0](https://github.com/fabriciojunio/ConectAgente/actions/runs/41493336633),
+full report in the `mobsf-v1.2.0` artifact.
 
 ## From libraries, no effect on ConectAgente
 
