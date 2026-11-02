@@ -180,7 +180,7 @@ src/
 │
 └── utils/
     ├── constants.ts            # Cores, chaves, limites, timeouts
-    ├── encryption.ts           # SHA-256-CTR (v2), hash com salt, SecureStore
+    ├── encryption.ts           # hash de senha com salt e sorteio de senha inicial
     ├── validators.ts           # Zod schemas + validações + escapeForLike()
     ├── formatters.ts           # CPF, CEP, datas, máscaras
     └── lgpd.ts                 # Anonimização, consentimento
@@ -267,21 +267,23 @@ O administrador acessa uma área separada (`/(admin)`) com tema roxo, distinta d
 | Timeout | Sessão expira em 8 horas, renovada por atividade |
 | Logout | Limpa token, chave de criptografia e cache em memória |
 
-### Criptografia de campos PII
+### Banco do aparelho cifrado
 
-O app usa **SHA-256 no modo CTR (stream cipher)** com IV aleatório de 16 bytes por cifração.
-
-```
-Formato armazenado: "v2:<base64(iv[16] || ciphertext[n])>"
-Compatibilidade retroativa: strings sem prefixo "v2:" são descriptografadas via XOR legado
-```
+Desde a 1.2.0 o arquivo do SQLite é cifrado inteiro com **SQLCipher**. A chave de 256 bits é
+sorteada no primeiro uso, fica no SecureStore (`database/chave.ts`) e entra com `PRAGMA key`
+antes de qualquer leitura (`database/database.ts`). A cifra campo a campo que existia antes
+(SHA-256 em modo contador, sem MAC) nunca foi chamada por nenhuma tela e foi removida; o motivo
+está no cabeçalho de `utils/encryption.ts`.
 
 | Dado | Proteção |
 |---|---|
 | Senha | SHA-256 + salt (irreversível) |
-| CPF, cartão SUS, nome, telefone | SHA-256-CTR com IV aleatório + chave em SecureStore |
+| CPF, cartão SUS, nome, telefone e o resto do banco | SQLCipher no arquivo inteiro |
 | Token de sessão | SecureStore (Keychain/Keystore do OS) |
-| Chave de criptografia | SecureStore (Keychain/Keystore do OS) |
+| Chave do banco | SecureStore (Keychain/Keystore do OS) |
+
+A sincronização só aceita a cadeia de certificado do Supabase: o pin fica na configuração de
+segurança de rede do Android (`plugins/fixar-certificado.js`), com expiração em 01/05/2027.
 
 ### Banco de dados
 
@@ -307,7 +309,8 @@ Compatibilidade retroativa: strings sem prefixo "v2:" são descriptografadas via
 - Brute force: rate limiting (5 tentativas / 15 min de bloqueio)
 - Token hijacking: SecureStore nativo
 - Enumeração de usuários: mensagem genérica na recuperação
-- Dados em repouso: campos PII criptografados com SHA-256-CTR
+- Dados em repouso: banco do aparelho cifrado inteiro com SQLCipher
+- Interceptação na sincronização: certificado do Supabase fixado
 - Sessão infinita: timeout de 8 horas
 - XSS: não aplicável (React Native)
 - CSRF: não aplicável (app nativo sem cookies)
@@ -315,10 +318,8 @@ Compatibilidade retroativa: strings sem prefixo "v2:" são descriptografadas via
 ### O que requer atenção em produção
 
 - **RLS no Supabase**: configurar Row-Level Security para isolar dados por `agente_id`
-- **Certificate pinning**: para apps de saúde críticos, fixar certificado TLS
 - **Root/jailbreak detection**: considerar `expo-device` para detectar dispositivos comprometidos
 - **Ofuscação de código**: habilitar ProGuard/Hermes no build de produção
-- **Upgrade para AES-256-GCM**: substituir SHA-256-CTR por cipher autenticado
 
 ---
 
@@ -423,7 +424,7 @@ Coverage:    ~80% statements / ~83% lines
 
 | Módulo | O que é testado |
 |---|---|
-| `utils/encryption.ts` | SHA-256-CTR, hash com salt, verificarSenha, round-trip, compatibilidade legado XOR |
+| `utils/encryption.ts` | hash com salt, verificarSenha (novo e legado), sorteio de senha forte, e que a cifra de campo não voltou |
 | `utils/validators.ts` | CPF, SUS, CEP, datas, email, telefone, escapeForLike, schemas Zod |
 | `repositories/agenteRepository` | Criar, autenticar, rate limiting, migração legado, verificarIdentidade, resetarSenha |
 | `repositories/moradorRepository` | CRUD, busca com LIKE seguro |
@@ -478,7 +479,8 @@ CREATE POLICY "agente_isolation" ON visitas
 - [x] CRUD completo: residências, moradores, visitas, prontuários
 - [x] Sincronização com Supabase (fila offline-first)
 - [x] Autenticação local com sessão de 8h
-- [x] Criptografia SHA-256-CTR + SecureStore
+- [x] Banco do aparelho cifrado com SQLCipher + chave no SecureStore
+- [x] Certificate pinning do Supabase (TLS)
 - [x] Conformidade LGPD (soft delete, anonimização, audit log, consentimento)
 - [x] Calendário de agendamentos
 - [x] Metas mensais de visitas
@@ -507,12 +509,10 @@ CREATE POLICY "agente_isolation" ON visitas
 - [ ] Notificações push para agendamentos
 - [ ] Integração com e-SUS/SISAB (sistema nacional)
 - [ ] Modo supervisor: coordenador vê equipe completa
-- [ ] Deploy do painel web em produção (Vercel + Supabase cloud)
+- [x] Deploy do painel web em produção (Vercel + Supabase cloud)
 
 ### Segurança: Backlog
 
-- [ ] Upgrade para AES-256-GCM (cipher autenticado)
-- [ ] Certificate pinning (TLS)
 - [ ] Root/jailbreak detection
 - [ ] Ofuscação de código (ProGuard + Hermes)
 - [ ] Política de senha configurável (complexidade mínima)

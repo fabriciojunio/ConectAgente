@@ -17,9 +17,8 @@
  * Código morto com cara de segurança é pior que a ausência dele: convida a ser
  * ligado por quem precisa de "criptografia" e não vai reler a construção.
  *
- * A saída de verdade, se a secretaria exigir cifra em repouso além da do
- * Android, é SQLCipher no banco inteiro: preserva a busca e é AEAD de verdade.
- * Custa dependência nativa e build de desenvolvimento. Está em
+ * A saída de verdade foi SQLCipher no banco inteiro, ligado na 1.2.0
+ * (database/database.ts): preserva a busca e é AEAD de verdade. Detalhe em
  * docs/seguranca.md.
  */
 import * as Crypto from 'expo-crypto';

@@ -1,11 +1,9 @@
 /**
  * Testes para utils/encryption.ts
  *
- * Cobre: hashSHA256, hashSenha, verificarSenha,
- *        encryptField (SHA-256-CTR), decryptField,
- *        encryptSensitiveFields, decryptSensitiveFields,
- *        compatibilidade retroativa com formato XOR legado,
- *        clearEncryptionKeyCache
+ * Cobre: hashSHA256, hashSenha, verificarSenha, sortearSenhaForte,
+ *        e a garantia de que a cifra de campo não voltou e a
+ *        documentação descreve o SQLCipher
  */
 
 jest.mock('expo-crypto', () => ({
@@ -173,8 +171,6 @@ describe('verificarSenha', () => {
   });
 });
 
-// ─── encryptField / decryptField (SHA-256-CTR) ───────────────
-
 describe('sortearSenhaForte', () => {
   // Existe porque a senha do administrador era a constante `Admin@2025`,
   // repetida no README publico e impressa na tela de configuracoes. Quem
@@ -288,6 +284,7 @@ describe('a cifra de campo não voltou, e a documentação diz a verdade', () =>
     // E nenhum documento volta a descrever a cifra de campo como se rodasse.
     expect(lgpd).not.toContain('cifra dos campos de identificação no aparelho');
     expect(manual).not.toContain('são cifrados com **SHA-256 no modo CTR**');
+    expect(manual).not.toContain('SHA-256-CTR com IV aleatório');
     expect(leiaMe).not.toContain('ficam em texto puro no banco do aparelho');
   });
 
