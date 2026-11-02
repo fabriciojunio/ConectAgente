@@ -276,11 +276,18 @@ describe('a cifra de campo não voltou, e a documentação diz a verdade', () =>
     expect(fonte).toContain('SQLCipher');
   });
 
-  it('a documentação não afirma que os campos estão cifrados', () => {
+  it('a documentação descreve a cifra do banco inteiro, não cifra campo a campo', () => {
     const seguranca = readFileSync(join(RAIZ, 'docs', 'seguranca.md'), 'utf-8');
     const lgpd = readFileSync(join(RAIZ, 'docs', 'lgpd.md'), 'utf-8');
+    const manual = readFileSync(join(RAIZ, 'docs', 'manual-tecnico.md'), 'utf-8');
+    const leiaMe = readFileSync(join(RAIZ, 'README.md'), 'utf-8');
 
-    expect(seguranca).toContain('em texto puro no SQLite');
+    // O que protege o aparelho desde a 1.2.0 é o SQLCipher no arquivo todo.
+    expect(seguranca).toContain('cifrado inteiro com SQLCipher');
+    expect(seguranca).toContain('foi removida, não ligada');
+    // E nenhum documento volta a descrever a cifra de campo como se rodasse.
     expect(lgpd).not.toContain('cifra dos campos de identificação no aparelho');
+    expect(manual).not.toContain('são cifrados com **SHA-256 no modo CTR**');
+    expect(leiaMe).not.toContain('ficam em texto puro no banco do aparelho');
   });
 });

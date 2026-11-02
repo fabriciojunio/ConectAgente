@@ -197,6 +197,22 @@ sense locally. Translation and removal of local fields live in one place,
   `.github/workflows/keep-alive.yml`, with the `SUPABASE_URL` and
   `SUPABASE_ANON_KEY` secrets already set in the repository.
 
+**Two decisions from 02/11/2026, in version 1.2.0.**
+
+- **The device database is encrypted whole, with SQLCipher, not field by
+  field.** The key is 256 bits, created on first run and kept in the Keystore,
+  bound to the device. Field-level encryption would break the local search the
+  agent uses in the field to find a patient; encrypting the whole file keeps the
+  search and is real AEAD. The cost is that upgrading from a version without
+  encryption needs a fresh install, and in an offline-first app the data comes
+  back from the server on sync.
+- **The Supabase certificate is pinned at the anchors, not the leaf.** The app
+  only accepts a chain that goes through Google Trust Services' WE1 intermediate
+  or the GTS Root R4. The Supabase leaf rotates on its own; the anchors do not.
+  The pin-set has an expiry date so a change in Google's own chain does not lock
+  sync out in the field; renewing before the date is described in the header of
+  `plugins/fixar-certificado.js`.
+
 ---
 
 ## What is still missing
@@ -210,12 +226,6 @@ Honesty about the current state, which is worth more than a feature list:
   device, with the hash migrated on the next login.
 - **Medical record tables can still be read directly through the API**, within
   RLS and without logging. The fix is the same one applied to `moradores`.
-- **Identification fields are stored in plain text in the device database.**
-  There was an encryption module that no code called, and three documents said
-  otherwise; it was removed on 13/10/2026 along with the document fixes. Today the
-  file is protected by Android disk encryption. If the health department requires
-  more, the option is SQLCipher for the whole database, at the cost of a native
-  dependency. Details in [docs/en/security.md](docs/en/security.md).
 - **The panel has no second factor**, and it is where everyone's records are read.
 
 ---
