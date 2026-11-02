@@ -60,7 +60,8 @@
         }
       ],
       "./plugins/assinatura-release",
-      "./plugins/endurecer-manifesto"
+      "./plugins/endurecer-manifesto",
+      "./plugins/fixar-certificado"
     ],
     "experiments": {
       "typedRoutes": true
