@@ -14,7 +14,15 @@ import type {
 } from '@/types';
 import { MORADOR_COLUNAS_LISTA } from './moradorColunas';
 
-const RESIDENCIA_SELECT = `*, agente:agentes(id, nome, area_atuacao), moradores(${MORADOR_COLUNAS_LISTA})`;
+/**
+ * Unidade e microárea são do agente, não da residência. Para o filtro cortar
+ * as famílias, o agente entra com `!inner`; sem ele o PostgREST só esvaziaria
+ * o objeto embutido e devolveria todas as residências.
+ */
+export function selectResidencias(filters?: GlobalFilters): string {
+  const agente = filters?.unidade_saude || filters?.microarea ? 'agentes!inner' : 'agentes';
+  return `*, agente:${agente}(id, nome, area_atuacao), moradores(${MORADOR_COLUNAS_LISTA})`;
+}
 
 export async function getFamilias(
   filters?: GlobalFilters,
@@ -33,13 +41,13 @@ export async function getFamilias(
 
     let query = supabase
       .from('residencias')
-      .select(RESIDENCIA_SELECT, { count: 'exact', head: false })
+      .select(selectResidencias(filters), { count: 'exact', head: false })
       .is('deleted_at', null);
 
     if (filters?.bairro) query = query.eq('bairro', filters.bairro);
     if (filters?.agente_id) query = query.eq('agente_id', filters.agente_id);
-    if (filters?.unidade_saude) query = query.eq('unidade_saude', filters.unidade_saude);
-    if (filters?.microarea) query = query.eq('microarea', filters.microarea);
+    if (filters?.unidade_saude) query = query.eq('agente.unidade_saude', filters.unidade_saude);
+    if (filters?.microarea) query = query.eq('agente.microarea', filters.microarea);
 
     query = query.order('created_at', { ascending: false }).range(from, to);
 
