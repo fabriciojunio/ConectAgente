@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import { cacheGet, cacheSet } from '@/lib/cache';
 import { enqueue } from '@/lib/requestQueue';
 import { DEMO_VISITAS_PAGINADO, isEmptyList } from '@/lib/demoData';
+import { fimExclusivo } from '@/lib/utils';
 import type {
   VisitaComDetalhes,
   GlobalFilters,
@@ -12,6 +13,19 @@ import type {
 } from '@/types';
 
 const VISITA_SELECT = `*, agente:agentes(id, nome, area_atuacao), residencia:residencias(id, logradouro, numero, bairro, cidade), morador:moradores(id, nome)`;
+
+/**
+ * Visita não tem unidade nem bairro: a unidade é do agente e o bairro, da
+ * residência. Filtro em tabela embutida só corta a linha principal com
+ * `!inner`; sem ele o PostgREST devolve todas as visitas e só esvazia o
+ * objeto embutido. O `!inner` entra só com o filtro ativo para não esconder
+ * visita de quem não enxerga o cadastro do agente.
+ */
+export function selectVisitas(filters?: GlobalFilters): string {
+  const agente = filters?.unidade_saude ? 'agentes!inner' : 'agentes';
+  const residencia = filters?.bairro ? 'residencias!inner' : 'residencias';
+  return `*, agente:${agente}(id, nome, area_atuacao), residencia:${residencia}(id, logradouro, numero, bairro, cidade), morador:moradores(id, nome)`;
+}
 
 export async function getVisitas(
   filters?: GlobalFilters,
@@ -30,12 +44,13 @@ export async function getVisitas(
 
     let query = supabase
       .from('visitas')
-      .select(VISITA_SELECT, { count: 'exact', head: false });
+      .select(selectVisitas(filters), { count: 'exact', head: false });
 
     if (filters?.periodo_inicio) query = query.gte('data_visita', filters.periodo_inicio);
-    if (filters?.periodo_fim) query = query.lte('data_visita', filters.periodo_fim);
+    if (filters?.periodo_fim) query = query.lt('data_visita', fimExclusivo(filters.periodo_fim));
     if (filters?.status) query = query.eq('status', filters.status);
     if (filters?.agente_id) query = query.eq('agente_id', filters.agente_id);
+    if (filters?.unidade_saude) query = query.eq('agente.unidade_saude', filters.unidade_saude);
     if (filters?.bairro) query = query.eq('residencia.bairro', filters.bairro);
 
     query = query.order('data_visita', { ascending: false }).range(from, to);
@@ -97,7 +112,7 @@ export async function getVisitasByAgente(
     const supabase = createClient();
     let query = supabase.from('visitas').select(VISITA_SELECT).eq('agente_id', agenteId);
     if (filters?.periodo_inicio) query = query.gte('data_visita', filters.periodo_inicio);
-    if (filters?.periodo_fim) query = query.lte('data_visita', filters.periodo_fim);
+    if (filters?.periodo_fim) query = query.lt('data_visita', fimExclusivo(filters.periodo_fim));
     if (filters?.status) query = query.eq('status', filters.status);
     query = query.order('data_visita', { ascending: false });
 
@@ -126,12 +141,16 @@ export async function getEstatisticasVisitas(filters?: GlobalFilters): Promise<{
 
     // Usa count queries com head:true (sem baixar dados), muito mais rápido
     function buildQuery(status?: string) {
-      let q = supabase.from('visitas').select('id', { count: 'exact', head: true });
+      // visitas não tem unidade_saude: com a coluna direto, o PostgREST
+      // devolvia erro, a contagem vinha nula e a tela caía nos números de
+      // demonstração como se fossem da unidade.
+      const colunas = filters?.unidade_saude ? 'id, agente:agentes!inner(id)' : 'id';
+      let q = supabase.from('visitas').select(colunas, { count: 'exact', head: true });
       if (status) q = q.eq('status', status);
       if (filters?.periodo_inicio) q = q.gte('data_visita', filters.periodo_inicio);
-      if (filters?.periodo_fim) q = q.lte('data_visita', filters.periodo_fim);
+      if (filters?.periodo_fim) q = q.lt('data_visita', fimExclusivo(filters.periodo_fim));
       if (filters?.agente_id) q = q.eq('agente_id', filters.agente_id);
-      if (filters?.unidade_saude) q = q.eq('unidade_saude', filters.unidade_saude);
+      if (filters?.unidade_saude) q = q.eq('agente.unidade_saude', filters.unidade_saude);
       return q;
     }
 
