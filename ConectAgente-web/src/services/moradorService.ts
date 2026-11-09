@@ -46,7 +46,12 @@ export async function getMoradores(
 
     let query = supabase
       .from('moradores')
-      .select(MORADOR_SELECT, { count: 'exact', head: false })
+      .select(
+        // Sem `!inner` o filtro de bairro só esvazia a residência embutida e
+        // devolve os moradores de todos os bairros.
+        filters?.bairro ? MORADOR_SELECT.replace('residencias(', 'residencias!inner(') : MORADOR_SELECT,
+        { count: 'exact', head: false },
+      )
       .is('deleted_at', null);
 
     if (filters?.agente_id) query = query.eq('agente_id', filters.agente_id);

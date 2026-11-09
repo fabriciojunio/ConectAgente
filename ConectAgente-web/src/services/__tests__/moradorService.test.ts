@@ -55,6 +55,23 @@ describe('moradorService', () => {
       expect(chainable.eq).toHaveBeenCalledWith('agente_id', 'agent-1');
     });
 
+    it('filtra bairro pela residência com !inner', async () => {
+      chainable.range.mockResolvedValue({ data: [], error: null, count: 0 });
+
+      await getMoradores({ bairro: 'Centro' });
+
+      expect(chainable.select.mock.calls[0][0]).toContain('residencia:residencias!inner(');
+      expect(chainable.eq).toHaveBeenCalledWith('residencia.bairro', 'Centro');
+    });
+
+    it('sem bairro não usa !inner', async () => {
+      chainable.range.mockResolvedValue({ data: [], error: null, count: 0 });
+
+      await getMoradores();
+
+      expect(chainable.select.mock.calls[0][0]).not.toContain('!inner');
+    });
+
     it('should throw on error', async () => {
       chainable.range.mockResolvedValue({ data: null, error: { message: 'DB error' }, count: 0 });
 
