@@ -12,7 +12,7 @@ import type {
   FamiliaEmAtraso,
   GlobalFilters,
 } from '@/types';
-import { formatDate, fimExclusivo } from '@/lib/utils';
+import { formatDate, formatDataDaVisita, fimExclusivo } from '@/lib/utils';
 import { selectVisitas } from './visitaService';
 import { selectResidencias } from './familiaService';
 import { buscarTudo } from '@/lib/buscarEmLotes';
@@ -457,7 +457,7 @@ export async function gerarRelatorio(
       return {
         // data_visita chega como TIMESTAMPTZ completo; somar 'T00:00:00' a ele
         // dava data inválida e o format derrubava o relatório inteiro.
-        'Data': r.data_visita ? formatDate(r.data_visita) : '-',
+        'Data': formatDataDaVisita(r.data_visita),
         'Agente': ag?.nome ?? '-',
         'Status': r.status,
         'Logradouro': res ? `${res.logradouro}, ${res.numero}` : '-',

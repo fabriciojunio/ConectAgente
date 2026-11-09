@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { format, differenceInDays, differenceInYears, parseISO } from 'date-fns';
+import { format, differenceInCalendarDays, differenceInYears, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { NivelCriticidade, StatusVisita } from '@/types';
 
@@ -56,6 +56,33 @@ export function fimExclusivo(data: string): string {
   return new Date(Date.UTC(ano, mes - 1, dia + 1)).toISOString().slice(0, 10);
 }
 
+/**
+ * Dia da visita como o agente registrou, em AAAA-MM-DD.
+ *
+ * O aplicativo envia só a data (`2026-10-13`) e a coluna é TIMESTAMPTZ, então
+ * o banco grava meia-noite em UTC e o PostgREST devolve
+ * `2026-10-13T00:00:00+00:00`. Convertido para o fuso do navegador, isso é dia
+ * 12 às 21h: toda visita aparecia um dia antes. O dia certo é a data em UTC,
+ * os dez primeiros caracteres.
+ */
+export function dataDaVisita(valor: string): string {
+  return valor.slice(0, 10);
+}
+
+/** `dataDaVisita` em DD/MM/AAAA, para tela e relatório. */
+export function formatDataDaVisita(valor: string | null | undefined): string {
+  if (!valor) return '-';
+  const dia = dataDaVisita(valor);
+  if (!DATA_DO_FILTRO.test(dia)) return '--/--/----';
+  const [ano, mes, d] = dia.split('-');
+  return `${d}/${mes}/${ano}`;
+}
+
+/** Hoje (ou outra data) no fuso de quem usa o painel, em AAAA-MM-DD. */
+export function diaLocal(data: Date = new Date()): string {
+  return format(data, 'yyyy-MM-dd');
+}
+
 // ---------------------------------------------------------------------------
 // Brazilian Document / Phone Formatting
 // ---------------------------------------------------------------------------
@@ -106,7 +133,10 @@ export function formatCEP(cep: string): string {
 export function calcularDiasSemVisita(ultimaVisita: string | null | undefined): number {
   if (!ultimaVisita) return Infinity;
   try {
-    return differenceInDays(new Date(), parseISO(ultimaVisita));
+    // Dias de calendário sobre o dia registrado: contar períodos de 24 h a
+    // partir da meia-noite UTC somava um dia de atraso depois das 21 h.
+    const dias = differenceInCalendarDays(new Date(), parseISO(dataDaVisita(ultimaVisita)));
+    return Number.isNaN(dias) ? Infinity : dias;
   } catch {
     return Infinity;
   }

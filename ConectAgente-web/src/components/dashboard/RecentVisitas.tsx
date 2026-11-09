@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { formatDate } from '@/lib/utils';
+import { formatDataDaVisita } from '@/lib/utils';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -84,7 +84,7 @@ export default function RecentVisitas({ visitas, loading }: RecentVisitasProps) 
             <TableBody>
               {recentVisitas.map((visita) => (
                 <TableRow key={visita.id}>
-                  <TableCell>{formatDate(visita.data_visita)}</TableCell>
+                  <TableCell>{formatDataDaVisita(visita.data_visita)}</TableCell>
                   <TableCell>{visita.agente?.nome || '-'}</TableCell>
                   <TableCell>
                     {visita.residencia
@@ -101,7 +101,7 @@ export default function RecentVisitas({ visitas, loading }: RecentVisitasProps) 
                     <Link
                       href={`/visitas/${visita.id}`}
                       className="text-sm font-medium text-primary-500 hover:text-primary-700 hover:underline"
-                      aria-label={`Ver detalhes da visita de ${formatDate(visita.data_visita)}`}
+                      aria-label={`Ver detalhes da visita de ${formatDataDaVisita(visita.data_visita)}`}
                     >
                       Detalhes
                     </Link>

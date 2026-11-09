@@ -13,6 +13,9 @@ import {
   calcularIdade,
   formatPercent,
   fimExclusivo,
+  formatDataDaVisita,
+  dataDaVisita,
+  diaLocal,
 } from '../utils';
 import { NivelCriticidade, StatusVisita } from '@/types';
 
@@ -284,4 +287,41 @@ describe('fimExclusivo', () => {
       expect(() => fimExclusivo(data)).toThrow('Data final do período inválida');
     }
   );
+});
+
+// O aplicativo envia só a data, a coluna é TIMESTAMPTZ e o banco grava
+// meia-noite em UTC. No fuso de São Paulo (jest.fuso.js) isso é o dia
+// anterior às 21h, e era o dia que o painel mostrava.
+describe('data da visita no fuso do Brasil', () => {
+  it('confere o fuso da suíte', () => {
+    expect(new Date('2026-10-13T00:00:00+00:00').getDate()).toBe(12);
+  });
+
+  it('formatDataDaVisita mostra o dia registrado', () => {
+    expect(formatDataDaVisita('2026-10-13T00:00:00+00:00')).toBe('13/10/2026');
+    expect(formatDataDaVisita('2026-01-01T00:00:00+00:00')).toBe('01/01/2026');
+    expect(formatDataDaVisita('2026-10-13')).toBe('13/10/2026');
+  });
+
+  it('formatDataDaVisita trata vazio e lixo', () => {
+    expect(formatDataDaVisita(null)).toBe('-');
+    expect(formatDataDaVisita('')).toBe('-');
+    expect(formatDataDaVisita('ontem')).toBe('--/--/----');
+  });
+
+  it('dataDaVisita devolve a data em UTC, sem conversão', () => {
+    expect(dataDaVisita('2026-11-07T00:00:00+00:00')).toBe('2026-11-07');
+  });
+
+  it('diaLocal usa o fuso de quem usa o painel, não UTC', () => {
+    // 22h de 9/11 em São Paulo já é 10/11 em UTC.
+    expect(diaLocal(new Date('2026-11-10T01:00:00Z'))).toBe('2026-11-09');
+  });
+
+  it('calcularDiasSemVisita conta dias de calendário sobre o dia registrado', () => {
+    const anteontem = new Date();
+    anteontem.setDate(anteontem.getDate() - 2);
+    expect(calcularDiasSemVisita(`${diaLocal(anteontem)}T00:00:00+00:00`)).toBe(2);
+    expect(calcularDiasSemVisita(`${diaLocal()}T00:00:00+00:00`)).toBe(0);
+  });
 });
