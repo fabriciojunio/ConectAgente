@@ -38,6 +38,24 @@ export function formatDate(
   }
 }
 
+const DATA_DO_FILTRO = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Limite exclusivo para filtrar `data_visita` até o fim do dia escolhido.
+ *
+ * `data_visita` é TIMESTAMPTZ e o filtro manda só a data. Com `lte` o banco
+ * compara com a meia-noite e deixa de fora as visitas do último dia inteiro.
+ * As funções do painel usam `data_visita::date BETWEEN`, que inclui o dia, e
+ * lista e relatório precisam bater com o painel: daí o `< dia seguinte`.
+ */
+export function fimExclusivo(data: string): string {
+  if (!DATA_DO_FILTRO.test(data)) {
+    throw new Error('Data final do período inválida');
+  }
+  const [ano, mes, dia] = data.split('-').map(Number);
+  return new Date(Date.UTC(ano, mes - 1, dia + 1)).toISOString().slice(0, 10);
+}
+
 // ---------------------------------------------------------------------------
 // Brazilian Document / Phone Formatting
 // ---------------------------------------------------------------------------

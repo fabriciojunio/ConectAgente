@@ -9,14 +9,8 @@ import {
   getVisitasPorAgente,
   getVisitasRecentes,
   getAlertasAtraso,
+  SEM_INDICADORES,
 } from '../dashboardService';
-import {
-  DEMO_STATS,
-  DEMO_VISITAS_PERIODO,
-  DEMO_VISITAS_AGENTE,
-  DEMO_VISITAS_RECENTES,
-  DEMO_ALERTAS,
-} from '@/lib/demoData';
 import type { DashboardStats, VisitaPorPeriodo, VisitaPorAgente, VisitaComDetalhes, FamiliaEmAtraso } from '@/types';
 
 const mockCreateClient = createClient as jest.MockedFunction<typeof createClient>;
@@ -88,21 +82,25 @@ describe('dashboardService', () => {
       });
     });
 
-    it('falls back to demo stats when rpc fails', async () => {
+    it('lança o erro do banco em vez de mostrar números de demonstração', async () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: { message: 'DB error' } });
 
-      const result = await getDashboardStats();
-
-      // Service logs error and falls back to demo data, does NOT throw
-      expect(result).toEqual(DEMO_STATS);
+      await expect(getDashboardStats()).rejects.toThrow('Erro ao carregar indicadores: DB error');
     });
 
-    it('falls back to demo stats when data is null', async () => {
+    it('banco sem dados devolve zero', async () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: null });
 
-      const result = await getDashboardStats();
+      expect(await getDashboardStats()).toEqual(SEM_INDICADORES);
+    });
 
-      expect(result).toEqual(DEMO_STATS);
+    it('indicadores zerados chegam zerados na tela', async () => {
+      supabaseMock.rpc.mockResolvedValue({ data: SEM_INDICADORES, error: null });
+
+      const result = await getDashboardStats({ unidade_saude: 'UBS sem visitas' });
+
+      expect(result.visitas_mes).toBe(0);
+      expect(result.total_familias).toBe(0);
     });
   });
 
@@ -135,20 +133,18 @@ describe('dashboardService', () => {
       });
     });
 
-    it('falls back to demo data on error', async () => {
+    it('lança o erro do banco', async () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: { message: 'fail' } });
 
-      const result = await getVisitasPorPeriodo('2024-03-01', '2024-03-31');
-
-      // Service logs error and falls back to demo data, does NOT throw
-      expect(result).toEqual(DEMO_VISITAS_PERIODO);
+      await expect(getVisitasPorPeriodo('2024-03-01', '2024-03-31')).rejects.toThrow(
+        'Erro ao carregar visitas por período: fail'
+      );
     });
 
-    it('falls back to demo data when result is null', async () => {
+    it('período sem visitas devolve lista vazia', async () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: null });
 
-      const result = await getVisitasPorPeriodo('2024-03-01', '2024-03-31');
-      expect(result).toEqual(DEMO_VISITAS_PERIODO);
+      expect(await getVisitasPorPeriodo('2024-03-01', '2024-03-31')).toEqual([]);
     });
   });
 
@@ -181,12 +177,18 @@ describe('dashboardService', () => {
       });
     });
 
-    it('falls back to demo data on error', async () => {
+    it('lança o erro do banco', async () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: { message: 'fail' } });
 
-      const result = await getVisitasPorAgente('2024-03-01', '2024-03-31');
+      await expect(getVisitasPorAgente('2024-03-01', '2024-03-31')).rejects.toThrow(
+        'Erro ao carregar visitas por agente: fail'
+      );
+    });
 
-      expect(result).toEqual(DEMO_VISITAS_AGENTE);
+    it('sem visitas devolve lista vazia', async () => {
+      supabaseMock.rpc.mockResolvedValue({ data: [], error: null });
+
+      expect(await getVisitasPorAgente('2024-03-01', '2024-03-31')).toEqual([]);
     });
   });
 
@@ -217,13 +219,16 @@ describe('dashboardService', () => {
       expect(chainable.limit).toHaveBeenCalledWith(5);
     });
 
-    it('falls back to demo data on error', async () => {
+    it('lança o erro do banco', async () => {
       chainable.limit.mockResolvedValue({ data: null, error: { message: 'fail' } });
 
-      const result = await getVisitasRecentes();
+      await expect(getVisitasRecentes()).rejects.toThrow('Erro ao carregar visitas recentes: fail');
+    });
 
-      // Service logs error and falls back to demo data, does NOT throw
-      expect(result).toEqual(DEMO_VISITAS_RECENTES.slice(0, 10));
+    it('sem visitas devolve lista vazia', async () => {
+      chainable.limit.mockResolvedValue({ data: [], error: null });
+
+      expect(await getVisitasRecentes()).toEqual([]);
     });
   });
 
@@ -253,12 +258,16 @@ describe('dashboardService', () => {
       });
     });
 
-    it('falls back to demo data on error', async () => {
+    it('lança o erro do banco', async () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: { message: 'fail' } });
 
-      const result = await getAlertasAtraso();
+      await expect(getAlertasAtraso()).rejects.toThrow('Erro ao carregar alertas de atraso: fail');
+    });
 
-      expect(result).toEqual(DEMO_ALERTAS);
+    it('sem famílias em atraso devolve lista vazia', async () => {
+      supabaseMock.rpc.mockResolvedValue({ data: [], error: null });
+
+      expect(await getAlertasAtraso()).toEqual([]);
     });
   });
 });

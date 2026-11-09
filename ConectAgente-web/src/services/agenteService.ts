@@ -4,7 +4,8 @@ import { createClient } from '@/lib/supabase/client';
 import { cacheGet, cacheSet } from '@/lib/cache';
 import { enqueue } from '@/lib/requestQueue';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
-import { DEMO_AGENTES_PAGINADO } from '@/lib/demoData';
+import { buscarTudo } from '@/lib/buscarEmLotes';
+import { fimExclusivo } from '@/lib/utils';
 import type {
   AgenteComEstatisticas,
   ResidenciaComDetalhes,
@@ -43,34 +44,33 @@ export async function getAgentes(
     if (error) throw new Error(`Erro ao buscar agentes: ${error.message}`);
 
     if (!agentes || agentes.length === 0) {
-      const demo = { ...DEMO_AGENTES_PAGINADO, page, per_page: perPage };
-      cacheSet(key, demo);
-      return demo;
+      const vazio = { data: [], total: count ?? 0, page, per_page: perPage, total_pages: Math.ceil((count ?? 0) / perPage) };
+      cacheSet(key, vazio);
+      return vazio;
     }
 
-    // Usa count queries com head:true (sem baixar dados), muito mais rápido
-    // que buscar todas as visitas e contar em memória
+    // Só agente_id e status, em lotes: numa única resposta o PostgREST
+    // parava em 1.000 visitas e a página inteira de agentes saía com a
+    // contagem cortada.
     const agenteIds = agentes.map((a) => a.id);
-    const [totalRes, realizadasRes] = await Promise.all([
-      supabase
-        .from('visitas')
-        .select('agente_id', { count: 'exact', head: false })
-        .in('agente_id', agenteIds),
-      supabase
-        .from('visitas')
-        .select('agente_id', { count: 'exact', head: false })
-        .in('agente_id', agenteIds)
-        .eq('status', 'realizada'),
-    ]);
+    const visitas = await buscarTudo<{ agente_id: string; status: string }>(
+      (de, ate) =>
+        supabase
+          .from('visitas')
+          .select('id, agente_id, status')
+          .in('agente_id', agenteIds)
+          .order('id', { ascending: true })
+          .range(de, ate),
+      'Erro ao contar visitas dos agentes'
+    );
 
-    // Conta por agente sem baixar todos os campos
     const totalPorAgente = new Map<string, number>();
     const realizadasPorAgente = new Map<string, number>();
-    for (const v of totalRes.data ?? []) {
+    for (const v of visitas) {
       totalPorAgente.set(v.agente_id, (totalPorAgente.get(v.agente_id) ?? 0) + 1);
-    }
-    for (const v of realizadasRes.data ?? []) {
-      realizadasPorAgente.set(v.agente_id, (realizadasPorAgente.get(v.agente_id) ?? 0) + 1);
+      if (v.status === 'realizada') {
+        realizadasPorAgente.set(v.agente_id, (realizadasPorAgente.get(v.agente_id) ?? 0) + 1);
+      }
     }
 
     const data = agentes.map((agente) => {
@@ -104,12 +104,16 @@ export async function getAgenteById(id: string): Promise<AgenteComEstatisticas |
     }
     if (!agente) return null;
 
-    const { data: visitas, error: visitasError } = await supabase
-      .from('visitas').select('id, status').eq('agente_id', id);
+    // Contagem no banco: baixar as visitas parava em 1.000 linhas.
+    const [totalRes, realizadasRes] = await Promise.all([
+      supabase.from('visitas').select('id', { count: 'exact', head: true }).eq('agente_id', id),
+      supabase.from('visitas').select('id', { count: 'exact', head: true }).eq('agente_id', id).eq('status', 'realizada'),
+    ]);
+    const visitasError = totalRes.error ?? realizadasRes.error;
     if (visitasError) throw new Error(`Erro ao buscar estatísticas do agente: ${visitasError.message}`);
 
-    const total = visitas?.length ?? 0;
-    const realizadas = visitas?.filter((v) => v.status === 'realizada').length ?? 0;
+    const total = totalRes.count ?? 0;
+    const realizadas = realizadasRes.count ?? 0;
     const result = {
       ...agente,
       total_visitas: total,
@@ -139,14 +143,17 @@ export async function getAgenteDesempenho(id: string, inicio: string, fim: strin
 
   try {
     const supabase = createClient();
-    const { data: visitas, error } = await supabase
-      .from('visitas').select('data_visita, status')
-      .eq('agente_id', id).gte('data_visita', inicio).lte('data_visita', fim)
-      .order('data_visita', { ascending: true });
+    const registros = await buscarTudo<{ data_visita: string; status: string }>(
+      (de, ate) =>
+        supabase
+          .from('visitas').select('id, data_visita, status')
+          .eq('agente_id', id).gte('data_visita', inicio).lt('data_visita', fimExclusivo(fim))
+          .order('data_visita', { ascending: true })
+          .order('id', { ascending: true })
+          .range(de, ate),
+      'Erro ao buscar desempenho do agente'
+    );
 
-    if (error) throw new Error(`Erro ao buscar desempenho do agente: ${error.message}`);
-
-    const registros = visitas ?? [];
     const total_visitas = registros.length;
     const total_realizadas = registros.filter((v) => v.status === 'realizada').length;
 

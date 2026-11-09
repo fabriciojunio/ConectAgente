@@ -289,6 +289,7 @@ export interface RelatorioFiltros {
   unidade_saude?: string;
   agente_id?: string;
   bairro?: string;
+  status?: StatusVisita;
   formato: 'pdf' | 'excel' | 'csv';
 }
 

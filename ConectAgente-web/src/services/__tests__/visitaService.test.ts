@@ -19,6 +19,7 @@ function buildMockSupabase() {
     eq: jest.fn().mockReturnThis(),
     gte: jest.fn().mockReturnThis(),
     lte: jest.fn().mockReturnThis(),
+    lt: jest.fn().mockReturnThis(),
     order: jest.fn().mockReturnThis(),
     limit: jest.fn().mockReturnThis(),
     range: jest.fn().mockReturnThis(),
@@ -100,7 +101,48 @@ describe('visitaService', () => {
       await getVisitas({ periodo_inicio: '2024-01-01', periodo_fim: '2024-03-31' });
 
       expect(chainable.gte).toHaveBeenCalledWith('data_visita', '2024-01-01');
-      expect(chainable.lte).toHaveBeenCalledWith('data_visita', '2024-03-31');
+      // data_visita é timestamp: o último dia entra inteiro, até antes do dia seguinte.
+      expect(chainable.lt).toHaveBeenCalledWith('data_visita', '2024-04-01');
+      expect(chainable.lte).not.toHaveBeenCalled();
+    });
+
+    it('rejeita data final fora do formato do filtro', async () => {
+      await expect(getVisitas({ periodo_fim: '31/03/2024' })).rejects.toThrow(
+        'Data final do período inválida'
+      );
+    });
+
+    it('filtra unidade pelo agente com !inner', async () => {
+      chainable.range.mockResolvedValue({ data: [], error: null, count: 0 });
+
+      await getVisitas({ unidade_saude: 'UBS Central' });
+
+      expect(chainable.select).toHaveBeenCalledWith(
+        expect.stringContaining('agente:agentes!inner('),
+        { count: 'exact', head: false }
+      );
+      expect(chainable.eq).toHaveBeenCalledWith('agente.unidade_saude', 'UBS Central');
+      expect(chainable.eq).not.toHaveBeenCalledWith('unidade_saude', expect.anything());
+    });
+
+    it('filtra bairro pela residência com !inner', async () => {
+      chainable.range.mockResolvedValue({ data: [], error: null, count: 0 });
+
+      await getVisitas({ bairro: 'Centro' });
+
+      expect(chainable.select).toHaveBeenCalledWith(
+        expect.stringContaining('residencia:residencias!inner('),
+        { count: 'exact', head: false }
+      );
+      expect(chainable.eq).toHaveBeenCalledWith('residencia.bairro', 'Centro');
+    });
+
+    it('sem filtro de unidade ou bairro não usa !inner', async () => {
+      chainable.range.mockResolvedValue({ data: [], error: null, count: 0 });
+
+      await getVisitas();
+
+      expect(chainable.select.mock.calls[0][0]).not.toContain('!inner');
     });
 
     it('throws on error', async () => {
@@ -141,7 +183,7 @@ describe('visitaService', () => {
   describe('getVisitasByAgente', () => {
     it('filters by agente_id and returns array', async () => {
       const mockData = [{ id: 'v1' }];
-      chainable.order.mockResolvedValue({ data: mockData, error: null });
+      chainable.range.mockResolvedValue({ data: mockData, error: null });
 
       const result = await getVisitasByAgente('agent-1');
 
@@ -149,8 +191,23 @@ describe('visitaService', () => {
       expect(result).toEqual(mockData);
     });
 
+    it('traz todas as visitas do agente, mesmo acima de 1.000', async () => {
+      const lote = (qtd: number, base: number) =>
+        Array.from({ length: qtd }, (_, i) => ({ id: `v${base + i}` }));
+      chainable.range
+        .mockResolvedValueOnce({ data: lote(1000, 0), error: null })
+        .mockResolvedValueOnce({ data: lote(3, 1000), error: null });
+
+      const result = await getVisitasByAgente('agent-1');
+
+      expect(result).toHaveLength(1003);
+      expect(chainable.range).toHaveBeenNthCalledWith(1, 0, 999);
+      expect(chainable.range).toHaveBeenNthCalledWith(2, 1000, 1999);
+      expect(chainable.order).toHaveBeenCalledWith('id', { ascending: true });
+    });
+
     it('applies optional filters', async () => {
-      chainable.order.mockResolvedValue({ data: [], error: null });
+      chainable.range.mockResolvedValue({ data: [], error: null });
 
       await getVisitasByAgente('agent-1', {
         status: StatusVisita.AGENDADA,
@@ -163,7 +220,7 @@ describe('visitaService', () => {
     });
 
     it('throws on error', async () => {
-      chainable.order.mockResolvedValue({ data: null, error: { message: 'fail' } });
+      chainable.range.mockResolvedValue({ data: null, error: { message: 'fail' } });
 
       await expect(getVisitasByAgente('agent-1')).rejects.toThrow('Erro ao buscar visitas do agente');
     });
@@ -200,7 +257,7 @@ describe('visitaService', () => {
       expect(result.taxa_conclusao).toBe(40); // 40/100 * 100
     });
 
-    it('falls back to demo stats when no visitas', async () => {
+    it('sem visitas devolve zero, não números de demonstração', async () => {
       supabaseMock.from.mockImplementation(() => {
         const c: Record<string, jest.Mock> = {};
         c.select = jest.fn(() => c);
@@ -214,9 +271,46 @@ describe('visitaService', () => {
 
       const result = await getEstatisticasVisitas();
 
-      // Sem dados no banco o serviço apresenta estatísticas de demonstração
-      expect(result.total).toBe(587);
-      expect(result.taxa_conclusao).toBe(95.7);
+      expect(result).toEqual({
+        total: 0, realizadas: 0, agendadas: 0, canceladas: 0, nao_encontrado: 0, taxa_conclusao: 0,
+      });
+    });
+
+    it('lança o erro da contagem em vez de mostrar zero', async () => {
+      supabaseMock.from.mockImplementation(() => {
+        const c: Record<string, jest.Mock> = {};
+        c.select = jest.fn(() => c);
+        c.eq = jest.fn(() => c);
+        c.then = jest.fn((resolve: (v: unknown) => void) =>
+          resolve({ count: null, error: { message: 'sem permissão' } }));
+        return c;
+      });
+
+      await expect(getEstatisticasVisitas()).rejects.toThrow('Erro ao contar visitas: sem permissão');
+    });
+
+    it('conta por unidade pelo agente, não por coluna da visita', async () => {
+      const cadeias: Array<Record<string, jest.Mock>> = [];
+      supabaseMock.from.mockImplementation(() => {
+        const c: Record<string, jest.Mock> = {};
+        c.select = jest.fn(() => c);
+        c.eq = jest.fn(() => c);
+        c.gte = jest.fn(() => c);
+        c.lt = jest.fn(() => c);
+        c.then = jest.fn((resolve: (v: unknown) => void) => resolve({ count: 4, error: null }));
+        cadeias.push(c);
+        return c;
+      });
+
+      await getEstatisticasVisitas({ unidade_saude: 'UBS Norte', periodo_fim: '2024-02-29' });
+
+      expect(cadeias).toHaveLength(5);
+      for (const c of cadeias) {
+        expect(c.select).toHaveBeenCalledWith('id, agente:agentes!inner(id)', { count: 'exact', head: true });
+        expect(c.eq).toHaveBeenCalledWith('agente.unidade_saude', 'UBS Norte');
+        expect(c.eq).not.toHaveBeenCalledWith('unidade_saude', expect.anything());
+        expect(c.lt).toHaveBeenCalledWith('data_visita', '2024-03-01');
+      }
     });
   });
 });

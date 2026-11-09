@@ -12,6 +12,7 @@ import {
   truncateText,
   calcularIdade,
   formatPercent,
+  fimExclusivo,
 } from '../utils';
 import { NivelCriticidade, StatusVisita } from '@/types';
 
@@ -264,4 +265,23 @@ describe('formatPercent', () => {
   it('rounds to one decimal place', () => {
     expect(formatPercent(33.333)).toBe('33.3%');
   });
+});
+
+describe('fimExclusivo', () => {
+  it.each([
+    ['2026-11-30', '2026-12-01'],
+    ['2026-12-31', '2027-01-01'],
+    ['2028-02-28', '2028-02-29'],
+    ['2026-02-28', '2026-03-01'],
+    ['2026-11-05', '2026-11-06'],
+  ])('%s termina antes de %s', (data, esperado) => {
+    expect(fimExclusivo(data)).toBe(esperado);
+  });
+
+  it.each(['', '05/11/2026', '2026-11-5', '2026-11-05T00:00:00', "2026-11-05'"])(
+    'recusa %j',
+    (data) => {
+      expect(() => fimExclusivo(data)).toThrow('Data final do período inválida');
+    }
+  );
 });

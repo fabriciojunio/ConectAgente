@@ -44,7 +44,6 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   nao_encontrado: { label: 'Não Encontrado', className: 'bg-yellow-100 text-yellow-700' },
 };
 
-const noop = () => {};
 
 export default function VisitasPage() {
   const { filters } = useFilters();
@@ -73,7 +72,8 @@ export default function VisitasPage() {
     try {
       // Progressive: each updates independently
       withTimeout(getEstatisticasVisitas(filters), { total: 0, realizadas: 0, agendadas: 0, canceladas: 0, nao_encontrado: 0, taxa_conclusao: 0 })
-        .then(setEstatisticas).catch(noop);
+        .then(setEstatisticas)
+        .catch((err) => setError(err instanceof Error ? err.message : 'Erro ao contar visitas'));
 
       const visitasResult = await withTimeout(
         getVisitas(filters, { page, per_page: perPage }),

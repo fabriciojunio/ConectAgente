@@ -21,9 +21,11 @@ interface FilterBarProps {
 const VARIANT_FIELDS: Record<FilterVariant, string[]> = {
   dashboard:    ['periodo_inicio', 'periodo_fim', 'unidade_saude'],
   visitas:      ['periodo_inicio', 'periodo_fim', 'unidade_saude', 'status'],
-  familias:     ['periodo_inicio', 'periodo_fim', 'unidade_saude'],
+  // Famílias e monitoramento trabalham com janela fixa de 30 dias nas funções
+  // do banco; um campo de período ali mudava a URL e não mudava nenhum número.
+  familias:     ['unidade_saude'],
   agentes:      ['unidade_saude'],
-  monitoramento:['periodo_inicio', 'periodo_fim', 'unidade_saude'],
+  monitoramento:['unidade_saude'],
   territorial:  ['unidade_saude'],
   relatorios:   ['periodo_inicio', 'periodo_fim', 'unidade_saude', 'status'],
 };

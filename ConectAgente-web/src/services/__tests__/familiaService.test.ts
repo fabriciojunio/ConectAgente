@@ -64,6 +64,30 @@ describe('familiaService', () => {
       expect(chainable.eq).toHaveBeenCalledWith('agente_id', 'agent-1');
     });
 
+    it('filtra unidade e microárea pelo agente, que é onde as colunas existem', async () => {
+      chainable.range.mockResolvedValue({ data: [], error: null, count: 0 });
+
+      await getFamilias({ unidade_saude: 'UBS Central', microarea: '003' });
+
+      expect(chainable.select).toHaveBeenCalledWith(
+        expect.stringContaining('agente:agentes!inner('),
+        { count: 'exact', head: false }
+      );
+      expect(chainable.eq).toHaveBeenCalledWith('agente.unidade_saude', 'UBS Central');
+      expect(chainable.eq).toHaveBeenCalledWith('agente.microarea', '003');
+      // residencias não tem essas colunas: o filtro direto voltava erro do PostgREST.
+      expect(chainable.eq).not.toHaveBeenCalledWith('unidade_saude', expect.anything());
+      expect(chainable.eq).not.toHaveBeenCalledWith('microarea', expect.anything());
+    });
+
+    it('sem filtro de unidade não usa !inner', async () => {
+      chainable.range.mockResolvedValue({ data: [], error: null, count: 0 });
+
+      await getFamilias({ bairro: 'Centro' });
+
+      expect(chainable.select.mock.calls[0][0]).not.toContain('!inner');
+    });
+
     it('should throw on error', async () => {
       chainable.range.mockResolvedValue({ data: null, error: { message: 'DB error' }, count: 0 });
 
