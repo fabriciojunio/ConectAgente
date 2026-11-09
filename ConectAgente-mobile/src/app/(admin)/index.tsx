@@ -12,6 +12,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { agenteRepository } from '../../database/repositories/agenteRepository';
 import { visitaRepository } from '../../database/repositories/visitaRepository';
 import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { formatDate } from '../../utils/formatters';
 import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 const ADMIN_GRADIENT = ['#4A148C', '#7B1FA2', '#AB47BC'] as const;
@@ -155,7 +156,7 @@ export default function AdminDashboard() {
                     {v.logradouro}, {v.numero} - {v.bairro}
                   </Text>
                   <Text style={styles.visitaInfo} numberOfLines={1}>
-                    {(v as any).agente_nome ?? 'Agente'} · {new Date(v.data_visita).toLocaleDateString('pt-BR')}
+                    {(v as any).agente_nome ?? 'Agente'} · {formatDate(v.data_visita)}
                   </Text>
                 </View>
                 <View style={[styles.statusChip, { backgroundColor: v.status === 'realizada' ? colors.successLight : colors.warningLight }]}>

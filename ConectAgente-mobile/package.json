@@ -12,6 +12,7 @@
   },
   "jest": {
     "preset": "jest-expo",
+    "globalSetup": "./jest.fuso.js",
     "setupFilesAfterEnv": [
       "./jest.setup.js"
     ],

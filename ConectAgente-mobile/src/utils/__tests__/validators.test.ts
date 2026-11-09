@@ -36,8 +36,24 @@ describe('validarCPF', () => {
 });
 
 describe('validarCartaoSUS', () => {
-  it('valida cartão SUS com 15 dígitos', () => {
-    expect(validarCartaoSUS('700123456789012')).toBe(true);
+  // Números gerados pelo algoritmo oficial de geração, não pela conferência:
+  // definitivo a partir do PIS (ramos 000 e 001) e provisório começando em 7 e 8.
+  it('aceita cartão definitivo', () => {
+    expect(validarCartaoSUS('123456789010000')).toBe(true);
+    expect(validarCartaoSUS('200000000010009')).toBe(true);
+    expect(validarCartaoSUS('100000000060018')).toBe(true);
+  });
+  it('aceita cartão provisório', () => {
+    expect(validarCartaoSUS('700123456789010')).toBe(true);
+    expect(validarCartaoSUS('898012345678900')).toBe(true);
+  });
+  it('rejeita cartão com um dígito trocado', () => {
+    expect(validarCartaoSUS('700123456789012')).toBe(false);
+    expect(validarCartaoSUS('123456789010001')).toBe(false);
+  });
+  it('rejeita cartão que começa com dígito sem uso', () => {
+    // A soma de 310000000000007 é divisível por 11, mas 3 não é início válido.
+    expect(validarCartaoSUS('310000000000007')).toBe(false);
   });
   it('rejeita cartão com menos de 15 dígitos', () => {
     expect(validarCartaoSUS('7001234567890')).toBe(false);
@@ -46,7 +62,7 @@ describe('validarCartaoSUS', () => {
     expect(validarCartaoSUS('7001234567890123')).toBe(false);
   });
   it('aceita cartão formatado com espaços', () => {
-    expect(validarCartaoSUS('700 1234 5678 9012')).toBe(true);
+    expect(validarCartaoSUS('700 1234 5678 9010')).toBe(true);
   });
 });
 

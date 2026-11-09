@@ -24,9 +24,19 @@ export function validarCPF(cpf: string): boolean {
   return remainder === parseInt(digits[10]);
 }
 
+/**
+ * Cartão Nacional de Saúde: 15 dígitos, começando por 1 ou 2 (definitivo) ou
+ * por 7, 8 ou 9 (provisório), com a soma dos dígitos multiplicados pelos pesos
+ * 15 a 1 divisível por 11. Antes só o tamanho era conferido, e um número com
+ * um dígito trocado entrava no cadastro sem aviso.
+ */
 export function validarCartaoSUS(cartao: string): boolean {
   const digits = cartao.replace(/\D/g, '');
-  return digits.length === VALIDATION.CARTAO_SUS_LENGTH;
+  if (digits.length !== VALIDATION.CARTAO_SUS_LENGTH) return false;
+  if (!/^[12789]/.test(digits)) return false;
+  let soma = 0;
+  for (let i = 0; i < digits.length; i++) soma += Number(digits[i]) * (15 - i);
+  return soma % 11 === 0;
 }
 
 export function validarCEP(cep: string): boolean {
@@ -76,6 +86,19 @@ export function validarDataBR(dataBR: string): boolean {
     date.getMonth() === month - 1 &&
     date.getDate() === day
   );
+}
+
+/**
+ * Compara uma data DD/MM/AAAA com o dia de hoje no fuso do aparelho:
+ * -1 antes de hoje, 0 hoje, 1 depois. Compara o dia civil, sem hora, para a
+ * visita de hoje não virar "futura" por causa do horário.
+ */
+export function compararComHoje(dataBR: string, hoje: Date = new Date()): -1 | 0 | 1 {
+  const [d, m, a] = dataBR.split('/').map(Number);
+  const alvo = a * 10000 + m * 100 + d;
+  const atual = hoje.getFullYear() * 10000 + (hoje.getMonth() + 1) * 100 + hoje.getDate();
+  if (alvo === atual) return 0;
+  return alvo < atual ? -1 : 1;
 }
 
 export function validarDataNascimento(dataBR: string): boolean {

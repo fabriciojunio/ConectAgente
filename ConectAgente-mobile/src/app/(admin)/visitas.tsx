@@ -11,6 +11,7 @@ import { visitaRepository } from '../../database/repositories/visitaRepository';
 import { agenteRepository } from '../../database/repositories/agenteRepository';
 import { StatusVisita, VisitaListada } from '../../types';
 import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { formatDate } from '../../utils/formatters';
 import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 type VisitaExt = VisitaListada;
@@ -112,7 +113,7 @@ export default function AdminVisitas() {
             {item.logradouro ?? '-'}, {item.numero ?? ''}
           </Text>
           <Text style={styles.sub} numberOfLines={1}>
-            {item.agente_nome ?? 'Agente'} · {new Date(item.data_visita).toLocaleDateString('pt-BR')}
+            {item.agente_nome ?? 'Agente'} · {formatDate(item.data_visita)}
           </Text>
           {item.motivo_visita ? (
             <Text style={styles.motivo} numberOfLines={1}>{item.motivo_visita}</Text>
@@ -265,7 +266,7 @@ export default function AdminVisitas() {
                   <InfoRow label="Endereço" value={`${selecionada.logradouro ?? '-'}, ${selecionada.numero ?? ''}`} />
                   <InfoRow label="Bairro" value={selecionada.bairro ?? '-'} />
                   <InfoRow label="Agente" value={selecionada.agente_nome ?? '-'} />
-                  <InfoRow label="Data" value={new Date(selecionada.data_visita).toLocaleDateString('pt-BR')} />
+                  <InfoRow label="Data" value={formatDate(selecionada.data_visita)} />
                   {selecionada.motivo_visita && <InfoRow label="Motivo" value={selecionada.motivo_visita} />}
                   {selecionada.queixas && <InfoRow label="Queixas" value={selecionada.queixas} />}
                   {selecionada.observacoes && <InfoRow label="Observações" value={selecionada.observacoes} />}

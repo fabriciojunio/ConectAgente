@@ -62,8 +62,18 @@ export function formatCartaoSUS(value: string): string {
 // DATAS
 // ============================================================
 
+const SO_DATA = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * `data_visita`, `data_agendada` e `data_nascimento` são gravadas só com a
+ * data, `2026-10-13`. `new Date` lê esse formato como meia-noite em UTC, e no
+ * fuso do Brasil isso ainda é o dia 12 às 21h: toda visita aparecia um dia
+ * antes na lista, na ficha e na planilha exportada. Data sem hora não passa
+ * por `Date`, só troca a ordem dos campos.
+ */
 export function formatDate(dateStr: string): string {
   if (!dateStr) return '';
+  if (SO_DATA.test(dateStr)) return toDateBR(dateStr);
   try {
     const date = new Date(dateStr);
     return date.toLocaleDateString('pt-BR');
@@ -105,13 +115,18 @@ export function toDateBR(isoDate: string): string {
   return `${parts[2]}/${parts[1]}/${parts[0]}`;
 }
 
-export function calcularIdade(dataNascimento: string): number {
+/**
+ * A data de nascimento é gravada sem hora. Lida por `new Date`, ela vira a
+ * véspera às 21h no fuso do Brasil, e a pessoa ganhava um ano de idade um dia
+ * antes do aniversário. Por isso os campos saem do texto, e não do `Date`.
+ */
+export function calcularIdade(dataNascimento: string, hoje: Date = new Date()): number {
   if (!dataNascimento) return 0;
-  const hoje = new Date();
-  const nascimento = new Date(dataNascimento);
-  let idade = hoje.getFullYear() - nascimento.getFullYear();
-  const m = hoje.getMonth() - nascimento.getMonth();
-  if (m < 0 || (m === 0 && hoje.getDate() < nascimento.getDate())) {
+  const [ano, mes, dia] = dataNascimento.slice(0, 10).split('-').map(Number);
+  if (!ano || !mes || !dia) return 0;
+  let idade = hoje.getFullYear() - ano;
+  const m = hoje.getMonth() + 1 - mes;
+  if (m < 0 || (m === 0 && hoje.getDate() < dia)) {
     idade--;
   }
   return idade;
