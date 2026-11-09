@@ -6,6 +6,37 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Não Lançado]
 
+## [1.2.1] - 2026-11-09
+
+### Corrigido
+
+- **Toda data de visita aparecia um dia antes no aplicativo.** A data é
+  gravada só com o dia, `2026-10-13`, e a conversão para exibição a lia como
+  meia-noite em UTC, que no fuso do Brasil ainda é dia 12 às 21h. Afetava a
+  lista de visitas, o detalhe da visita, as fichas da residência e do morador,
+  a agenda, as telas do administrador e as planilhas exportadas em Excel e CSV.
+- **A coluna "Horário" da planilha mostrava 21:00 em toda visita.** A visita
+  guarda só o dia; a coluna passou a ser "Registrado em", com a hora em que o
+  registro foi feito no aparelho.
+- **A idade avançava um dia antes do aniversário**, pela mesma leitura em UTC.
+  Pesa na puericultura, que usa a idade para o acompanhamento até dois anos.
+- **O Cartão SUS aceitava qualquer sequência de 15 dígitos.** Passa a conferir
+  o primeiro dígito (1, 2, 7, 8 ou 9) e o dígito verificador do Cartão Nacional
+  de Saúde. A busca continua achando cartões gravados antes da conferência.
+- **Visita realizada aceitava data futura** e agendamento aceitava data
+  passada. Um 2062 digitado no lugar de 2026 entrava como visita feita.
+- **Painel web:** filtros de unidade, microárea e bairro que davam erro ou não
+  filtravam, último dia do período fora das consultas, relatórios cortados em
+  1.000 linhas sem aviso e números de demonstração exibidos no lugar de zero.
+
+### Removido
+
+- `healthValidators.ts`, com uma segunda conferência do Cartão SUS fora do
+  algoritmo oficial, e a exportação de pacientes que nenhuma tela chamava e
+  preenchia hipertensão e diabetes sempre com "-".
+
+## [1.2.0] - 2026-11-02
+
 ### Segurança
 
 - **Banco local cifrado com SQLCipher.** O arquivo do SQLite no aparelho passa a
