@@ -6,6 +6,26 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Não Lançado]
 
+## [1.2.2] - 2026-11-09
+
+### Segurança
+
+- **Quem não fez login não toca mais em nada no banco.** O papel `anon`
+  tinha SELECT nas colunas de `agentes` (CPF, e-mail, telefone), escrita e
+  TRUNCATE nas tabelas de dado e executava as funções auxiliares das
+  policies. Saiu também a policy que deixava gravar pedido de cadastro
+  direto pela API. Aplicado em produção em 09/11/2026
+  (`migration_sem_anonimo.sql`).
+- **Nenhuma coluna clínica das fichas de prontuário sai pela API.** Era a
+  pendência aberta em `docs/seguranca.md`. O aplicativo passa a gravar as
+  fichas com INSERT e, na retentativa, UPDATE pela `prontuario_id`, sem
+  upsert (`migration_prontuario_fechado.sql`, que depende desta versão).
+
+### Corrigido
+
+- O `/api/health` do painel lê a recusa por permissão como prova de que o
+  banco respondeu, com GET para separar isso de chave inválida.
+
 ## [1.2.1] - 2026-11-09
 
 ### Corrigido
