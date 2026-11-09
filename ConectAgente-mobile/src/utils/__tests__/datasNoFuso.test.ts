@@ -4,15 +4,8 @@
  * `new Date('2026-10-13')` é meia-noite em UTC, que no Brasil ainda é dia 12
  * às 21h. Os testes antigos rodavam no fuso da máquina e não pegavam isso.
  */
-const FUSO_ORIGINAL = process.env.TZ;
-process.env.TZ = 'America/Sao_Paulo';
-
 import { calcularIdade, formatDate } from '../formatters';
 import { compararComHoje } from '../validators';
-
-afterAll(() => {
-  process.env.TZ = FUSO_ORIGINAL;
-});
 
 describe('datas sem hora no fuso do Brasil', () => {
   it('confere o fuso do teste', () => {

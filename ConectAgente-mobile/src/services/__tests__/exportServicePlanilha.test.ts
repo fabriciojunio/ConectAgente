@@ -5,11 +5,8 @@
  * abriu o arquivo gerado nem viu a data como o aplicativo grava: só o dia,
  * `2026-10-13`. Lida como meia-noite UTC, no Brasil ela vira dia 12 às 21h, e
  * era isso que saía na coluna Data. Aqui o `xlsx` é o real e o arquivo é lido
- * de volta.
+ * de volta, no fuso de São Paulo fixado pelo globalSetup (jest.fuso.js).
  */
-const FUSO_ORIGINAL = process.env.TZ;
-process.env.TZ = 'America/Sao_Paulo';
-
 const escritas: { nome: string; conteudo: unknown }[] = [];
 
 jest.mock('expo-file-system', () => {
@@ -63,10 +60,6 @@ function lerPlanilha() {
 
 beforeEach(() => {
   escritas.length = 0;
-});
-
-afterAll(() => {
-  process.env.TZ = FUSO_ORIGINAL;
 });
 
 describe('planilha de visitas exportada', () => {
