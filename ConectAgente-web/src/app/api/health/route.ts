@@ -4,6 +4,9 @@ import { conferirEnv, chaveDeServicoVazou } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
 
+/** Código do Postgres para permissão negada. */
+const PERMISSAO_NEGADA = '42501';
+
 /**
  * Health check endpoint for monitoring and deployment verification.
  * GET /api/health
@@ -64,7 +67,10 @@ export async function GET() {
 
     const latencyMs = Date.now() - start;
 
-    if (error) {
+    // Sem login, o banco recusa a leitura de qualquer tabela (42501). A
+    // recusa vem do próprio Postgres, então prova que ele está de pé; dar
+    // permissão ao visitante só para o health check abriria o que foi fechado.
+    if (error && error.code !== PERMISSAO_NEGADA) {
       // Não expor error.message: o endpoint é público e detalhes do banco
       // (nomes de tabela, mensagens do Postgres) ajudariam um atacante.
       return NextResponse.json(
