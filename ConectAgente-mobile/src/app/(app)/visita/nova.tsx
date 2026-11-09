@@ -12,7 +12,7 @@ import { SelectField } from '../../../components/forms/SelectField';
 import { SwitchField } from '../../../components/forms/SwitchField';
 import { Button } from '../../../components/button';
 import { PageHeader } from '../../../components/ui/PageHeader';
-import { visitaSchema, VisitaFormDataValidated, validarDataBR } from '../../../utils/validators';
+import { visitaSchema, VisitaFormDataValidated, validarDataBR, compararComHoje } from '../../../utils/validators';
 import { formatDateInput, parseDateBR } from '../../../utils/formatters';
 import { ESPECIALIDADES, SPACING, FONT_SIZE } from '../../../utils/constants';
 import { StatusVisita } from '../../../types';
@@ -104,6 +104,11 @@ export default function NovaVisita() {
   }));
 
   async function onSubmitVisita(data: VisitaFormDataValidated) {
+    // Um 2062 no lugar de 2026 entrava como visita feita e contava na meta.
+    if (data.status === StatusVisita.REALIZADA && compararComHoje(data.data_visita) > 0) {
+      Alert.alert('Data inválida', 'Visita realizada não pode ter data futura. Para uma data futura, use Agendar.');
+      return;
+    }
     setIsLoading(true);
     try {
       await registrarVisita({
@@ -136,6 +141,10 @@ export default function NovaVisita() {
   }
 
   async function onSubmitAgendamento(data: VisitaFormDataValidated) {
+    if (compararComHoje(data.data_visita) < 0) {
+      Alert.alert('Data inválida', 'O agendamento precisa ser para hoje ou para uma data futura.');
+      return;
+    }
     setIsLoading(true);
     try {
       const agendamento = await agendarVisita({

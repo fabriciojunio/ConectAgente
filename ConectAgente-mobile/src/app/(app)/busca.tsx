@@ -14,8 +14,8 @@ import { Badge } from '../../components/ui/Badge';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { formatCPF, formatCartaoSUS, calcularIdade, stripCPF } from '../../utils/formatters';
-import { validarCPF, validarCartaoSUS } from '../../utils/validators';
-import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { validarCPF } from '../../utils/validators';
+import { SPACING, FONT_SIZE, RADIUS, VALIDATION } from '../../utils/constants';
 import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 type SearchMode = 'nome' | 'cpf' | 'sus';
@@ -49,7 +49,9 @@ export default function Busca() {
         }
       } else if (mode === 'sus') {
         const susLimpo = query.replace(/\D/g, '');
-        if (validarCartaoSUS(susLimpo)) {
+        // Só o tamanho: cartão gravado antes da conferência do dígito
+        // verificador também precisa ser encontrado.
+        if (susLimpo.length === VALIDATION.CARTAO_SUS_LENGTH) {
           const m = await moradorRepository.buscarPorCartaoSUS(susLimpo, agente.id);
           moradores = m ? [m] : [];
         }
