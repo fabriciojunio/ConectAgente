@@ -86,34 +86,36 @@ function conflitoDa(tabela: SupabaseTable): string {
 }
 
 /**
- * Tabelas em que o aplicativo salva por substituição e não por alteração.
+ * Fichas de prontuário: o aplicativo salva por substituição e não por
+ * alteração.
  *
  * `salvarSaude` e as irmãs fazem insere-ou-atualiza no banco local. Mandar
  * isso como UPDATE puro perdia dado em silêncio: se a linha ainda não existe
- * no servidor, o UPDATE afeta zero linhas e o PostgREST não devolve erro.
- * Como UPSERT, o primeiro envio cria e os seguintes atualizam.
+ * no servidor, o UPDATE afeta zero linhas e o PostgREST não devolve erro. Por
+ * isso tanto o insert quanto o update da fila passam por `inserirOuAtualizar`.
  */
-/**
- * Tabelas com colunas que o servidor não deixa ler direto.
- *
- * Em `moradores`, cpf, cartão do SUS, doença e medicação só saem pela leitura
- * auditada (`fn_ler_morador`). O Postgres exige permissão de leitura nas
- * colunas que um `INSERT ... ON CONFLICT DO UPDATE` atualiza, então o upsert
- * passou a ser recusado. INSERT e UPDATE separados não leem nada, e dão o
- * mesmo resultado: o primeiro envio insere, a retentativa atualiza.
- */
-const GRAVADAS_SEM_UPSERT = new Set<SupabaseTable>(['moradores']);
-
-/** Código do Postgres para chave primária repetida. */
-const CHAVE_REPETIDA = '23505';
-
-const SALVAS_POR_UPSERT = new Set<SupabaseTable>([
+const FICHAS_DE_PRONTUARIO = new Set<SupabaseTable>([
   'prontuario_saude',
   'prontuario_gestante',
   'prontuario_puericultura',
   'prontuario_mulher',
   'prontuario_social',
 ]);
+
+/**
+ * Tabelas com colunas que o servidor não deixa ler direto.
+ *
+ * Em `moradores`, cpf, cartão do SUS, doença e medicação só saem pela leitura
+ * auditada (`fn_ler_morador`); nas fichas de prontuário, nenhuma coluna
+ * clínica sai pela API. O Postgres exige permissão de leitura nas colunas que
+ * um `INSERT ... ON CONFLICT DO UPDATE` atualiza, então o upsert é recusado.
+ * INSERT e UPDATE separados não leem nada, e dão o mesmo resultado: o
+ * primeiro envio insere, a retentativa atualiza.
+ */
+const GRAVADAS_SEM_UPSERT = new Set<SupabaseTable>(['moradores', ...FICHAS_DE_PRONTUARIO]);
+
+/** Código do Postgres para chave primária repetida. */
+const CHAVE_REPETIDA = '23505';
 
 export const syncService = {
   /**
@@ -209,12 +211,8 @@ async function syncParaSupabase(
       break;
     }
     case 'update': {
-      if (SALVAS_POR_UPSERT.has(tabela)) {
-        const comChave = { ...payload, [chave]: registroId };
-        const { error } = await supabase
-          .from(tabela)
-          .upsert(comChave, { onConflict: conflitoDa(tabela) });
-        if (error) throw new Error(error.message);
+      if (FICHAS_DE_PRONTUARIO.has(tabela)) {
+        await inserirOuAtualizar(tabela, chave, registroId, { ...payload, [chave]: registroId });
         break;
       }
       const { error } = await supabase.from(tabela).update(payload).eq(chave, registroId);

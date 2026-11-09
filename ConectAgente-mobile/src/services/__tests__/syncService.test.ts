@@ -199,6 +199,60 @@ describe('syncService.sincronizar - morador sem upsert', () => {
   });
 });
 
+// Nenhuma coluna clínica das fichas sai pela API, então upsert nelas é
+// recusado pelo Postgres. A ficha é salva por substituição: tanto o insert
+// quanto o update da fila tentam inserir e, se já existe, atualizam pela
+// chave prontuario_id.
+describe('syncService.sincronizar - fichas de prontuário sem upsert', () => {
+  const fichas = [
+    'prontuario_saude',
+    'prontuario_gestante',
+    'prontuario_puericultura',
+    'prontuario_mulher',
+    'prontuario_social',
+  ];
+
+  it.each(fichas)('%s: insert da fila insere sem upsert', async (tabela) => {
+    mockedQueue.listarPendentes.mockResolvedValue([{
+      ...itemSyncBase, id: 'sync-f', tabela, registro_id: 'pront-1',
+      payload: JSON.stringify({ observacoes: 'Dados simulados' }),
+    }]);
+
+    await syncService.sincronizar();
+
+    expect(mockSupabaseUpsert).not.toHaveBeenCalled();
+    expect(mockSupabaseInsert).toHaveBeenCalledWith({ observacoes: 'Dados simulados', prontuario_id: 'pront-1' });
+    expect(mockedQueue.marcarSucesso).toHaveBeenCalledWith('sync-f');
+  });
+
+  it.each(fichas)('%s: update da fila cria a ficha que ainda não existe no servidor', async (tabela) => {
+    mockedQueue.listarPendentes.mockResolvedValue([{
+      ...itemSyncBase, id: 'sync-f', tabela, operacao: 'update' as const, registro_id: 'pront-1',
+      payload: JSON.stringify({ observacoes: 'Dados simulados' }),
+    }]);
+
+    await syncService.sincronizar();
+
+    expect(mockSupabaseUpsert).not.toHaveBeenCalled();
+    expect(mockSupabaseInsert).toHaveBeenCalledWith({ observacoes: 'Dados simulados', prontuario_id: 'pront-1' });
+    expect(mockSupabaseUpdateComEq).not.toHaveBeenCalled();
+  });
+
+  it('update de ficha que já existe atualiza por prontuario_id', async () => {
+    mockedQueue.listarPendentes.mockResolvedValue([{
+      ...itemSyncBase, id: 'sync-f', tabela: 'prontuario_saude', operacao: 'update' as const,
+      registro_id: 'pront-1', payload: JSON.stringify({ observacoes: 'Dados simulados' }),
+    }]);
+    mockSupabaseInsert.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+
+    await syncService.sincronizar();
+
+    expect(mockSupabaseUpdateComEq).toHaveBeenCalledWith({ observacoes: 'Dados simulados' });
+    expect(mockSupabaseEq).toHaveBeenCalledWith('prontuario_id', 'pront-1');
+    expect(mockedQueue.marcarSucesso).toHaveBeenCalledWith('sync-f');
+  });
+});
+
 describe('syncService.sincronizar - sem sessao no servidor', () => {
   // Sem sessao, `auth.uid()` e nulo e toda policy de RLS nega a gravacao.
   // Medido com o schema e as policies reais num PostgreSQL:

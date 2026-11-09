@@ -51,6 +51,15 @@ It is meant for use by a municipal health department.
   their scope by role; a null role fell into the manager branch and saw the whole city. They now
   refuse without an active account, have a locked `search_path` and cannot be executed with the
   anonymous key. Proven in `07-conta-ativa.sql`.
+- **Someone who has not signed in cannot touch the database.** Since 09/11/2026 the `anon` role has
+  no privilege on any table, sequence or policy helper function, including ones created later, and
+  `authenticated` has no `TRUNCATE`, which would bypass RLS. The policy that accepted registration
+  requests straight through the API is gone: requests come in through the server, which validates
+  and rate-limits them. Proven in `08-sem-anonimo.sql` and applied in production.
+- **No clinical column of the medical record forms leaves through the API.** From 1.2.2 on the app
+  writes the forms without upsert, and `migration_prontuario_fechado.sql` lets a signed-in user read
+  only the keys. Proven in `09-prontuario-fechado.sql`, including that the old upsert is refused and
+  that the app can still write.
 - **Session token and local key in SecureStore** (Keychain on iOS, Keystore on Android).
 - **The device's local database is encrypted whole with SQLCipher** since 1.2.0 (02/11/2026). The
   256-bit key is drawn on first run, kept in the Keystore and applied with `PRAGMA key` before any
@@ -89,13 +98,10 @@ Recorded because omitting a limitation in a public-sector system is worse than h
   too fast for a password: with a stolen device's database in hand, guessing passwords is cheap. The
   right approach is slow derivation (PBKDF2 with many iterations, scrypt or Argon2), migrating each
   agent's hash on their next login.
-- **Reads of the medical record tables do not go through an audited server function yet.** In the
-  app, opening a record writes `LEITURA` to the local trail, and in the panel the resident record
-  goes through `fn_ler_morador`. But a signed-in user can read `prontuario_saude` and the other
-  records directly through the API, within what RLS allows, without logging. The fix is the one
-  applied to `moradores` on 28/10/2026: column-level reads and an audited function. It requires
-  replacing the app's upsert on those tables, because Postgres refuses an upsert that updates a
-  column the user cannot read.
+- **Closing the medical record forms depends on 1.2.2 being installed.** Earlier versions write the
+  forms with upsert, which `migration_prontuario_fechado.sql` refuses. The migration goes into the
+  database together with the 1.2.2 rollout, and a device on an older version stops syncing forms
+  until it is updated.
 - **The web panel has no second factor**, and it is where every patient's record is read.
 - **Rate limiting is in process memory.** With more than one panel instance, each counts separately.
 - **Build dependencies with known flaws** (`uuid` 7, `image-size` 1, `deepmerge`, `glob` and

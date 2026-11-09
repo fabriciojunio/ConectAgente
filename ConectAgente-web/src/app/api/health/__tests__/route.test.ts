@@ -40,6 +40,13 @@ describe('GET /api/health', () => {
     expect((await r.json()).status).toBe('healthy');
   });
 
+  it('chave inválida não passa por banco de pé', async () => {
+    // O gateway responde 401 sem o código do Postgres.
+    resposta.error = { code: '', message: 'Invalid API key' };
+    const r = await GET();
+    expect(r.status).toBe(503);
+  });
+
   it('outro erro continua sendo banco fora do ar, sem vazar a mensagem', async () => {
     resposta.error = { code: 'PGRST000', message: 'could not connect to server' };
     const r = await GET();
