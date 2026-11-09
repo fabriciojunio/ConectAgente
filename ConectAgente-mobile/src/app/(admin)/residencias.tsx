@@ -12,6 +12,7 @@ import { moradorRepository } from '../../database/repositories/moradorRepository
 import { visitaRepository } from '../../database/repositories/visitaRepository';
 import { Residencia, Morador, Visita } from '../../types';
 import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { formatDate } from '../../utils/formatters';
 import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 type ResidenciaExt = Residencia & { agente_nome?: string };
@@ -174,7 +175,7 @@ export default function AdminResidencias() {
                         <View style={{ flex: 1 }}>
                           <Text style={styles.moradorNome}>{m.nome}</Text>
                           <Text style={styles.moradorInfo}>
-                            {m.sexo} · {new Date(m.data_nascimento).toLocaleDateString('pt-BR')}
+                            {m.sexo} · {formatDate(m.data_nascimento)}
                             {m.is_responsavel ? ' · Responsável' : ''}
                           </Text>
                         </View>
@@ -190,7 +191,7 @@ export default function AdminResidencias() {
                     visitas.map((v) => (
                       <View key={v.id} style={styles.visitaRow}>
                         <View style={[styles.statusDot, { backgroundColor: v.status === 'realizada' ? colors.success : colors.warning }]} />
-                        <Text style={styles.visitaData}>{new Date(v.data_visita).toLocaleDateString('pt-BR')}</Text>
+                        <Text style={styles.visitaData}>{formatDate(v.data_visita)}</Text>
                         <View style={[styles.statusChip, { backgroundColor: v.status === 'realizada' ? colors.successLight : colors.warningLight }]}>
                           <Text style={[styles.statusText, { color: v.status === 'realizada' ? colors.success : colors.warning }]}>{v.status}</Text>
                         </View>

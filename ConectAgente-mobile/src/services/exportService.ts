@@ -11,7 +11,7 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { utils, write } from 'xlsx';
 import { Visita } from '../types';
-import { apenasData, formatDate, formatDateTime } from '../utils/formatters';
+import { formatDate, formatDateTime } from '../utils/formatters';
 
 export type PeriodoRelatorio = 'dia' | 'semana' | 'mes';
 export type FormatoRelatorio = 'csv' | 'xlsx';
@@ -32,7 +32,9 @@ export const exportService = {
   ): Promise<void> {
     const linhas = dados.visitas.map((v) => ({
       'Data': formatDate(v.data_visita),
-      'Horário': formatDateTime(v.data_visita),
+      // A visita guarda só o dia. Hora que existe de fato é a do registro no
+      // aparelho; a coluna "Horário" antiga mostrava 21:00 inventado pelo fuso.
+      'Registrado em': formatDateTime(v.created_at),
       'Endereço': v.residencia
         ? `${v.residencia.logradouro}, ${v.residencia.numero} - ${v.residencia.bairro}`
         : v.residencia_id,
@@ -50,25 +52,6 @@ export const exportService = {
     } else {
       await exportarExcel(linhas, `Visitas - ${traduzirPeriodo(dados.periodo)}`, nome);
     }
-  },
-
-  /**
-   * Exporta moradores/pacientes como Excel.
-   */
-  async exportarPacientes(moradores: Record<string, unknown>[]): Promise<void> {
-    const linhas = moradores.map((m) => ({
-      'Nome': m.nome,
-      'CPF': m.cpf ?? '-',
-      'Cartão SUS': m.cartao_sus ?? '-',
-      'Data Nasc.': m.data_nascimento ? formatDate(m.data_nascimento as string) : '-',
-      'Sexo': m.sexo,
-      'Telefone': m.telefone ?? '-',
-      'Hipertenso': '-',
-      'Diabético': '-',
-      'Bolsa Família': m.beneficio_bolsa_familia ? 'Sim' : 'Não',
-    }));
-
-    await exportarExcel(linhas, 'Pacientes', `pacientes_${apenasData(new Date())}`);
   },
 };
 
