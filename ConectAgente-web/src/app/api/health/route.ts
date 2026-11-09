@@ -59,10 +59,12 @@ export async function GET() {
   try {
     const supabase = await createClient();
 
-    // Quick DB connectivity check (lightweight query)
+    // GET e não HEAD: a resposta de HEAD vem sem corpo, e sem o corpo não há
+    // como separar a recusa por permissão (42501, banco de pé) da chave
+    // inválida (401 do gateway, painel quebrado). Os dois chegam como 401.
     const { error } = await supabase
       .from('agentes')
-      .select('id', { count: 'exact', head: true })
+      .select('id')
       .limit(1);
 
     const latencyMs = Date.now() - start;
