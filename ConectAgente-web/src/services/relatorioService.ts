@@ -15,30 +15,7 @@ import type {
 import { formatDate, fimExclusivo } from '@/lib/utils';
 import { selectVisitas } from './visitaService';
 import { selectResidencias } from './familiaService';
-
-/** Teto padrão de linhas por resposta do PostgREST no Supabase. */
-export const LINHAS_POR_LOTE = 1000;
-
-type Lote<T> = PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
-
-/**
- * O PostgREST corta a resposta em 1.000 linhas sem erro e sem aviso, então um
- * relatório com mais visitas que isso saía incompleto e com cara de completo.
- * A busca segue em lotes até vir um lote menor que o teto. Cada lote monta a
- * consulta de novo porque o builder do Supabase só pode ser executado uma vez.
- */
-async function buscarTudo<T>(
-  lote: (de: number, ate: number) => Lote<T>,
-  mensagemDeErro: string
-): Promise<T[]> {
-  const linhas: T[] = [];
-  for (let de = 0; ; de += LINHAS_POR_LOTE) {
-    const { data, error } = await lote(de, de + LINHAS_POR_LOTE - 1);
-    if (error) throw new Error(`${mensagemDeErro}: ${error.message}`);
-    linhas.push(...(data ?? []));
-    if (!data || data.length < LINHAS_POR_LOTE) return linhas;
-  }
-}
+import { buscarTudo } from '@/lib/buscarEmLotes';
 
 /**
  * Gera dados de relatório de visitas com base nos filtros informados.

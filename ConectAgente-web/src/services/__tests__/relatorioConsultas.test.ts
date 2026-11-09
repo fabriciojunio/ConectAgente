@@ -16,8 +16,8 @@ import {
   gerarRelatorioAtrasos,
   gerarRelatorioFamilias,
   gerarRelatorioVisitas,
-  LINHAS_POR_LOTE,
 } from '../relatorioService';
+import { LINHAS_POR_LOTE } from '@/lib/buscarEmLotes';
 import { StatusVisita } from '@/types';
 import type { RelatorioFiltros } from '@/types';
 
