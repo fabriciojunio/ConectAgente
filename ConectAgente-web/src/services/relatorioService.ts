@@ -9,9 +9,36 @@ import type {
   AgenteComEstatisticas,
   ResidenciaComDetalhes,
   CoberturaMicroarea,
+  FamiliaEmAtraso,
   GlobalFilters,
 } from '@/types';
-import { MORADOR_COLUNAS_LISTA } from './moradorColunas';
+import { formatDate, fimExclusivo } from '@/lib/utils';
+import { selectVisitas } from './visitaService';
+import { selectResidencias } from './familiaService';
+
+/** Teto padrão de linhas por resposta do PostgREST no Supabase. */
+export const LINHAS_POR_LOTE = 1000;
+
+type Lote<T> = PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
+
+/**
+ * O PostgREST corta a resposta em 1.000 linhas sem erro e sem aviso, então um
+ * relatório com mais visitas que isso saía incompleto e com cara de completo.
+ * A busca segue em lotes até vir um lote menor que o teto. Cada lote monta a
+ * consulta de novo porque o builder do Supabase só pode ser executado uma vez.
+ */
+async function buscarTudo<T>(
+  lote: (de: number, ate: number) => Lote<T>,
+  mensagemDeErro: string
+): Promise<T[]> {
+  const linhas: T[] = [];
+  for (let de = 0; ; de += LINHAS_POR_LOTE) {
+    const { data, error } = await lote(de, de + LINHAS_POR_LOTE - 1);
+    if (error) throw new Error(`${mensagemDeErro}: ${error.message}`);
+    linhas.push(...(data ?? []));
+    if (!data || data.length < LINHAS_POR_LOTE) return linhas;
+  }
+}
 
 /**
  * Gera dados de relatório de visitas com base nos filtros informados.
@@ -22,34 +49,36 @@ export async function gerarRelatorioVisitas(
   try {
     const supabase = createClient();
 
-    let query = supabase
-      .from('visitas')
-      .select(
-        `*, agente:agentes(id, nome, area_atuacao), residencia:residencias(id, logradouro, numero, bairro, cidade), morador:moradores(id, nome)`
-      );
+    const rows = await buscarTudo((de, ate) => {
+      let query = supabase.from('visitas').select(selectVisitas(filtros));
 
-    if (filtros.periodo_inicio) {
-      query = query.gte('data_visita', filtros.periodo_inicio);
-    }
-    if (filtros.periodo_fim) {
-      query = query.lte('data_visita', filtros.periodo_fim);
-    }
-    if (filtros.agente_id) {
-      query = query.eq('agente_id', filtros.agente_id);
-    }
-    if (filtros.bairro) {
-      query = query.eq('residencia.bairro', filtros.bairro);
-    }
+      if (filtros.periodo_inicio) {
+        query = query.gte('data_visita', filtros.periodo_inicio);
+      }
+      if (filtros.periodo_fim) {
+        query = query.lt('data_visita', fimExclusivo(filtros.periodo_fim));
+      }
+      if (filtros.agente_id) {
+        query = query.eq('agente_id', filtros.agente_id);
+      }
+      if (filtros.unidade_saude) {
+        query = query.eq('agente.unidade_saude', filtros.unidade_saude);
+      }
+      if (filtros.bairro) {
+        query = query.eq('residencia.bairro', filtros.bairro);
+      }
+      if (filtros.status) {
+        query = query.eq('status', filtros.status);
+      }
 
-    query = query.order('data_visita', { ascending: false });
+      // O id desempata visitas na mesma data, senão um lote repete ou pula linha.
+      return query
+        .order('data_visita', { ascending: false })
+        .order('id', { ascending: true })
+        .range(de, ate);
+    }, 'Erro ao gerar relatório de visitas');
 
-    const { data, error } = await query;
-
-    if (error) {
-      throw new Error(`Erro ao gerar relatório de visitas: ${error.message}`);
-    }
-
-    return (data as unknown as VisitaComDetalhes[]) ?? [];
+    return rows as unknown as VisitaComDetalhes[];
   } catch (err) {
     if (err instanceof Error) throw err;
     throw new Error('Erro inesperado ao gerar relatório de visitas');
@@ -86,27 +115,25 @@ export async function gerarRelatorioAgentes(
 
     const agenteIds = agentes.map((a) => a.id);
 
-    let visitasQuery = supabase
-      .from('visitas')
-      .select('agente_id, status')
-      .in('agente_id', agenteIds);
+    const visitas = await buscarTudo((de, ate) => {
+      let visitasQuery = supabase
+        .from('visitas')
+        .select('id, agente_id, status')
+        .in('agente_id', agenteIds);
 
-    if (filtros.periodo_inicio) {
-      visitasQuery = visitasQuery.gte('data_visita', filtros.periodo_inicio);
-    }
-    if (filtros.periodo_fim) {
-      visitasQuery = visitasQuery.lte('data_visita', filtros.periodo_fim);
-    }
+      if (filtros.periodo_inicio) {
+        visitasQuery = visitasQuery.gte('data_visita', filtros.periodo_inicio);
+      }
+      if (filtros.periodo_fim) {
+        visitasQuery = visitasQuery.lt('data_visita', fimExclusivo(filtros.periodo_fim));
+      }
 
-    const { data: visitas, error: visitasError } = await visitasQuery;
-
-    if (visitasError) {
-      throw new Error(`Erro ao buscar visitas dos agentes: ${visitasError.message}`);
-    }
+      return visitasQuery.order('id', { ascending: true }).range(de, ate);
+    }, 'Erro ao buscar visitas dos agentes');
 
     const statsMap = new Map<string, { total: number; realizadas: number }>();
 
-    for (const v of visitas ?? []) {
+    for (const v of visitas) {
       const s = statsMap.get(v.agente_id) ?? { total: 0, realizadas: 0 };
       s.total++;
       if (v.status === 'realizada') s.realizadas++;
@@ -140,30 +167,29 @@ export async function gerarRelatorioFamilias(
   try {
     const supabase = createClient();
 
-    let query = supabase
-      .from('residencias')
-      .select(`*, agente:agentes(id, nome, area_atuacao), moradores(${MORADOR_COLUNAS_LISTA})`)
-      .is('deleted_at', null);
+    const rows = await buscarTudo((de, ate) => {
+      let query = supabase
+        .from('residencias')
+        .select(selectResidencias(filtros))
+        .is('deleted_at', null);
 
-    if (filtros.bairro) {
-      query = query.eq('bairro', filtros.bairro);
-    }
-    if (filtros.agente_id) {
-      query = query.eq('agente_id', filtros.agente_id);
-    }
-    if (filtros.unidade_saude) {
-      query = query.eq('unidade_saude', filtros.unidade_saude);
-    }
+      if (filtros.bairro) {
+        query = query.eq('bairro', filtros.bairro);
+      }
+      if (filtros.agente_id) {
+        query = query.eq('agente_id', filtros.agente_id);
+      }
+      if (filtros.unidade_saude) {
+        query = query.eq('agente.unidade_saude', filtros.unidade_saude);
+      }
 
-    query = query.order('logradouro', { ascending: true });
+      return query
+        .order('logradouro', { ascending: true })
+        .order('id', { ascending: true })
+        .range(de, ate);
+    }, 'Erro ao gerar relatório de famílias');
 
-    const { data, error } = await query;
-
-    if (error) {
-      throw new Error(`Erro ao gerar relatório de famílias: ${error.message}`);
-    }
-
-    return (data as unknown as ResidenciaComDetalhes[]) ?? [];
+    return rows as unknown as ResidenciaComDetalhes[];
   } catch (err) {
     if (err instanceof Error) throw err;
     throw new Error('Erro inesperado ao gerar relatório de famílias');
@@ -196,6 +222,28 @@ export async function gerarRelatorioCobertura(
     if (err instanceof Error) throw err;
     throw new Error('Erro inesperado ao gerar relatório de cobertura');
   }
+}
+
+/**
+ * Gera dados de relatório de famílias sem visita realizada (todas, sem corte
+ * de dias). A função do banco também passa pelo teto de 1.000 linhas.
+ */
+export async function gerarRelatorioAtrasos(
+  filtros: RelatorioFiltros
+): Promise<FamiliaEmAtraso[]> {
+  const supabase = createClient();
+  const params: Record<string, unknown> = { p_dias: 0 };
+  if (filtros.unidade_saude) params.p_unidade = filtros.unidade_saude;
+
+  return buscarTudo<FamiliaEmAtraso>(
+    (de, ate) =>
+      supabase
+        .rpc('fn_familias_em_atraso', params)
+        .order('dias_sem_visita', { ascending: false, nullsFirst: true })
+        .order('residencia_id', { ascending: true })
+        .range(de, ate),
+    'Erro ao gerar relatório de famílias em atraso'
+  );
 }
 
 /**
@@ -415,6 +463,7 @@ export async function gerarRelatorio(
     unidade_saude: filters?.unidade_saude,
     agente_id: filters?.agente_id,
     bairro: filters?.bairro,
+    status: filters?.status,
   };
 
   let data: Array<Record<string, unknown>> = [];
@@ -429,9 +478,9 @@ export async function gerarRelatorio(
       const res = r.residencia as Record<string, unknown> | null | undefined;
       const ag = r.agente as Record<string, unknown> | null | undefined;
       return {
-        'Data': r.data_visita
-          ? format(new Date(r.data_visita + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
-          : '-',
+        // data_visita chega como TIMESTAMPTZ completo; somar 'T00:00:00' a ele
+        // dava data inválida e o format derrubava o relatório inteiro.
+        'Data': r.data_visita ? formatDate(r.data_visita) : '-',
         'Agente': ag?.nome ?? '-',
         'Status': r.status,
         'Logradouro': res ? `${res.logradouro}, ${res.numero}` : '-',
@@ -484,8 +533,7 @@ export async function gerarRelatorio(
     // atrasos
     titulo = 'Relatório de Famílias em Atraso';
     columns = ['Família', 'Bairro', 'Agente', 'Dias s/ Visita', 'Criticidade'];
-    const { getFamiliasEmAtraso } = await import('./familiaService');
-    const rows = await getFamiliasEmAtraso(0, filters);
+    const rows = await gerarRelatorioAtrasos(filtros);
     data = rows.map((r) => ({
       'Família': r.endereco,
       'Bairro': r.bairro ?? '-',
