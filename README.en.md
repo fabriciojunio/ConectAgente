@@ -82,13 +82,13 @@ npm run build
 bash ConectAgente-web/supabase/testes/rodar-todos.sh
 ```
 
-State measured on 29/10/2026:
+State measured on 09/11/2026:
 
 | What | Result |
 |---|---|
-| App tests | 638 in 33 suites |
-| Panel tests | 335 in 30 suites |
-| Checks against a real database | 106 in 6 suites, plus the repeated-install one |
+| App tests | 668 in 37 suites |
+| Panel tests | 375 in 32 suites |
+| Checks against a real database | 127 in 5 suites, plus the repeated-install one |
 | Type errors | 0 in both projects |
 | ESLint warnings | 3, all unused imports, pre-existing |
 | Vulnerabilities (OSV-Scanner) | 0 unaccepted; build-tool ones have a reason and deadline in `osv-scanner.toml` |
@@ -213,6 +213,22 @@ sense locally. Translation and removal of local fields live in one place,
   sync out in the field; renewing before the date is described in the header of
   `plugins/fixar-certificado.js`.
 
+**Three decisions from 09/11/2026, in version 1.2.2.**
+
+- **Someone who has not signed in cannot touch the database.** The `anon` role
+  lost every table, sequence and helper-function privilege, and registration
+  requests only come in through the server. The panel's health check treats
+  the `42501` refusal as proof the database answered; granting the visitor
+  access just for the health check would reopen what was closed.
+- **A date without time never goes through `new Date`.** `data_visita`,
+  `data_agendada` and `data_nascimento` are stored as `2026-10-13`, and
+  `new Date` reads that as UTC midnight, which in Brazil is still the 12th.
+  Every visit showed up a day early. The app suite runs in the São Paulo time
+  zone (`jest.fuso.js`) so the defect cannot come back unnoticed.
+- **Health card check digit on registration, length only on search.**
+  Registration checks the Cartão Nacional de Saúde algorithm; search still
+  finds cards stored before the check existed.
+
 ---
 
 ## What is still missing
@@ -224,8 +240,10 @@ Honesty about the current state, which is worth more than a feature list:
   without JIT, as Hermes runs, 100,000 iterations took 41 s. The way forward is
   native derivation (`react-native-quick-crypto`), validated on a real Android
   device, with the hash migrated on the next login.
-- **Medical record tables can still be read directly through the API**, within
-  RLS and without logging. The fix is the same one applied to `moradores`.
+- **Medical record forms only close with 1.2.2 installed.** From that version
+  on no clinical column leaves through the API (`migration_prontuario_fechado.sql`),
+  but the migration refuses earlier versions' upsert, so it goes into the
+  database together with the 1.2.2 rollout.
 - **The panel has no second factor**, and it is where everyone's records are read.
 
 ---

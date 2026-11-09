@@ -115,9 +115,11 @@ pode perder a visita registrada porque o log falhou.
 CD/ANPD nº 15/2024. Faltam os nomes e contatos, que são decisão administrativa
 da secretaria.
 
-**Leitura direta das tabelas de prontuário.** No aplicativo a abertura grava
-na trilha, mas pela API um usuário logado lê `prontuario_saude` e as outras
-fichas sem registro, dentro do RLS. Ver [seguranca.md](seguranca.md).
+**Leitura direta das tabelas de prontuário: fechada a partir da 1.2.2.** Desde
+`migration_prontuario_fechado.sql`, nenhuma coluna clínica das fichas sai pela
+API, e o usuário logado lê só as chaves. Como a migração recusa o upsert das
+versões anteriores do aplicativo, ela entra no banco junto com a distribuição
+da 1.2.2. Ver [seguranca.md](seguranca.md).
 
 **Encarregado e canal do titular.** Sem definição, os pedidos de titular não
 têm a quem responder. Também é decisão administrativa.

@@ -82,13 +82,13 @@ npm run build
 bash ConectAgente-web/supabase/testes/rodar-todos.sh
 ```
 
-Estado medido em 29/10/2026:
+Estado medido em 09/11/2026:
 
 | O que | Resultado |
 |---|---|
-| Testes do aplicativo | 638 em 33 suítes |
-| Testes do painel | 335 em 30 suítes |
-| Verificações em banco de verdade | 106 em 6 suítes, mais a de instalação repetida |
+| Testes do aplicativo | 668 em 37 suítes |
+| Testes do painel | 375 em 32 suítes |
+| Verificações em banco de verdade | 127 em 5 suítes, mais a de instalação repetida |
 | Erros de tipo | 0 nos dois projetos |
 | Avisos de ESLint | 3, todos de import sem uso, anteriores |
 | Vulnerabilidade (OSV-Scanner) | 0 sem aceite; as de ferramenta de build têm motivo e prazo em `osv-scanner.toml` |
@@ -216,6 +216,22 @@ localmente. A tradução e a remoção dos campos locais ficam num lugar só, em
   Google trocar a própria cadeia; renovar antes da data está no cabeçalho de
   `plugins/fixar-certificado.js`.
 
+**Três decisões de 09/11/2026, na versão 1.2.2.**
+
+- **Quem não fez login não toca no banco.** O papel `anon` perdeu todo
+  privilégio de tabela, sequência e função auxiliar, e o pedido de cadastro só
+  entra pelo servidor. O health check do painel trata a recusa `42501` como
+  prova de que o banco respondeu; dar permissão ao visitante só para o health
+  abriria o que foi fechado.
+- **Data sem hora nunca passa por `new Date`.** `data_visita`,
+  `data_agendada` e `data_nascimento` são gravadas como `2026-10-13`, e
+  `new Date` lê isso como meia-noite UTC, que no Brasil ainda é o dia 12. Toda
+  visita aparecia um dia antes. A suíte do aplicativo roda no fuso de São
+  Paulo (`jest.fuso.js`) para o defeito não voltar despercebido.
+- **Cartão SUS com dígito verificador no cadastro, só tamanho na busca.** O
+  cadastro confere o algoritmo do Cartão Nacional de Saúde; a busca continua
+  achando cartão gravado antes da conferência.
+
 ---
 
 ## O que ainda falta
@@ -227,8 +243,10 @@ Honestidade sobre o estado, que vale mais que uma lista de recursos:
   e descartada: sem JIT, como o Hermes roda, 100 mil iterações levaram 41 s.
   O caminho é a derivação nativa (`react-native-quick-crypto`), validada no
   Android de verdade, com migração do hash no próximo login.
-- **As tabelas de prontuário ainda são legíveis direto pela API**, dentro do
-  RLS e sem registro. A correção é a mesma feita em `moradores`.
+- **As fichas de prontuário só fecham com a 1.2.2 instalada.** A partir dela
+  nenhuma coluna clínica sai pela API (`migration_prontuario_fechado.sql`),
+  mas a migração recusa o upsert das versões anteriores e por isso entra no
+  banco junto com a distribuição da 1.2.2.
 - **Não há segundo fator no painel**, que é onde se lê o prontuário de todos.
 - **A classificação de risco do time já está aqui**, portada do commit do Luan
   em vez de fundida, porque a linha deles carrega junto 97 arquivos de

@@ -249,11 +249,48 @@ estilo assim. Conferido no Chromium, sem violação em `/login`, `/registro` e
 `/demo`. Entraram também `Cross-Origin-Embedder-Policy: credentialless`,
 `Cross-Origin-Opener-Policy` e `Cross-Origin-Resource-Policy`.
 
+### O visitante tinha privilégio de tabela
+
+Apontado pelo consultor de segurança do Supabase em 09/11/2026. O papel `anon`,
+o de quem usa a chave pública sem login, tinha `SELECT` nas colunas de
+`agentes` (CPF, e-mail, telefone), `INSERT`, `UPDATE`, `DELETE` e `TRUNCATE`
+nas tabelas de dado, e executava as funções auxiliares das policies pela rota
+`/rest/v1/rpc`. O RLS filtrava as linhas, mas `TRUNCATE` nem passa por ele, e
+a defesa dependia de a API não emitir esse comando.
+
+Nada do sistema usa `anon` para dado: o login é pelo Supabase Auth e toda
+leitura acontece depois dele. `migration_sem_anonimo.sql` tira de `anon` todo
+privilégio de tabela, sequência e função auxiliar, inclusive nos objetos
+criados depois, tira `TRUNCATE` de `authenticated`, fixa o `search_path` das
+duas funções de gatilho e remove a policy `solicitacoes_insert_anon`
+(`WITH CHECK (true)`), que deixava gravar pedido de cadastro direto pela API,
+por fora da validação e do limite de tentativas da tela. Suíte:
+`08-sem-anonimo.sql`; a de RLS passou a exigir recusa, e não zero linhas.
+
+Efeito colateral encontrado na aplicação em produção: o `/api/health`
+consultava `agentes` sem login com `HEAD`, que volta sem corpo, e a recusa por
+permissão chegava igual a uma chave inválida, como 401. O health passou a
+responder `degraded` com o banco de pé. Corrigido com `GET`, que traz o código
+`42501` no corpo.
+
+### Fichas de prontuário legíveis pela API
+
+Pressão, glicemia, pré-natal, vacina da criança, preventivo e relato de
+violência eram legíveis direto pelo PostgREST por qualquer usuário logado,
+dentro do RLS e sem registro na trilha. Ninguém precisa dessa leitura: o painel
+não abre ficha de prontuário, e o aplicativo guarda a ficha no aparelho e só
+envia. `migration_prontuario_fechado.sql` deixa só as chaves legíveis.
+
+O aplicativo gravava as fichas com upsert, que o Postgres recusa quando o
+usuário não pode ler as colunas atualizadas (o mesmo efeito visto em
+`moradores`). A 1.2.2 grava com `INSERT` e, na retentativa, `UPDATE` pela
+`prontuario_id`. Suíte: `09-prontuario-fechado.sql`, inclusive que o upsert
+antigo é recusado em vez de aceito em silêncio.
+
 ## O que continua em aberto
 
-- **As tabelas de prontuário ainda são legíveis direto pela API**, dentro do
-  RLS e sem registro. A saída é a mesma de `moradores`: leitura coluna a
-  coluna, função auditada e troca do upsert do aplicativo nessas tabelas.
+- **As fichas só fecham com a 1.2.2 instalada.** A migração recusa o upsert das
+  versões anteriores, então entra no banco junto com a distribuição da 1.2.2.
 - **Dependências de build com aviso aberto:** `deepmerge` (do Jest), `uuid` 7 e
   `image-size` 1 (do Metro e do config-plugins), e `glob` e `minimatch` (ReDoS
   que só dispara com padrão vindo de atacante; aqui o padrão é configuração fixa

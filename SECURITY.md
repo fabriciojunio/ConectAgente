@@ -60,6 +60,17 @@ O destino é uso por secretaria municipal de saúde.
   de gerente e via a cidade inteira. Agora recusam sem cadastro ativo, têm
   `search_path` travado e não são executáveis pela chave anônima. Provado em
   `07-conta-ativa.sql`.
+- **Quem não fez login não toca no banco.** Desde 09/11/2026 o papel `anon`
+  não tem privilégio em nenhuma tabela, sequência ou função auxiliar das
+  policies, nem nas que forem criadas depois, e `authenticated` não tem
+  `TRUNCATE`, que passaria por cima do RLS. Saiu a policy que aceitava pedido
+  de cadastro direto pela API: o pedido entra pelo servidor, que valida e
+  limita tentativas. Provado em `08-sem-anonimo.sql` e aplicado em produção.
+- **Nenhuma coluna clínica das fichas de prontuário sai pela API.** A partir da
+  1.2.2 o aplicativo grava as fichas sem upsert, e
+  `migration_prontuario_fechado.sql` deixa o usuário logado ler só as chaves.
+  Provado em `09-prontuario-fechado.sql`, inclusive que o upsert antigo é
+  recusado e que a gravação do aplicativo continua funcionando.
 - **Token de sessão e chave local no SecureStore** (Keychain no iOS, Keystore
   no Android).
 - **Banco local do aparelho cifrado inteiro com SQLCipher** desde a 1.2.0
@@ -106,15 +117,10 @@ tê-la.
   aparelho roubado em mãos, testar senhas custa pouco. O certo é uma derivação
   lenta (PBKDF2 com muitas iterações, scrypt ou Argon2), com migração do hash
   no próximo login de cada agente.
-- **A leitura das tabelas de prontuário ainda não passa por função
-  auditada no servidor.** No aplicativo a abertura do prontuário grava
-  `LEITURA` na trilha local, e no painel a ficha do morador passa por
-  `fn_ler_morador`. Mas um usuário logado consegue ler `prontuario_saude` e as
-  outras fichas direto pela API, dentro do que o RLS permite, sem registro. A
-  saída é a mesma aplicada a `moradores` em 28/10/2026: leitura coluna a
-  coluna e função auditada. Ela exige trocar o upsert do aplicativo nessas
-  tabelas, porque o Postgres recusa upsert que atualiza coluna que o usuário
-  não pode ler.
+- **O fechamento das fichas depende da 1.2.2 instalada.** As versões
+  anteriores gravam as fichas com upsert, que `migration_prontuario_fechado.sql`
+  recusa. A migração entra no banco junto com a distribuição da 1.2.2, e um
+  aparelho com versão antiga deixa de sincronizar fichas até ser atualizado.
 - **Não há segundo fator** para o painel web, que é onde se lê o prontuário de
   todos os pacientes.
 - **O limite de taxa é em memória do processo.** Com mais de uma instância do

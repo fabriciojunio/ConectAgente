@@ -108,9 +108,10 @@ had happened. An agent in the field cannot lose a recorded visit because the log
 with the three-business-day deadline from ANPD Resolution CD/ANPD No. 15/2024. Names and contacts
 are missing; they are an administrative decision for the department.
 
-**Direct reads of the medical record tables.** In the app, opening one writes to the trail, but
-through the API a signed-in user reads `prontuario_saude` and the other records without logging,
-within RLS. See [security.md](security.md).
+**Direct reads of the medical record tables: closed from 1.2.2 on.** Since
+`migration_prontuario_fechado.sql`, no clinical column of the forms leaves through the API, and a
+signed-in user reads only the keys. Because the migration refuses earlier app versions' upsert, it
+goes into the database together with the 1.2.2 rollout. See [security.md](security.md).
 
 **Data protection officer and data subject channel.** Without them, data subject requests have no
 one to answer them. Also an administrative decision.

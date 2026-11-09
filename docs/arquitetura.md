@@ -1,57 +1,98 @@
 # Arquitetura, ConectAgente
 
-## Visão Geral
+## Visão geral
 
-Sistema offline-first para Agentes Comunitários de Saúde (ACS) do SUS, com app mobile React Native e portal web administrativo.
+Sistema offline-first para Agentes Comunitários de Saúde (ACS): um aplicativo
+Android que grava primeiro no aparelho, e um painel web para a coordenação. Os
+dois falam direto com o Supabase; não há servidor de aplicação no meio.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                  Agente de Saúde (Campo)                      │
-│              Smartphone Android/iOS (sem internet)           │
+│                  Agente de Saúde (campo)                      │
+│              Celular Android, muitas vezes sem sinal          │
 └─────────────────────────────┬────────────────────────────────┘
-                              │ Expo Router
                               ▼
 ┌──────────────────────────────────────────────────────────────┐
-│              ConectAgente-mobile (React Native + Expo)       │
+│         ConectAgente-mobile (React Native 0.81, Expo 54)      │
 │                                                              │
-│  src/app/, Telas (Expo Router File-System)             │
-│  src/database/, SQLite (drizzle-orm), dados offline        │
-│  src/contexts/, Auth, Network, Sync, Theme                  │
-│  src/hooks/, useMoradores, useVisitas, useMetas          │
-│  src/services/, Sync, Export, CEP, Notifications            │
-│  src/utils/, encryption (AES-256), lgpd, formatters      │
+│  src/app/           telas, por expo-router                    │
+│  src/database/      SQLite local, 18 tabelas, cifrado inteiro │
+│                     com SQLCipher; repositórios e sync_queue  │
+│  src/services/      sincronização, autenticação, exportação,  │
+│                     CEP e notificação                         │
+│  src/utils/         validação (Zod), LGPD, formatação         │
 └──────────┬───────────────────────────────────────────────────┘
-           │ HTTPS (quando online)
-           │ Sync bidirecional via SyncContext
+           │ HTTPS, certificado fixado, só quando há rede
            ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                     Supabase (Backend)                       │
-│  PostgreSQL  │  Auth  │  Storage  │  Realtime                │
-└──────────────┬───────────────────────────────────────────────┘
-               │ Next.js API Routes
-               ▼
+│                         Supabase                              │
+│  PostgreSQL, 15 tabelas, Row Level Security em todas          │
+│  Supabase Auth (sessão)  │  PostgREST (API gerada do schema)  │
+│  funções auditadas: fn_ler_morador, fn_buscar_morador_...     │
+└──────────┬───────────────────────────────────────────────────┘
+           │ HTTPS (PostgREST), sessão por cookie
+           ▼
 ┌──────────────────────────────────────────────────────────────┐
-│         ConectAgente-web (Next.js, Portal Admin)            │
-│  Dashboard de equipe │ Gestão de agentes │ Relatórios        │
+│          ConectAgente-web (Next.js 15, publicado na Vercel)   │
+│  indicadores, visitas, famílias, moradores, agentes,          │
+│  monitoramento, território, relatórios, aprovação de cadastro │
 └──────────────────────────────────────────────────────────────┘
 ```
 
-## Estratégia Offline-First
+## Quem decide o acesso
 
-1. **SQLite local**: todos os dados são gravados localmente primeiro (drizzle-orm)
-2. **SyncQueue**: operações pendentes são enfileiradas quando offline
-3. **Background sync**: `backgroundSync.ts` executa via `expo-background-fetch`
-4. **Conflito**: estratégia "last-write-wins" com timestamp, campo `updatedAt`
+O banco. Os dois clientes usam a chave pública do Supabase, que vai dentro do
+pacote do aplicativo e do código do painel; regra que o cliente pudesse
+contornar não seria regra. Cada tabela tem policies de RLS que decidem por
+`auth.uid()`, e os guardas de tela só espelham essas policies.
 
-## LGPD e Privacidade
-
-- Dados de prontuário (condições crônicas, medicamentos) → criptografados com AES-256 antes do SQLite
-- Sincronização → payload criptografado em trânsito
-- Direito ao esquecimento → `lgpd.ts` remove dados local + remoto
-
-## Perfis de Acesso
-
-| Perfil | Permissões |
+| Papel | Alcance |
 |---|---|
-| Agente | Suas residências, moradores e visitas |
-| Admin | Todos os dados da UBS, gestão de agentes, relatórios |
+| `agente` | os próprios pacientes |
+| `coordenador` | a própria unidade de saúde |
+| `gerente` | tudo, mais a trilha de auditoria |
+| `admin` | tudo, mais a gestão de usuários |
+
+Quem não fez login (`anon`) não tem privilégio em nenhuma tabela nem função
+auxiliar desde 09/11/2026. Documento, doença e medicação do morador só saem por
+função auditada, e as colunas clínicas das fichas de prontuário não saem pela
+API. Detalhes em [seguranca.md](seguranca.md).
+
+O painel usa a chave de serviço, que ignora o RLS, apenas em Server Actions que
+conferem a sessão e o papel de quem chama: o cadastro público e a aprovação de
+cadastro.
+
+## Offline-first
+
+1. **Gravação local primeiro.** Todo registro vai para o SQLite do aparelho e
+   entra na fila `sync_queue` com situação `pendente`.
+2. **Sincronização quando há rede**, a cada 30 segundos com o aplicativo aberto
+   e em segundo plano pelo `backgroundSync.ts`.
+3. **Sessão antes de enviar.** O aplicativo autentica localmente para funcionar
+   sem rede, mas o servidor só aceita gravação com sessão do Supabase Auth. Sem
+   sessão, a sincronização para e avisa, em vez de gastar as tentativas da fila.
+4. **Retentativa.** Cada falha soma uma tentativa; depois de cinco, o item fica
+   em `erro`, visível para correção, e não é descartado.
+5. **Gravação sem upsert onde o servidor fecha leitura.** Em `moradores` e nas
+   fichas de prontuário o envio é `INSERT` e, se a chave já existe, `UPDATE`
+   pela chave, porque o Postgres recusa upsert que atualiza coluna que o
+   usuário não pode ler.
+6. **Conflito:** a última escrita vence, pela data de atualização. Na prática
+   cada registro tem um único autor, o agente da microárea.
+
+## Dado em repouso e em trânsito
+
+- **Aparelho:** banco inteiro cifrado com SQLCipher, chave de 256 bits gerada no
+  primeiro uso e guardada no Keystore. Token de sessão no SecureStore.
+- **Trânsito:** HTTPS, com o certificado do Supabase fixado na intermediária e
+  na raiz da cadeia (`plugins/fixar-certificado.js`).
+- **Servidor:** exclusão lógica (`deleted_at`) e trilha `audit_log` somente de
+  inclusão.
+
+## Verificação
+
+A cada pull request, no GitHub Actions: tipos e testes Jest do aplicativo e do
+painel, suítes em PostgreSQL descartável (permissão, sincronização, cadastro,
+leitura auditada, colunas sensíveis, acesso anônimo e fichas fechadas),
+Semgrep, OSV-Scanner e gitleaks. O MobSF analisa o APK de cada versão
+publicada. Como rodar tudo localmente está no [README](../README.md).

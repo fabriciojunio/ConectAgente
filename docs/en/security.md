@@ -218,11 +218,43 @@ because the components and charts render styles that way. Checked in Chromium wi
 `/login`, `/registro` and `/demo`. `Cross-Origin-Embedder-Policy: credentialless`,
 `Cross-Origin-Opener-Policy` and `Cross-Origin-Resource-Policy` were added too.
 
+### The visitor had table privileges
+
+Flagged by the Supabase security advisor on 09/11/2026. The `anon` role, used with the public key
+without signing in, had `SELECT` on the columns of `agentes` (CPF, e-mail, phone), `INSERT`,
+`UPDATE`, `DELETE` and `TRUNCATE` on the data tables, and could execute the policy helper functions
+through `/rest/v1/rpc`. RLS filtered rows, but `TRUNCATE` does not go through it, and the defence
+relied on the API never issuing that command.
+
+Nothing in the system uses `anon` for data: sign-in is through Supabase Auth and every read happens
+after it. `migration_sem_anonimo.sql` removes every table, sequence and helper-function privilege
+from `anon`, including on objects created later, removes `TRUNCATE` from `authenticated`, locks the
+`search_path` of the two trigger functions and drops the `solicitacoes_insert_anon` policy
+(`WITH CHECK (true)`), which let anyone write registration requests straight through the API,
+bypassing the screen's validation and rate limit. Suite: `08-sem-anonimo.sql`; the RLS suite now
+requires a refusal, not zero rows.
+
+Side effect found when applying it in production: `/api/health` queried `agentes` without signing
+in using `HEAD`, which returns no body, so a permission refusal looked the same as an invalid key,
+a 401. Health started reporting `degraded` with the database up. Fixed with `GET`, which carries the
+`42501` code in the body.
+
+### Medical record forms readable through the API
+
+Blood pressure, glucose, prenatal care, child vaccination, screening and reports of violence were
+readable straight through PostgREST by any signed-in user, within RLS and without logging. Nobody
+needs that read: the panel never opens a medical record form, and the app keeps the form on the
+device and only sends it. `migration_prontuario_fechado.sql` leaves only the keys readable.
+
+The app wrote the forms with upsert, which Postgres refuses when the user cannot read the updated
+columns (the same effect seen on `moradores`). 1.2.2 writes with `INSERT` and, on retry, `UPDATE`
+by `prontuario_id`. Suite: `09-prontuario-fechado.sql`, including that the old upsert is refused
+rather than silently accepted.
+
 ## Still open
 
-- **Medical record tables can still be read directly through the API**, within RLS and without
-  logging. The fix is the same as for `moradores`: column-level reads, an audited function and
-  replacing the app's upsert on those tables.
+- **The forms only close with 1.2.2 installed.** The migration refuses earlier versions' upsert, so
+  it goes into the database together with the 1.2.2 rollout.
 - **Build dependencies with open advisories:** `deepmerge` (from Jest), `uuid` 7 and `image-size` 1
   (from Metro and config-plugins), and `glob` and `minimatch` (a ReDoS that only fires with an
   attacker-supplied pattern; here the pattern is fixed tool configuration, and the fix needs majors
