@@ -3,8 +3,8 @@
 import { createClient } from '@/lib/supabase/client';
 import { cacheGet, cacheSet } from '@/lib/cache';
 import { enqueue } from '@/lib/requestQueue';
-import { DEMO_VISITAS_PAGINADO, isEmptyList } from '@/lib/demoData';
 import { fimExclusivo } from '@/lib/utils';
+import { buscarTudo } from '@/lib/buscarEmLotes';
 import type {
   VisitaComDetalhes,
   GlobalFilters,
@@ -58,16 +58,13 @@ export async function getVisitas(
     const { data, error, count } = await query;
     if (error) throw new Error(`Erro ao buscar visitas: ${error.message}`);
 
-    const rows = (data as unknown as VisitaComDetalhes[]) ?? [];
-    const result = isEmptyList(rows)
-      ? { ...DEMO_VISITAS_PAGINADO, page, per_page: perPage }
-      : {
-          data: rows,
-          total: count ?? 0,
-          page,
-          per_page: perPage,
-          total_pages: Math.ceil((count ?? 0) / perPage),
-        };
+    const result = {
+      data: (data as unknown as VisitaComDetalhes[]) ?? [],
+      total: count ?? 0,
+      page,
+      per_page: perPage,
+      total_pages: Math.ceil((count ?? 0) / perPage),
+    };
     cacheSet(key, result);
     return result;
   });
@@ -110,16 +107,19 @@ export async function getVisitasByAgente(
 
   try {
     const supabase = createClient();
-    let query = supabase.from('visitas').select(VISITA_SELECT).eq('agente_id', agenteId);
-    if (filters?.periodo_inicio) query = query.gte('data_visita', filters.periodo_inicio);
-    if (filters?.periodo_fim) query = query.lt('data_visita', fimExclusivo(filters.periodo_fim));
-    if (filters?.status) query = query.eq('status', filters.status);
-    query = query.order('data_visita', { ascending: false });
+    // A ficha do agente calcula hoje, semana, mês e taxa em cima desta lista,
+    // então ela precisa vir inteira e não só as primeiras 1.000 visitas.
+    const result = await buscarTudo<VisitaComDetalhes>((de, ate) => {
+      let query = supabase.from('visitas').select(VISITA_SELECT).eq('agente_id', agenteId);
+      if (filters?.periodo_inicio) query = query.gte('data_visita', filters.periodo_inicio);
+      if (filters?.periodo_fim) query = query.lt('data_visita', fimExclusivo(filters.periodo_fim));
+      if (filters?.status) query = query.eq('status', filters.status);
+      return query
+        .order('data_visita', { ascending: false })
+        .order('id', { ascending: true })
+        .range(de, ate) as unknown as PromiseLike<{ data: VisitaComDetalhes[] | null; error: { message: string } | null }>;
+    }, 'Erro ao buscar visitas do agente');
 
-    const { data, error } = await query;
-    if (error) throw new Error(`Erro ao buscar visitas do agente: ${error.message}`);
-
-    const result = (data as unknown as VisitaComDetalhes[]) ?? [];
     cacheSet(key, result);
     return result;
   } catch (err) {
@@ -141,9 +141,7 @@ export async function getEstatisticasVisitas(filters?: GlobalFilters): Promise<{
 
     // Usa count queries com head:true (sem baixar dados), muito mais rápido
     function buildQuery(status?: string) {
-      // visitas não tem unidade_saude: com a coluna direto, o PostgREST
-      // devolvia erro, a contagem vinha nula e a tela caía nos números de
-      // demonstração como se fossem da unidade.
+      // visitas não tem unidade_saude: a unidade vem do agente.
       const colunas = filters?.unidade_saude ? 'id, agente:agentes!inner(id)' : 'id';
       let q = supabase.from('visitas').select(colunas, { count: 'exact', head: true });
       if (status) q = q.eq('status', status);
@@ -163,15 +161,19 @@ export async function getEstatisticasVisitas(filters?: GlobalFilters): Promise<{
         buildQuery('nao_encontrado'),
       ]);
 
+    // Contagem nula com erro não é zero: a tela precisa saber que falhou.
+    const erro = [totalRes, realizadasRes, agendadasRes, canceladasRes, naoEncontradoRes]
+      .find((r) => r.error)?.error;
+    if (erro) throw new Error(`Erro ao contar visitas: ${erro.message}`);
+
     const total = totalRes.count ?? 0;
     const realizadas = realizadasRes.count ?? 0;
     const agendadas = agendadasRes.count ?? 0;
     const canceladas = canceladasRes.count ?? 0;
     const nao_encontrado = naoEncontradoRes.count ?? 0;
 
-    const result = total > 0
-      ? { total, realizadas, agendadas, canceladas, nao_encontrado, taxa_conclusao: Math.round((realizadas / total) * 10000) / 100 }
-      : { total: 587, realizadas: 562, agendadas: 25, canceladas: 8, nao_encontrado: 12, taxa_conclusao: 95.7 };
+    const taxa_conclusao = total > 0 ? Math.round((realizadas / total) * 10000) / 100 : 0;
+    const result = { total, realizadas, agendadas, canceladas, nao_encontrado, taxa_conclusao };
     cacheSet(key, result);
     return result;
   });

@@ -3,7 +3,6 @@ jest.mock('@/lib/supabase/client', () => ({
 }));
 
 import { createClient } from '@/lib/supabase/client';
-import { DEMO_AGENTES_PAGINADO } from '@/lib/demoData';
 import {
   getAgentes,
   getAgenteById,
@@ -19,6 +18,7 @@ function buildMockSupabase() {
     eq: jest.fn().mockReturnThis(),
     gte: jest.fn().mockReturnThis(),
     lte: jest.fn().mockReturnThis(),
+    lt: jest.fn().mockReturnThis(),
     order: jest.fn().mockReturnThis(),
     limit: jest.fn().mockReturnThis(),
     range: jest.fn().mockReturnThis(),
@@ -62,41 +62,91 @@ describe('agenteService', () => {
         range: jest.fn().mockResolvedValue({ data: mockAgentes, error: null, count: 2 }),
       };
 
-      // Second & third from() for visitas count queries (thenable chains)
-      const visitasChain1 = {
+      const visitas = [
+        { id: 'v1', agente_id: 'a1', status: 'realizada' },
+        { id: 'v2', agente_id: 'a1', status: 'agendada' },
+        { id: 'v3', agente_id: 'a2', status: 'realizada' },
+      ];
+      const visitasChain = {
         select: jest.fn().mockReturnThis(),
         in: jest.fn().mockReturnThis(),
-        then: jest.fn((resolve: (v: unknown) => void) => resolve({ data: [], error: null })),
-      };
-      const visitasChain2 = {
-        select: jest.fn().mockReturnThis(),
-        in: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        then: jest.fn((resolve: (v: unknown) => void) => resolve({ data: [], error: null })),
+        order: jest.fn().mockReturnThis(),
+        range: jest.fn().mockResolvedValue({ data: visitas, error: null }),
       };
 
       supabaseMock.from
         .mockReturnValueOnce(agentesChain as never)
-        .mockReturnValueOnce(visitasChain1 as never)
-        .mockReturnValueOnce(visitasChain2 as never);
+        .mockReturnValueOnce(visitasChain as never);
 
       const result = await getAgentes();
 
       expect(supabaseMock.from).toHaveBeenCalledWith('agentes');
       expect(agentesChain.eq).toHaveBeenCalledWith('ativo', true);
+      expect(visitasChain.in).toHaveBeenCalledWith('agente_id', ['a1', 'a2']);
       expect(result.data).toHaveLength(2);
+      expect(result.data[0]).toMatchObject({ total_visitas: 2, visitas_realizadas: 1, taxa_conclusao: 50 });
+      expect(result.data[1]).toMatchObject({ total_visitas: 1, visitas_realizadas: 1, taxa_conclusao: 100 });
       expect(result.total).toBe(2);
       expect(result.page).toBe(1);
     });
 
-    it('falls back to demo data when no agents found', async () => {
+    it('conta visitas acima de 1.000 buscando em lotes', async () => {
+      const agentesChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        range: jest.fn().mockResolvedValue({ data: [{ id: 'a1', nome: 'Maria' }], error: null, count: 1 }),
+      };
+      const lote = (qtd: number, status: string) =>
+        Array.from({ length: qtd }, (_, i) => ({ id: `${status}-${i}`, agente_id: 'a1', status }));
+      const lotes = [lote(1000, 'realizada'), lote(5, 'agendada')];
+      const novaCadeia = () => ({
+        select: jest.fn().mockReturnThis(),
+        in: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        range: jest.fn(() => Promise.resolve({ data: lotes.shift() ?? [], error: null })),
+      });
+      const cadeias = [novaCadeia(), novaCadeia()];
+      supabaseMock.from
+        .mockReturnValueOnce(agentesChain as never)
+        .mockReturnValueOnce(cadeias[0] as never)
+        .mockReturnValueOnce(cadeias[1] as never);
+
+      const result = await getAgentes();
+
+      expect(cadeias[0].range).toHaveBeenCalledWith(0, 999);
+      expect(cadeias[1].range).toHaveBeenCalledWith(1000, 1999);
+      expect(result.data[0]).toMatchObject({ total_visitas: 1005, visitas_realizadas: 1000 });
+    });
+
+    it('lança o erro da contagem de visitas em vez de mostrar zero', async () => {
+      const agentesChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        range: jest.fn().mockResolvedValue({ data: [{ id: 'a1', nome: 'Maria' }], error: null, count: 1 }),
+      };
+      const visitasChain = {
+        select: jest.fn().mockReturnThis(),
+        in: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        range: jest.fn().mockResolvedValue({ data: null, error: { message: 'sem permissão' } }),
+      };
+      supabaseMock.from
+        .mockReturnValueOnce(agentesChain as never)
+        .mockReturnValueOnce(visitasChain as never);
+
+      await expect(getAgentes()).rejects.toThrow('Erro ao contar visitas dos agentes: sem permissão');
+    });
+
+    it('sem agentes devolve lista vazia, sem dados de demonstração', async () => {
       chainable.range.mockResolvedValueOnce({ data: [], error: null, count: 0 });
 
       const result = await getAgentes();
 
-      // Banco vazio: o serviço apresenta dados de demonstração
-      expect(result.data).toEqual(DEMO_AGENTES_PAGINADO.data);
-      expect(result.total).toBe(DEMO_AGENTES_PAGINADO.total);
+      expect(result.data).toEqual([]);
+      expect(result.total).toBe(0);
+      expect(result.total_pages).toBe(0);
     });
 
     it('throws on error', async () => {
@@ -109,28 +159,27 @@ describe('agenteService', () => {
   describe('getAgenteById', () => {
     it('returns single agent with stats', async () => {
       const mockAgente = { id: 'a1', nome: 'Maria' };
-      const mockVisitas = [
-        { id: 'v1', status: 'realizada' },
-        { id: 'v2', status: 'agendada' },
-        { id: 'v3', status: 'realizada' },
-      ];
-
-      // First from() for agent
       chainable.single.mockResolvedValueOnce({ data: mockAgente, error: null });
-      // Second from() for visitas, the service calls from().select().eq()
-      // Since from() returns chainable, and eq() returns chainable,
-      // we need the second eq() call to resolve with visitas data.
-      // But single was already called, so we need a separate chain.
-      const visitasChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockResolvedValue({ data: mockVisitas, error: null }),
+
+      // Contagem no banco (head: true): uma para o total e outra para as realizadas.
+      const contagem = (count: number) => {
+        const c: Record<string, jest.Mock> = {};
+        c.select = jest.fn(() => c);
+        c.eq = jest.fn(() => c);
+        c.then = jest.fn((resolve: (v: unknown) => void) => resolve({ count, error: null }));
+        return c;
       };
+      const total = contagem(3);
+      const realizadas = contagem(2);
       supabaseMock.from
         .mockReturnValueOnce(chainable as never)
-        .mockReturnValueOnce(visitasChain as never);
+        .mockReturnValueOnce(total as never)
+        .mockReturnValueOnce(realizadas as never);
 
       const result = await getAgenteById('a1');
 
+      expect(total.select).toHaveBeenCalledWith('id', { count: 'exact', head: true });
+      expect(realizadas.eq).toHaveBeenCalledWith('status', 'realizada');
       expect(result).not.toBeNull();
       expect(result?.total_visitas).toBe(3);
       expect(result?.visitas_realizadas).toBe(2);
@@ -166,14 +215,15 @@ describe('agenteService', () => {
         { data_visita: '2024-03-02T10:00:00Z', status: 'agendada' },
       ];
 
-      chainable.order.mockResolvedValueOnce({ data: mockVisitas, error: null });
+      chainable.range.mockResolvedValueOnce({ data: mockVisitas, error: null });
 
       const result = await getAgenteDesempenho('a1', '2024-03-01', '2024-03-03');
 
       expect(supabaseMock.from).toHaveBeenCalledWith('visitas');
       expect(chainable.eq).toHaveBeenCalledWith('agente_id', 'a1');
       expect(chainable.gte).toHaveBeenCalledWith('data_visita', '2024-03-01');
-      expect(chainable.lte).toHaveBeenCalledWith('data_visita', '2024-03-03');
+      // data_visita tem hora: o último dia entra inteiro, até antes do dia seguinte.
+      expect(chainable.lt).toHaveBeenCalledWith('data_visita', '2024-03-04');
       expect(result.total_visitas).toBe(3);
       expect(result.total_realizadas).toBe(2);
       expect(result.visitas_por_dia).toHaveLength(2);
@@ -182,7 +232,7 @@ describe('agenteService', () => {
     });
 
     it('handles empty results', async () => {
-      chainable.order.mockResolvedValueOnce({ data: [], error: null });
+      chainable.range.mockResolvedValueOnce({ data: [], error: null });
 
       const result = await getAgenteDesempenho('a1', '2024-03-01', '2024-03-03');
 
@@ -193,7 +243,7 @@ describe('agenteService', () => {
     });
 
     it('throws on error', async () => {
-      chainable.order.mockResolvedValueOnce({ data: null, error: { message: 'fail' } });
+      chainable.range.mockResolvedValueOnce({ data: null, error: { message: 'fail' } });
 
       await expect(getAgenteDesempenho('a1', '2024-03-01', '2024-03-03')).rejects.toThrow(
         'Erro ao buscar desempenho do agente'

@@ -183,7 +183,7 @@ describe('visitaService', () => {
   describe('getVisitasByAgente', () => {
     it('filters by agente_id and returns array', async () => {
       const mockData = [{ id: 'v1' }];
-      chainable.order.mockResolvedValue({ data: mockData, error: null });
+      chainable.range.mockResolvedValue({ data: mockData, error: null });
 
       const result = await getVisitasByAgente('agent-1');
 
@@ -191,8 +191,23 @@ describe('visitaService', () => {
       expect(result).toEqual(mockData);
     });
 
+    it('traz todas as visitas do agente, mesmo acima de 1.000', async () => {
+      const lote = (qtd: number, base: number) =>
+        Array.from({ length: qtd }, (_, i) => ({ id: `v${base + i}` }));
+      chainable.range
+        .mockResolvedValueOnce({ data: lote(1000, 0), error: null })
+        .mockResolvedValueOnce({ data: lote(3, 1000), error: null });
+
+      const result = await getVisitasByAgente('agent-1');
+
+      expect(result).toHaveLength(1003);
+      expect(chainable.range).toHaveBeenNthCalledWith(1, 0, 999);
+      expect(chainable.range).toHaveBeenNthCalledWith(2, 1000, 1999);
+      expect(chainable.order).toHaveBeenCalledWith('id', { ascending: true });
+    });
+
     it('applies optional filters', async () => {
-      chainable.order.mockResolvedValue({ data: [], error: null });
+      chainable.range.mockResolvedValue({ data: [], error: null });
 
       await getVisitasByAgente('agent-1', {
         status: StatusVisita.AGENDADA,
@@ -205,7 +220,7 @@ describe('visitaService', () => {
     });
 
     it('throws on error', async () => {
-      chainable.order.mockResolvedValue({ data: null, error: { message: 'fail' } });
+      chainable.range.mockResolvedValue({ data: null, error: { message: 'fail' } });
 
       await expect(getVisitasByAgente('agent-1')).rejects.toThrow('Erro ao buscar visitas do agente');
     });
@@ -242,7 +257,7 @@ describe('visitaService', () => {
       expect(result.taxa_conclusao).toBe(40); // 40/100 * 100
     });
 
-    it('falls back to demo stats when no visitas', async () => {
+    it('sem visitas devolve zero, não números de demonstração', async () => {
       supabaseMock.from.mockImplementation(() => {
         const c: Record<string, jest.Mock> = {};
         c.select = jest.fn(() => c);
@@ -256,9 +271,22 @@ describe('visitaService', () => {
 
       const result = await getEstatisticasVisitas();
 
-      // Sem dados no banco o serviço apresenta estatísticas de demonstração
-      expect(result.total).toBe(587);
-      expect(result.taxa_conclusao).toBe(95.7);
+      expect(result).toEqual({
+        total: 0, realizadas: 0, agendadas: 0, canceladas: 0, nao_encontrado: 0, taxa_conclusao: 0,
+      });
+    });
+
+    it('lança o erro da contagem em vez de mostrar zero', async () => {
+      supabaseMock.from.mockImplementation(() => {
+        const c: Record<string, jest.Mock> = {};
+        c.select = jest.fn(() => c);
+        c.eq = jest.fn(() => c);
+        c.then = jest.fn((resolve: (v: unknown) => void) =>
+          resolve({ count: null, error: { message: 'sem permissão' } }));
+        return c;
+      });
+
+      await expect(getEstatisticasVisitas()).rejects.toThrow('Erro ao contar visitas: sem permissão');
     });
 
     it('conta por unidade pelo agente, não por coluna da visita', async () => {

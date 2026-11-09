@@ -20,6 +20,7 @@ import {
 } from '@/services/dashboardService';
 import { cacheGetStale } from '@/lib/cache';
 import { withTimeout } from '@/lib/utils';
+import { SEM_INDICADORES } from '@/services/dashboardService';
 import type {
   DashboardStats,
   VisitaPorPeriodo,
@@ -29,18 +30,6 @@ import type {
   FamiliaEmAtraso,
 } from '@/types';
 
-const EMPTY_STATS: DashboardStats = {
-  visitas_hoje: 0,
-  visitas_semana: 0,
-  visitas_mes: 0,
-  total_familias: 0,
-  total_moradores: 0,
-  agentes_ativos: 0,
-  visitas_realizadas: 0,
-  visitas_pendentes: 0,
-  taxa_conclusao: 0,
-};
-
 export default function DashboardPage() {
   const { filters } = useFilters();
 
@@ -49,7 +38,8 @@ export default function DashboardPage() {
   const initAlertas = cacheGetStale<FamiliaEmAtraso[]>('dash_alertas_30');
 
   const [loading, setLoading] = useState(!initStats);
-  const [stats, setStats] = useState<DashboardStats>(initStats ?? EMPTY_STATS);
+  const [error, setError] = useState('');
+  const [stats, setStats] = useState<DashboardStats>(initStats ?? SEM_INDICADORES);
   const [visitasPeriodo, setVisitasPeriodo] = useState<VisitaPorPeriodo[]>([]);
   const [visitasAgente, setVisitasAgente] = useState<VisitaPorAgente[]>([]);
   const [visitasBairro, setVisitasBairro] = useState<VisitaPorBairro[]>([]);
@@ -75,13 +65,18 @@ export default function DashboardPage() {
     // instead of waiting for all 6 queries via Promise.all
     const done = { count: 0, total: 6 };
     const checkDone = () => { if (++done.count >= done.total && !cancelled) setLoading(false); };
+    // Um bloco que falha fica vazio e a tela avisa, em vez de mostrar zero
+    // como se fosse o número real.
+    const falhou = (err: unknown) => {
+      if (!cancelled) setError(err instanceof Error ? err.message : 'Erro ao carregar o dashboard');
+    };
 
-    withTimeout(getDashboardStats(f), EMPTY_STATS).then((d) => { if (!cancelled) setStats(d); }).finally(checkDone);
-    withTimeout(getVisitasPorPeriodo(inicio, fim, f), []).then((d) => { if (!cancelled) setVisitasPeriodo(d); }).finally(checkDone);
-    withTimeout(getVisitasPorAgente(inicio, fim, f), []).then((d) => { if (!cancelled) setVisitasAgente(d); }).finally(checkDone);
-    withTimeout(getVisitasPorBairro(inicio, fim), []).then((d) => { if (!cancelled) setVisitasBairro(d); }).finally(checkDone);
-    withTimeout(getVisitasRecentes(10), []).then((d) => { if (!cancelled) setVisitasRecentes(d); }).finally(checkDone);
-    withTimeout(getAlertasAtraso(30), []).then((d) => { if (!cancelled) setAlertas(d); }).finally(checkDone);
+    withTimeout(getDashboardStats(f), SEM_INDICADORES).then((d) => { if (!cancelled) setStats(d); }).catch(falhou).finally(checkDone);
+    withTimeout(getVisitasPorPeriodo(inicio, fim, f), []).then((d) => { if (!cancelled) setVisitasPeriodo(d); }).catch(falhou).finally(checkDone);
+    withTimeout(getVisitasPorAgente(inicio, fim, f), []).then((d) => { if (!cancelled) setVisitasAgente(d); }).catch(falhou).finally(checkDone);
+    withTimeout(getVisitasPorBairro(inicio, fim), []).then((d) => { if (!cancelled) setVisitasBairro(d); }).catch(falhou).finally(checkDone);
+    withTimeout(getVisitasRecentes(10), []).then((d) => { if (!cancelled) setVisitasRecentes(d); }).catch(falhou).finally(checkDone);
+    withTimeout(getAlertasAtraso(30), []).then((d) => { if (!cancelled) setAlertas(d); }).catch(falhou).finally(checkDone);
 
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,6 +90,12 @@ export default function DashboardPage() {
       </div>
 
       <FilterBar variant="dashboard" />
+
+      {error && (
+        <div role="alert" className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+          {error}
+        </div>
+      )}
 
       <DashboardCards stats={stats} loading={loading} />
 

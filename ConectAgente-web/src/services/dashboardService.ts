@@ -3,16 +3,6 @@
 import { createClient } from '@/lib/supabase/client';
 import { cacheGet, cacheSet } from '@/lib/cache';
 import { enqueue } from '@/lib/requestQueue';
-import {
-  DEMO_STATS,
-  DEMO_VISITAS_PERIODO,
-  DEMO_VISITAS_AGENTE,
-  DEMO_VISITAS_BAIRRO,
-  DEMO_ALERTAS,
-  DEMO_VISITAS_RECENTES,
-  isEmptyStats,
-  isEmptyList,
-} from '@/lib/demoData';
 import type {
   DashboardStats,
   VisitaPorPeriodo,
@@ -22,6 +12,17 @@ import type {
   VisitaComDetalhes,
   GlobalFilters,
 } from '@/types';
+
+/*
+ * Banco vazio é resposta válida: a tela mostra zero. Antes, lista vazia ou
+ * erro de consulta viravam números de demonstração, e quem abria o painel
+ * de uma unidade sem visitas via 587 visitas que não existiam.
+ */
+export const SEM_INDICADORES: DashboardStats = {
+  visitas_hoje: 0, visitas_semana: 0, visitas_mes: 0,
+  total_familias: 0, total_moradores: 0, agentes_ativos: 0,
+  visitas_realizadas: 0, visitas_pendentes: 0, taxa_conclusao: 0,
+};
 
 export async function getDashboardStats(
   filters?: GlobalFilters
@@ -37,17 +38,11 @@ export async function getDashboardStats(
     if (filters?.agente_id) params.p_agente_id = filters.agente_id;
 
     const { data, error } = await supabase.rpc('fn_dashboard_stats', params);
-    if (error) console.error('getDashboardStats error:', error.message);
+    if (error) throw new Error(`Erro ao carregar indicadores: ${error.message}`);
 
-    const empty: DashboardStats = {
-      visitas_hoje: 0, visitas_semana: 0, visitas_mes: 0,
-      total_familias: 0, total_moradores: 0, agentes_ativos: 0,
-      visitas_realizadas: 0, visitas_pendentes: 0, taxa_conclusao: 0,
-    };
-    const result = (data as DashboardStats) ?? empty;
-    const final = isEmptyStats(result) ? DEMO_STATS : result;
-    cacheSet(key, final);
-    return final;
+    const result = (data as DashboardStats) ?? SEM_INDICADORES;
+    cacheSet(key, result);
+    return result;
   });
 }
 
@@ -66,12 +61,11 @@ export async function getVisitasPorPeriodo(
     if (filters?.unidade_saude) params.p_unidade = filters.unidade_saude;
 
     const { data, error } = await supabase.rpc('fn_visitas_por_periodo', params);
-    if (error) console.error('getVisitasPorPeriodo error:', error.message);
+    if (error) throw new Error(`Erro ao carregar visitas por período: ${error.message}`);
 
     const result = (data as VisitaPorPeriodo[]) ?? [];
-    const final = isEmptyList(result) ? DEMO_VISITAS_PERIODO : result;
-    cacheSet(key, final);
-    return final;
+    cacheSet(key, result);
+    return result;
   });
 }
 
@@ -90,12 +84,11 @@ export async function getVisitasPorAgente(
     if (filters?.unidade_saude) params.p_unidade = filters.unidade_saude;
 
     const { data, error } = await supabase.rpc('fn_visitas_por_agente', params);
-    if (error) console.error('getVisitasPorAgente error:', error.message);
+    if (error) throw new Error(`Erro ao carregar visitas por agente: ${error.message}`);
 
     const result = (data as VisitaPorAgente[]) ?? [];
-    const final = isEmptyList(result) ? DEMO_VISITAS_AGENTE : result;
-    cacheSet(key, final);
-    return final;
+    cacheSet(key, result);
+    return result;
   });
 }
 
@@ -110,12 +103,11 @@ export async function getVisitasPorBairro(
   return enqueue(async () => {
     const supabase = createClient();
     const { data, error } = await supabase.rpc('fn_visitas_por_bairro', { p_inicio: inicio, p_fim: fim });
-    if (error) console.error('getVisitasPorBairro error:', error.message);
+    if (error) throw new Error(`Erro ao carregar visitas por bairro: ${error.message}`);
 
     const result = (data as VisitaPorBairro[]) ?? [];
-    const final = isEmptyList(result) ? DEMO_VISITAS_BAIRRO : result;
-    cacheSet(key, final);
-    return final;
+    cacheSet(key, result);
+    return result;
   });
 }
 
@@ -134,12 +126,11 @@ export async function getVisitasRecentes(
       .order('data_visita', { ascending: false })
       .limit(limit);
 
-    if (error) console.error('getVisitasRecentes error:', error.message);
+    if (error) throw new Error(`Erro ao carregar visitas recentes: ${error.message}`);
 
     const result = (data as unknown as VisitaComDetalhes[]) ?? [];
-    const final = isEmptyList(result) ? DEMO_VISITAS_RECENTES.slice(0, limit) : result;
-    cacheSet(key, final);
-    return final;
+    cacheSet(key, result);
+    return result;
   });
 }
 
@@ -153,11 +144,10 @@ export async function getAlertasAtraso(
   return enqueue(async () => {
     const supabase = createClient();
     const { data, error } = await supabase.rpc('fn_familias_em_atraso', { p_dias: dias });
-    if (error) console.error('getAlertasAtraso error:', error.message);
+    if (error) throw new Error(`Erro ao carregar alertas de atraso: ${error.message}`);
 
     const result = (data as FamiliaEmAtraso[]) ?? [];
-    const final = isEmptyList(result) ? DEMO_ALERTAS : result;
-    cacheSet(key, final);
-    return final;
+    cacheSet(key, result);
+    return result;
   });
 }
