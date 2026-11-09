@@ -117,7 +117,8 @@ for f in \
   "$RAIZ/ConectAgente-web/supabase/migration_sync_mobile.sql" \
   "$RAIZ/ConectAgente-web/supabase/migration_prontuario_sync.sql" \
   "$AQUI/02-cenario.sql" \
-  "$RAIZ/ConectAgente-web/supabase/migration_rls_completo.sql"
+  "$RAIZ/ConectAgente-web/supabase/migration_rls_completo.sql" \
+  "$RAIZ/ConectAgente-web/supabase/migration_sem_anonimo.sql"
 do
   erro=$("$PSQL" $D -f "$f" 2>&1 | grep -iE "^ERRO|^ERROR" | head -2)
   [ -n "$erro" ] && { echo "FALHOU ao carregar $(basename "$f"):"; echo "$erro"; exit 1; }
@@ -140,18 +141,31 @@ checar() {
     printf "  FALHA %-46s esperado=%s obtido=%s\n" "$nome" "$esperado" "$obtido"; falhou=$((falhou+1))
   fi
 }
+# Desde migration_sem_anonimo o visitante nem chega ao RLS: o banco recusa
+# antes, por falta de privilégio na tabela. Contar 0 linhas não provaria isso.
+checar_recusa() {
+  local nome="$1" sql="$2"
+  local obtido; obtido=$("$PSQL" $Q -c "$sql" 2>&1 | tail -1)
+  case "$obtido" in
+    *"permission denied"*|*"permissão negada"*)
+      printf "  ok    %-46s %s\n" "$nome" "recusado"; ok=$((ok+1)) ;;
+    *)
+      printf "  FALHA %-46s esperado=recusado obtido=%s\n" "$nome" "$obtido"; falhou=$((falhou+1)) ;;
+  esac
+}
 como_anon()  { echo "SET ROLE anon; $1"; }
 como()       { echo "SET ROLE authenticated; SET request.jwt.claim.sub='$1'; $2"; }
 
 echo
-echo "ATAQUES (todos devem devolver 0)"
-checar "visitante lê prontuário de saúde"   0 "$(como_anon 'SELECT count(*) FROM prontuario_saude;')"
-checar "visitante lê prontuário de gestante" 0 "$(como_anon 'SELECT count(*) FROM prontuario_gestante;')"
-checar "visitante lê puericultura"          0 "$(como_anon 'SELECT count(*) FROM prontuario_puericultura;')"
-checar "visitante lê saúde da mulher"       0 "$(como_anon 'SELECT count(*) FROM prontuario_mulher;')"
-checar "visitante lê dados sociais"         0 "$(como_anon 'SELECT count(*) FROM prontuario_social;')"
-checar "visitante lê agentes e CPF"         0 "$(como_anon 'SELECT count(*) FROM agentes;')"
-checar "visitante lê trilha de auditoria"   0 "$(como_anon 'SELECT count(*) FROM audit_log;')"
+echo "ATAQUES (visitante recusado; usuário logado vê 0)"
+checar_recusa "visitante lê prontuário de saúde"    "$(como_anon 'SELECT count(*) FROM prontuario_saude;')"
+checar_recusa "visitante lê prontuário de gestante" "$(como_anon 'SELECT count(*) FROM prontuario_gestante;')"
+checar_recusa "visitante lê puericultura"           "$(como_anon 'SELECT count(*) FROM prontuario_puericultura;')"
+checar_recusa "visitante lê saúde da mulher"        "$(como_anon 'SELECT count(*) FROM prontuario_mulher;')"
+checar_recusa "visitante lê dados sociais"          "$(como_anon 'SELECT count(*) FROM prontuario_social;')"
+checar_recusa "visitante lê agentes e CPF"          "$(como_anon 'SELECT count(*) FROM agentes;')"
+checar_recusa "visitante lê trilha de auditoria"    "$(como_anon 'SELECT count(*) FROM audit_log;')"
+checar_recusa "visitante apaga visitas"             "$(como_anon 'DELETE FROM visitas;')"
 checar "agente lê paciente de outro agente" 0 "$(como $BRUNO "SELECT count(*) FROM prontuario_saude WHERE prontuario_id='$PRONT_ANA';")"
 checar "coordenador lê outra unidade"       0 "$(como $CARLA "SELECT count(*) FROM prontuario_saude WHERE prontuario_id='$PRONT_BRUNO';")"
 
