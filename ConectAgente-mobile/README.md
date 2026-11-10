@@ -180,7 +180,7 @@ src/
 │
 └── utils/
     ├── constants.ts            # Cores, chaves, limites, timeouts
-    ├── encryption.ts           # hash de senha com salt e sorteio de senha inicial
+    ├── encryption.ts           # hash de senha com salt e sorteio do código de recuperação
     ├── validators.ts           # Zod schemas + validações + escapeForLike()
     ├── formatters.ts           # CPF, CEP, datas, máscaras
     └── lgpd.ts                 # Anonimização, consentimento
@@ -240,16 +240,16 @@ O administrador acessa uma área separada (`/(admin)`) com tema roxo, distinta d
 | **Agentes** | Lista completa com busca, estatísticas por agente, definição de metas mensais |
 | **Residências** | Todas as residências com moradores e histórico de visitas |
 | **Visitas** | Todas as visitas com filtros por status e agente, detalhes de sinais vitais e checklist |
-| **Sistema** | Estatísticas do banco, credenciais admin, audit log LGPD paginado |
+| **Sistema** | Estatísticas do banco, novo código de recuperação do admin, audit log LGPD paginado |
 
-### Credenciais padrão do administrador
+### Administrador do aparelho
 
-| Campo | Valor |
-|---|---|
-| CPF | `111.444.777-35` |
-| Senha | `Admin@2025` |
+Não existe senha padrão. Na primeira abertura, a tela de entrada mostra **Configurar
+administrador**: quem instala escolhe a senha e recebe um código de recuperação, mostrado uma
+única vez. Depois disso, o login do administrador é o CPF `111.444.777-35` com a senha escolhida.
 
-> **Troque a senha no primeiro login.** O administrador padrão é criado automaticamente na inicialização do app.
+O CPF não é segredo e não precisa ser. Nenhuma senha é sorteada, guardada ou exibida pelo
+aplicativo.
 
 ---
 
@@ -259,10 +259,10 @@ O administrador acessa uma área separada (`/(admin)`) com tema roxo, distinta d
 
 | Mecanismo | Implementação |
 |---|---|
-| Hash de senha | SHA-256 com salt aleatório de 16 bytes: formato `salt$hash` |
-| Migração automática | Login com senha legada (sem salt) migra transparentemente para o novo formato |
-| Timing-safe | `verificarSenha` é sempre executada, mesmo quando o CPF não existe no banco |
-| Rate limiting | 5 tentativas por CPF → bloqueio de 15 minutos |
+| Hash de senha | PBKDF2-HMAC-SHA256, 100 mil iterações, sal de 16 bytes: `pbkdf2-sha256$iteracoes$sal$hash` |
+| Migração automática | Login com senha no formato antigo (SHA-256 com ou sem sal) regrava no PBKDF2 |
+| Timing-safe | `verificarSenha` é sempre executada, contra um PBKDF2 de mesmo custo quando o CPF não existe |
+| Rate limiting | 5 tentativas por CPF → bloqueio de 15 minutos, gravado no aparelho (sobrevive ao reinício) |
 | Sessão | Token UUID em `expo-secure-store` (iOS Keychain / Android Keystore) |
 | Timeout | Sessão expira em 8 horas, renovada por atividade |
 | Logout | Limpa token, chave de criptografia e cache em memória |
@@ -277,7 +277,7 @@ está no cabeçalho de `utils/encryption.ts`.
 
 | Dado | Proteção |
 |---|---|
-| Senha | SHA-256 + salt (irreversível) |
+| Senha | PBKDF2-HMAC-SHA256 + sal (irreversível e lento de propósito) |
 | CPF, cartão SUS, nome, telefone e o resto do banco | SQLCipher no arquivo inteiro |
 | Token de sessão | SecureStore (Keychain/Keystore do OS) |
 | Chave do banco | SecureStore (Keychain/Keystore do OS) |
@@ -293,22 +293,38 @@ segurança de rede do Android (`plugins/fixar-certificado.js`), com expiração 
 - **`PRAGMA journal_mode = WAL`**: recuperação de falhas sem corrupção
 - **Migrations específicas**: erros de `duplicate column` são ignorados; outros são relançados
 
-### Recuperação de senha (LGPD-compliant)
+### Recuperação de senha
 
-1. Usuário informa CPF + e-mail cadastrado
-2. Mensagem de erro **genérica**: não revela qual campo falhou
-3. Verificação normaliza o e-mail (lowercase + trim) antes da consulta
-4. Nova senha usa hash com salt
-5. Evento registrado no `audit_log`
+1. Cada conta recebe um **código de recuperação** (`XXXX-XXXX-XXXX`, 60 bits) ao ser criada,
+   mostrado uma única vez. Só o hash fica no aparelho, no SecureStore
+2. Em "Esqueci minha senha" a pessoa informa CPF, código e a senha nova
+3. Mensagem de erro **genérica**: não revela se o erro foi no CPF ou no código
+4. O código vale uma vez; depois da troca o aplicativo mostra um código novo
+5. 5 tentativas erradas por CPF bloqueiam por 15 minutos
+6. Quem perdeu o código pede ao administrador, que gera um novo na tela de agentes
+7. Evento registrado no `audit_log`
+
+A recuperação antiga pedia CPF e e-mail, que não são segredo: os do administrador estavam na
+tela de entrada e no código-fonte, e qualquer pessoa com o aparelho trocava a senha dele.
+
+A troca vale para entrar no aparelho. Se o aparelho ainda tem a sessão do servidor da mesma
+pessoa, a senha do servidor muda junto; senão o aplicativo avisa no login que a sincronização
+está parada, e a coordenação redefine a senha de sincronização no painel (Agentes → detalhes).
+
+Administrador que perdeu a senha e o código usa **"Administrador perdeu a senha e o código?"** na
+tela de entrada: o aparelho é reiniciado sem reinstalar, depois de mostrar quantos registros ainda
+não foram para o servidor e pedir que se digite `APAGAR`.
 
 ### O que está protegido
 
 - SQL Injection: parameterized queries + escapeForLike()
 - Rainbow tables: salt nas senhas
+- Força bruta com o banco em mãos: PBKDF2 com 100 mil iterações
 - Timing attack no login: verificarSenha sempre executada com hash dummy
-- Brute force: rate limiting (5 tentativas / 15 min de bloqueio)
+- Brute force: rate limiting (5 tentativas / 15 min de bloqueio), que não zera ao reabrir o app
 - Token hijacking: SecureStore nativo
 - Enumeração de usuários: mensagem genérica na recuperação
+- Troca de senha alheia: recuperação exige código de recuperação, e não CPF e e-mail
 - Dados em repouso: banco do aparelho cifrado inteiro com SQLCipher
 - Interceptação na sincronização: certificado do Supabase fixado
 - Sessão infinita: timeout de 8 horas

