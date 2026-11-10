@@ -1,10 +1,14 @@
 /**
  * Testes para utils/encryption.ts
  *
- * Cobre: hashSHA256, hashSenha, verificarSenha, sortearSenhaForte,
+ * Cobre: hashSHA256, hashSenha (PBKDF2), verificarSenha nos três formatos,
+ *        precisaAtualizarHash, sortearCodigoRecuperacao,
  *        e a garantia de que a cifra de campo não voltou e a
  *        documentação descreve o SQLCipher
  */
+
+// PBKDF2 de verdade, com as iterações de produção: lento de propósito.
+jest.setTimeout(30_000);
 
 jest.mock('expo-crypto', () => ({
   getRandomBytesAsync: jest.fn(),
@@ -17,10 +21,15 @@ jest.mock('expo-secure-store', () => ({
   setItemAsync: jest.fn(),
 }));
 
+import { pbkdf2Sync } from 'crypto';
 import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 import {
-  sortearSenhaForte,
+  ITERACOES_PBKDF2,
+  HASH_QUE_NUNCA_CONFERE,
+  precisaAtualizarHash,
+  sortearCodigoRecuperacao,
+  normalizarCodigoRecuperacao,
   hashSHA256,
   hashSenha,
   verificarSenha,
@@ -40,7 +49,9 @@ const FIXED_KEY = '0123456789abcdef'.repeat(4);
 const BYTES_FIXOS = new Uint8Array(16).fill(0xaa);
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  // resetAllMocks, e não clearAllMocks: um `mockResolvedValueOnce` que um
+  // teste não consumiu vazaria para o seguinte.
+  jest.resetAllMocks();
   mockedSecureStore.getItemAsync.mockResolvedValue(FIXED_KEY);
   mockedSecureStore.setItemAsync.mockResolvedValue(undefined);
 
@@ -78,35 +89,44 @@ describe('hashSHA256', () => {
 
 // ─── hashSenha ────────────────────────────────────────────────
 
+/**
+ * PBKDF2 de referência, o do Node, para conferir a implementação usada no
+ * aplicativo sem depender dela. O sal entra como o texto hexadecimal, que é
+ * como o aplicativo o passa.
+ */
+function pbkdf2DeReferencia(senha: string, salHex: string, iteracoes: number): string {
+  return pbkdf2Sync(senha, salHex, iteracoes, 32, 'sha256').toString('hex');
+}
+
 describe('hashSenha', () => {
-  it('retorna string no formato salt$hash', async () => {
+  it('sai no formato pbkdf2-sha256$iteracoes$sal$hash, com o número atual', async () => {
     mockedCrypto.getRandomBytesAsync.mockResolvedValue(new Uint8Array(16).fill(0xab) as any);
-    mockedCrypto.digestStringAsync.mockResolvedValue('computed-hash');
 
-    const result = await hashSenha('minhasenha');
-    const [salt, hash] = result.split('$');
+    const partes = (await hashSenha('minhasenha')).split('$');
 
-    expect(result.split('$')).toHaveLength(2);
-    expect(salt).toBe('ab'.repeat(16));
-    expect(hash).toBe('computed-hash');
+    expect(partes).toHaveLength(4);
+    expect(partes[0]).toBe('pbkdf2-sha256');
+    expect(Number(partes[1])).toBe(ITERACOES_PBKDF2);
+    expect(partes[2]).toBe('ab'.repeat(16));
+    expect(partes[3]).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it('inclui o salt na entrada do hash (salt_hex + senha)', async () => {
+  it('confere com o PBKDF2-HMAC-SHA256 de referência', async () => {
     mockedCrypto.getRandomBytesAsync.mockResolvedValue(new Uint8Array(16).fill(0x01) as any);
-    mockedCrypto.digestStringAsync.mockResolvedValue('resultado');
 
+    const [, , sal, hash] = (await hashSenha('minhasenha')).split('$');
+
+    expect(hash).toBe(pbkdf2DeReferencia('minhasenha', sal, ITERACOES_PBKDF2));
+  });
+
+  it('não usa mais um SHA-256 de uma passada só', async () => {
+    // O formato antigo era sha256(sal + senha). Um computador comum faz
+    // bilhões disso por segundo; é o que tornava o hash fácil de quebrar.
     await hashSenha('minhasenha');
-
-    expect(mockedCrypto.digestStringAsync).toHaveBeenCalledWith(
-      'SHA-256',
-      '01'.repeat(16) + 'minhasenha'
-    );
+    expect(mockedCrypto.digestStringAsync).not.toHaveBeenCalled();
   });
 
   it('salt é gerado com 16 bytes aleatórios', async () => {
-    mockedCrypto.getRandomBytesAsync.mockResolvedValue(new Uint8Array(16).fill(0) as any);
-    mockedCrypto.digestStringAsync.mockResolvedValue('h');
-
     await hashSenha('senha');
 
     expect(mockedCrypto.getRandomBytesAsync).toHaveBeenCalledWith(16);
@@ -116,9 +136,6 @@ describe('hashSenha', () => {
     mockedCrypto.getRandomBytesAsync
       .mockResolvedValueOnce(new Uint8Array(16).fill(0x01) as any)
       .mockResolvedValueOnce(new Uint8Array(16).fill(0x02) as any);
-    mockedCrypto.digestStringAsync
-      .mockResolvedValueOnce('hash-salt-1')
-      .mockResolvedValueOnce('hash-salt-2');
 
     const h1 = await hashSenha('mesmaSenha');
     const h2 = await hashSenha('mesmaSenha');
@@ -129,14 +146,50 @@ describe('hashSenha', () => {
 
 // ─── verificarSenha ───────────────────────────────────────────
 
-describe('verificarSenha', () => {
-  it('retorna true para senha correta no formato novo (salt$hash)', async () => {
+describe('verificarSenha - formato atual (PBKDF2)', () => {
+  it('aceita a senha certa e recusa a errada', async () => {
+    const guardado = await hashSenha('SenhaCerta@1');
+
+    expect(await verificarSenha('SenhaCerta@1', guardado)).toBe(true);
+    expect(await verificarSenha('SenhaErrada@1', guardado)).toBe(false);
+  });
+
+  it('usa o número de iterações gravado no hash', async () => {
+    // Senão subir o número numa versão futura trancaria todo mundo fora.
+    const sal = 'cd'.repeat(16);
+    const guardado = `pbkdf2-sha256$1000$${sal}$${pbkdf2DeReferencia('antiga', sal, 1000)}`;
+
+    expect(await verificarSenha('antiga', guardado)).toBe(true);
+  });
+
+  it('recusa número de iterações inválido', async () => {
+    expect(await verificarSenha('x', `pbkdf2-sha256$0$${'0'.repeat(32)}$${'0'.repeat(64)}`)).toBe(false);
+    expect(await verificarSenha('x', `pbkdf2-sha256$abc$${'0'.repeat(32)}$${'0'.repeat(64)}`)).toBe(false);
+  });
+
+  it('o hash de conta inexistente nunca confere e custa o mesmo que um de verdade', async () => {
+    expect(HASH_QUE_NUNCA_CONFERE.startsWith(`pbkdf2-sha256$${ITERACOES_PBKDF2}$`)).toBe(true);
+    expect(await verificarSenha('', HASH_QUE_NUNCA_CONFERE)).toBe(false);
+  });
+});
+
+describe('precisaAtualizarHash', () => {
+  it('formatos antigos e menos iterações pedem atualização; o atual não', async () => {
+    expect(precisaAtualizarHash('hashSemSalt')).toBe(true);
+    expect(precisaAtualizarHash('aabbcc$hash')).toBe(true);
+    expect(precisaAtualizarHash(`pbkdf2-sha256$1000$${'0'.repeat(32)}$${'0'.repeat(64)}`)).toBe(true);
+    expect(precisaAtualizarHash(await hashSenha('x'))).toBe(false);
+  });
+});
+
+describe('verificarSenha - formatos antigos, para a migração', () => {
+  it('retorna true para senha correta no formato salt$hash', async () => {
     mockedCrypto.digestStringAsync.mockResolvedValue('hash-correto');
 
     expect(await verificarSenha('senhaCorreta', 'aabbcc$hash-correto')).toBe(true);
   });
 
-  it('retorna false para senha errada no formato novo', async () => {
+  it('retorna false para senha errada no formato salt$hash', async () => {
     mockedCrypto.digestStringAsync.mockResolvedValue('hash-diferente');
 
     expect(await verificarSenha('senhaErrada', 'aabbcc$hash-original')).toBe(false);
@@ -171,40 +224,41 @@ describe('verificarSenha', () => {
   });
 });
 
-describe('sortearSenhaForte', () => {
-  // Existe porque a senha do administrador era a constante `Admin@2025`,
-  // repetida no README publico e impressa na tela de configuracoes. Quem
-  // encontrasse uma instalacao no ar entrava como administrador e lia o
-  // prontuario de todos.
+describe('sortearCodigoRecuperacao', () => {
+  // Substitui a recuperação por CPF e e-mail, que não pedia segredo nenhum:
+  // os dois do administrador eram públicos.
   beforeEach(() => {
-    // Bytes variados: com tudo igual o embaralhamento nao teria o que mover
-    // e o teste de classes passaria por acidente.
     (Crypto.getRandomBytesAsync as jest.Mock).mockImplementation(
       async (n: number) =>
         new Uint8Array(Array.from({ length: n }, (_, i) => (i * 37 + 11) % 256))
     );
   });
 
-  it('respeita o tamanho pedido', async () => {
-    expect((await sortearSenhaForte(16)).length).toBe(16);
-    expect((await sortearSenhaForte(24)).length).toBe(24);
+  it('sai no formato XXXX-XXXX-XXXX', async () => {
+    expect(await sortearCodigoRecuperacao()).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/);
   });
 
-  it('tem ao menos uma maiuscula, uma minuscula, um numero e um simbolo', async () => {
-    // Sem isto a senha poderia ser recusada pela propria validacao do
-    // aplicativo, que exige as quatro classes.
-    const senha = await sortearSenhaForte(16);
-    expect(senha).toMatch(/[A-Z]/);
-    expect(senha).toMatch(/[a-z]/);
-    expect(senha).toMatch(/[0-9]/);
-    expect(senha).toMatch(/[^A-Za-z0-9]/);
-  });
+  it('todo valor de byte vira símbolo com a mesma chance, sem os confundíveis', async () => {
+    // 64 códigos de 12 símbolos são 768 bytes: cada um dos 256 valores de
+    // byte aparece 3 vezes. Com alfabeto de tamanho que não divide 256,
+    // `byte % tamanho` favoreceria os primeiros símbolos e as contagens
+    // sairiam desiguais. E O e 0, I e 1 não podem aparecer: o código é lido
+    // de uma tela e digitado a mão.
+    let proximo = 0;
+    (Crypto.getRandomBytesAsync as jest.Mock).mockImplementation(
+      async (n: number) => new Uint8Array(Array.from({ length: n }, () => proximo++ % 256))
+    );
 
-  it('nao usa caracteres que se confundem na leitura', async () => {
-    // Esta senha e lida de uma tela e digitada a mao: O e 0, l e 1 e I viram
-    // chamado de suporte.
-    const senha = await sortearSenhaForte(32);
-    expect(senha).not.toMatch(/[O0l1I]/);
+    const contagem = new Map<string, number>();
+    for (let i = 0; i < 64; i++) {
+      for (const c of (await sortearCodigoRecuperacao()).replace(/-/g, '')) {
+        contagem.set(c, (contagem.get(c) ?? 0) + 1);
+      }
+    }
+
+    expect(contagem.size).toBe(32);
+    expect(new Set(contagem.values())).toEqual(new Set([24]));
+    expect([...contagem.keys()].join('')).not.toMatch(/[O0I1]/);
   });
 
   it('muda a cada chamada', async () => {
@@ -214,9 +268,15 @@ describe('sortearSenhaForte', () => {
         new Uint8Array(Array.from({ length: n }, (_, i) => (i * 37 + semente++) % 256))
     );
 
-    const senhas = new Set<string>();
-    for (let i = 0; i < 5; i++) senhas.add(await sortearSenhaForte(16));
-    expect(senhas.size).toBe(5);
+    const codigos = new Set<string>();
+    for (let i = 0; i < 5; i++) codigos.add(await sortearCodigoRecuperacao());
+    expect(codigos.size).toBe(5);
+  });
+});
+
+describe('normalizarCodigoRecuperacao', () => {
+  it('ignora caixa, espaço e hífen', () => {
+    expect(normalizarCodigoRecuperacao(' abcd-efgh jklm ')).toBe('ABCDEFGHJKLM');
   });
 });
 

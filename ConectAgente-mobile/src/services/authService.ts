@@ -17,6 +17,24 @@ export interface SessionData {
   agente: Agente;
   token: string;
   expires_at: string;
+  /** Aviso para a tela mostrar depois de entrar, quando há um. */
+  aviso?: string;
+}
+
+/**
+ * Aviso de quem trocou a senha pela recuperação e o servidor não acompanhou.
+ *
+ * A conta do agente no Supabase usa um e-mail interno
+ * (`<cpf>@conectagente.local`), que não recebe mensagem, então não existe
+ * "esqueci a senha" do lado do servidor. Quem resolve é a coordenação, no
+ * painel, em Agentes → detalhes → Senha de sincronização.
+ */
+export const AVISO_SENHA_DO_SERVIDOR =
+  'Sua senha foi trocada só neste aparelho. A sincronização fica parada até a ' +
+  'coordenação redefinir a sua senha de sincronização no painel, usando a mesma senha nova.';
+
+function chaveDaPendencia(agenteId: string): string {
+  return `${SECURE_KEYS.SENHA_SERVIDOR_PENDENTE}${agenteId}`;
 }
 
 export const authService = {
@@ -59,7 +77,20 @@ export const authService = {
     // não tiver usuário no Supabase Auth, o acesso ao aplicativo funciona
     // normalmente e a fila espera. O que muda é que a falha passa a ser
     // visível em vez de silenciosa.
-    await this.abrirSessaoNoServidor(agente.email, senha);
+    const servidor = await this.abrirSessaoNoServidor(agente.email, senha);
+
+    // Senha trocada pela recuperação: enquanto o servidor tiver a antiga, a
+    // sincronização fica parada, e o agente precisa saber disso agora, e não
+    // quando perceber que a coleta da semana não subiu.
+    let aviso: string | undefined;
+    const pendente = await SecureStore.getItemAsync(chaveDaPendencia(agente.id)).catch(() => null);
+    if (pendente) {
+      if (servidor.ok) {
+        await SecureStore.deleteItemAsync(chaveDaPendencia(agente.id)).catch(() => undefined);
+      } else {
+        aviso = AVISO_SENHA_DO_SERVIDOR;
+      }
+    }
 
     // Entrada no sistema. Junto com a leitura de prontuario, e o que permite
     // responder "quem estava com este aparelho quando o dado foi aberto".
@@ -70,7 +101,58 @@ export const authService = {
       registroId: agente.id,
     });
 
-    return { agente, token: localToken, expires_at };
+    return { agente, token: localToken, expires_at, aviso };
+  },
+
+  /**
+   * Recupera a senha com o código e tenta levar a senha nova ao servidor.
+   *
+   * A troca local é a que vale para entrar no aplicativo. O servidor só
+   * acompanha se este aparelho ainda tem uma sessão aberta da mesma pessoa:
+   * aí `updateUser` troca a senha lá também. Sem sessão não há como provar ao
+   * servidor quem é quem, e a troca fica marcada como pendente; o próximo
+   * login avisa (ver `AVISO_SENHA_DO_SERVIDOR`).
+   *
+   * Devolve `null` quando CPF ou código não conferem.
+   */
+  async recuperarSenha(
+    cpf: string,
+    codigo: string,
+    novaSenha: string
+  ): Promise<{ codigo: string; servidorAtualizado: boolean } | null> {
+    const novoCodigo = await agenteRepository.redefinirSenhaComCodigo(cpf, codigo, novaSenha);
+    if (!novoCodigo) return null;
+
+    const agente = await agenteRepository.buscarPorCpf(cpf);
+    // O administrador do aparelho não tem conta no servidor.
+    if (!agente || agente.is_admin) return { codigo: novoCodigo, servidorAtualizado: true };
+
+    const servidorAtualizado = await this.atualizarSenhaNoServidor(agente, novaSenha);
+    if (servidorAtualizado) {
+      await SecureStore.deleteItemAsync(chaveDaPendencia(agente.id)).catch(() => undefined);
+    } else {
+      await SecureStore.setItemAsync(chaveDaPendencia(agente.id), new Date().toISOString());
+    }
+    return { codigo: novoCodigo, servidorAtualizado };
+  },
+
+  /** Troca a senha no Supabase, se a sessão aberta for da mesma pessoa. */
+  async atualizarSenhaNoServidor(agente: Agente, novaSenha: string): Promise<boolean> {
+    try {
+      const { data } = await supabase.auth.getSession();
+      const email = data.session?.user?.email?.toLowerCase();
+      if (!email || email !== agente.email.toLowerCase()) return false;
+
+      const { error } = await supabase.auth.updateUser({ password: novaSenha });
+      if (error) {
+        console.warn('[auth] O servidor recusou a senha nova:', error.message);
+        return false;
+      }
+      return true;
+    } catch (erro) {
+      console.warn('[auth] Sem acesso ao servidor para trocar a senha:', erro);
+      return false;
+    }
   },
 
   /**
@@ -185,6 +267,9 @@ export const authService = {
 
   /**
    * Primeiro acesso, cadastro local do agente.
+   *
+   * Devolve também o código de recuperação da conta, que a tela mostra uma
+   * vez. É ele que permite redefinir a senha depois, em "Esqueci minha senha".
    */
   async cadastrarAgente(data: {
     nome: string;
@@ -193,12 +278,14 @@ export const authService = {
     senha: string;
     area_atuacao: string;
     unidade_saude: string;
-  }): Promise<Agente> {
+  }): Promise<{ agente: Agente; codigoRecuperacao: string }> {
     // Verifica se CPF já existe
     const existe = await agenteRepository.buscarPorCpf(data.cpf);
     if (existe) throw new Error('CPF já cadastrado');
 
-    return agenteRepository.criar(data);
+    const agente = await agenteRepository.criar(data);
+    const codigoRecuperacao = await agenteRepository.gerarCodigoRecuperacao(agente.id);
+    return { agente, codigoRecuperacao };
   },
 
   async obterAgenteAtual(): Promise<Agente | null> {

@@ -2,9 +2,15 @@
  * Testes para agenteRepository
  *
  * Cobre: criar, autenticar (rate limiting, timing-safe, migração legado),
- *        buscarPorId, existeAgenteCadastrado, atualizar,
- *        verificarIdentidade, resetarSenha, loginRateStatus
+ *        buscarPorId, existeAgenteCadastrado, atualizar, loginRateStatus,
+ *        código de recuperação e configuração do administrador
  */
+
+// O hash de senha é PBKDF2 de verdade, com as iterações de produção: um login
+// custa centenas de milissegundos de propósito. Com a suíte toda rodando em
+// paralelo, os 5 segundos padrão do Jest não bastam para os testes que fazem
+// vários logins seguidos.
+jest.setTimeout(30_000);
 
 jest.mock('../../../database/database', () => ({
   getDatabase: jest.fn(),
@@ -18,16 +24,33 @@ jest.mock('expo-crypto', () => ({
 }));
 
 jest.mock('expo-secure-store', () => ({
-  getItemAsync: jest.fn().mockResolvedValue('0123456789abcdef'.repeat(4)),
+  getItemAsync: jest.fn().mockResolvedValue(null),
   setItemAsync: jest.fn(),
   deleteItemAsync: jest.fn(),
 }));
 
+// A auditoria tem teste próprio; aqui ela só não pode mexer na contagem de
+// chamadas ao banco.
+jest.mock('../auditRepository', () => ({
+  ...jest.requireActual('../auditRepository'),
+  auditRepository: { registrar: jest.fn().mockResolvedValue(true) },
+}));
+
 import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
+import * as encryption from '../../../utils/encryption';
+import { _esquecerMemoriaParaTeste } from '../../limiteDeTentativas';
 import { SECURE_KEYS } from '../../../utils/constants';
 import { getDatabase } from '../../../database/database';
-import { agenteRepository, loginRateStatus, _resetLoginAttemptsForTesting } from '../agenteRepository';
+import { auditRepository } from '../auditRepository';
+import {
+  ADMIN_CPF,
+  agenteRepository,
+  loginRateStatus,
+  _resetLoginAttemptsForTesting,
+} from '../agenteRepository';
+
+const mockedSecureStore = SecureStore as jest.Mocked<typeof SecureStore>;
 
 const mockedCrypto = Crypto as jest.Mocked<typeof Crypto>;
 const mockGetDatabase = getDatabase as jest.MockedFunction<typeof getDatabase>;
@@ -55,13 +78,20 @@ const agenteBase = {
   updated_at: '2024-01-01T00:00:00.000Z',
 };
 
-beforeEach(() => {
+/** Espião da comparação de senha, que passa a chamada adiante sem mudar nada. */
+const espiaoVerificar = jest.spyOn(encryption, 'verificarSenha');
+
+beforeEach(async () => {
   jest.clearAllMocks();
-  _resetLoginAttemptsForTesting();
+  await _resetLoginAttemptsForTesting();
 
   // Restaura mock padrão que clearAllMocks pode ter limpado
   mockedCrypto.digestStringAsync.mockResolvedValue('hashed-password');
   mockedCrypto.getRandomBytesAsync.mockResolvedValue(new Uint8Array(16).fill(0x01) as any);
+
+  mockedSecureStore.getItemAsync.mockResolvedValue(null);
+  mockedSecureStore.setItemAsync.mockResolvedValue(undefined);
+  mockedSecureStore.deleteItemAsync.mockResolvedValue(undefined);
 
   mockDb.runAsync.mockResolvedValue({ changes: 1, lastInsertRowId: 1 });
   mockDb.getFirstAsync.mockResolvedValue(null);
@@ -145,8 +175,26 @@ describe('agenteRepository.autenticar', () => {
 
     await agenteRepository.autenticar('cpf-inexistente', 'qualquerSenha');
 
-    // digestStringAsync deve ter sido chamado (mesmo sem usuário no banco)
-    expect(mockedCrypto.digestStringAsync).toHaveBeenCalled();
+    // Compara contra um hash PBKDF2 com as mesmas iterações de uma conta de
+    // verdade, para o tempo não dizer se o CPF existe.
+    expect(espiaoVerificar).toHaveBeenCalledWith('qualquerSenha', encryption.HASH_QUE_NUNCA_CONFERE);
+  });
+
+  it('regrava no PBKDF2 a senha que estava no SHA-256 com sal', async () => {
+    mockDb.getFirstAsync.mockResolvedValue(agenteBase); // 'aabbccdd$hashed-password'
+
+    await agenteRepository.autenticar('52998224725', 'senha123');
+
+    const update = mockDb.runAsync.mock.calls.find(([sql]) => String(sql).includes('UPDATE agentes SET senha_hash'));
+    expect(String(update?.[1]?.[0])).toMatch(/^pbkdf2-sha256\$/);
+  });
+
+  it('não regrava quem já está no formato atual', async () => {
+    const atual = await encryption.hashSenha('Atual@123');
+    mockDb.getFirstAsync.mockResolvedValue({ ...agenteBase, senha_hash: atual });
+
+    expect(await agenteRepository.autenticar('52998224725', 'Atual@123')).not.toBeNull();
+    expect(mockDb.runAsync).not.toHaveBeenCalled();
   });
 
   it('migra hash legado (sem salt) para formato novo com salt', async () => {
@@ -155,18 +203,28 @@ describe('agenteRepository.autenticar', () => {
       ...agenteBase,
       senha_hash: 'hashed-password', // legado sem salt
     });
-    // digestStringAsync: primeira chamada = verificarSenha legado (retorna match)
-    // segunda chamada = hashSenha para gerar novo hash
-    mockedCrypto.digestStringAsync
-      .mockResolvedValueOnce('hashed-password') // verificarSenha: legacyHash === stored ✓
-      .mockResolvedValueOnce('novo-hash');       // hashSenha: novo hash com salt
+    // verificarSenha legado: sha256(senha) === stored. O hash novo é PBKDF2 e
+    // não passa por aqui; um segundo valor enfileirado sobraria para o
+    // próximo teste.
+    mockedCrypto.digestStringAsync.mockResolvedValueOnce('hashed-password');
 
     await agenteRepository.autenticar('52998224725', 'senha123');
 
     expect(mockDb.runAsync).toHaveBeenCalledWith(
       expect.stringContaining('UPDATE agentes SET senha_hash'),
-      expect.any(Array)
+      [expect.stringMatching(/^pbkdf2-sha256\$/), expect.any(String), agenteBase.id]
     );
+  });
+
+  it('recusa o administrador que ainda não escolheu a senha', async () => {
+    // O marcador não é hash; nenhuma senha pode conferir com ele, nem a
+    // que por acaso produzisse o mesmo texto no formato legado.
+    mockDb.getFirstAsync.mockResolvedValue({ ...agenteBase, senha_hash: 'senha-nao-definida' });
+    mockedCrypto.digestStringAsync.mockResolvedValue('senha-nao-definida');
+
+    expect(await agenteRepository.autenticar('52998224725', 'qualquer')).toBeNull();
+    // Compara mesmo assim, para o tempo não denunciar o estado da conta.
+    expect(espiaoVerificar).toHaveBeenCalledWith('qualquer', encryption.HASH_QUE_NUNCA_CONFERE);
   });
 });
 
@@ -233,6 +291,33 @@ describe('agenteRepository: rate limiting', () => {
     const status = loginRateStatus(CPF_OK);
     expect(status.remaining).toBe(5);
   });
+
+  it('o bloqueio sobrevive a fechar e abrir o aplicativo', async () => {
+    // Antes a contagem ficava só na memória: reabrir o aplicativo dava mais
+    // cinco tentativas, sem espera.
+    const CPF_R = '33344455566';
+    for (let i = 0; i < 5; i++) {
+      await agenteRepository.autenticar(CPF_R, 'errada');
+    }
+
+    _esquecerMemoriaParaTeste(); // como se o processo tivesse reiniciado
+
+    await expect(agenteRepository.autenticar(CPF_R, 'qualquer')).rejects.toThrow(
+      'Conta temporariamente bloqueada'
+    );
+  });
+
+  it('as falhas antes do bloqueio também sobrevivem ao reinício', async () => {
+    const CPF_P = '66677788899';
+    for (let i = 0; i < 4; i++) {
+      await agenteRepository.autenticar(CPF_P, 'errada');
+    }
+    _esquecerMemoriaParaTeste();
+
+    await agenteRepository.autenticar(CPF_P, 'errada');
+
+    expect(loginRateStatus(CPF_P).locked).toBe(true);
+  });
 });
 
 // ─── buscarPorId ──────────────────────────────────────────────
@@ -298,179 +383,207 @@ describe('agenteRepository.atualizar', () => {
   });
 });
 
-// ─── verificarIdentidade ─────────────────────────────────────
+// ─── código de recuperação ───────────────────────────────────
 
-describe('agenteRepository.verificarIdentidade', () => {
-  it('retorna true quando CPF e email correspondem a um agente ativo', async () => {
-    mockDb.getFirstAsync.mockResolvedValue({ count: 1 });
+const CHAVE_DO_CODIGO = `${SECURE_KEYS.CODIGO_RECUPERACAO}${agenteBase.id}`;
+const HASH_DO_CODIGO = 'aabbccdd$hashed-password';
 
-    const resultado = await agenteRepository.verificarIdentidade('52998224725', 'joao@ubs.gov.br');
+describe('agenteRepository.gerarCodigoRecuperacao', () => {
+  it('devolve o código e guarda só o hash, na chave da conta', async () => {
+    const codigo = await agenteRepository.gerarCodigoRecuperacao(agenteBase.id);
 
-    expect(resultado).toBe(true);
-    expect(mockDb.getFirstAsync).toHaveBeenCalledWith(
-      expect.stringContaining('cpf = ?'),
-      expect.arrayContaining(['52998224725'])
-    );
-  });
-
-  it('retorna false quando combinação é inválida', async () => {
-    mockDb.getFirstAsync.mockResolvedValue({ count: 0 });
-
-    expect(await agenteRepository.verificarIdentidade('52998224725', 'errado@email.com')).toBe(false);
-  });
-
-  it('normaliza o email (lowercase e trim) antes da query', async () => {
-    mockDb.getFirstAsync.mockResolvedValue({ count: 1 });
-
-    await agenteRepository.verificarIdentidade('52998224725', ' JOAO@UBS.GOV.BR ');
-
-    expect(mockDb.getFirstAsync).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.arrayContaining(['joao@ubs.gov.br'])
-    );
+    expect(codigo).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+    const [chave, guardado] = mockedSecureStore.setItemAsync.mock.calls[0];
+    expect(chave).toBe(CHAVE_DO_CODIGO);
+    expect(guardado).toContain('$');
+    expect(guardado).not.toContain(codigo);
+    expect(guardado).not.toContain(codigo.replace(/-/g, ''));
   });
 });
 
-// ─── resetarSenha ────────────────────────────────────────────
+describe('agenteRepository.redefinirSenhaComCodigo', () => {
+  function comCodigoGuardado() {
+    mockDb.getFirstAsync.mockResolvedValue(agenteBase);
+    mockedSecureStore.getItemAsync.mockImplementation(async (chave: string) =>
+      chave === CHAVE_DO_CODIGO ? HASH_DO_CODIGO : null
+    );
+  }
 
-describe('agenteRepository.resetarSenha', () => {
-  it('retorna false e não altera senha quando identidade não é verificada', async () => {
-    mockDb.getFirstAsync.mockResolvedValue({ count: 0 });
+  it('não aceita CPF e e-mail: a troca exige o código', async () => {
+    // O defeito que motivou isto: CPF e e-mail do administrador eram
+    // públicos e bastavam para trocar a senha dele.
+    expect('verificarIdentidade' in agenteRepository).toBe(false);
+    expect('resetarSenha' in agenteRepository).toBe(false);
+  });
 
-    const resultado = await agenteRepository.resetarSenha('52998224725', 'errado@email.com', 'novaSenha');
+  it('troca a senha com o código certo e devolve um código novo', async () => {
+    comCodigoGuardado();
 
-    expect(resultado).toBe(false);
+    const novo = await agenteRepository.redefinirSenhaComCodigo('52998224725', 'ABCD-EFGH-JKLM', 'NovaSenha@1');
+
+    expect(novo).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+    expect(mockDb.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining('UPDATE agentes SET senha_hash'),
+      expect.arrayContaining([agenteBase.id])
+    );
+    expect(auditRepository.registrar).toHaveBeenCalledWith(
+      expect.objectContaining({ acao: 'RESET_SENHA', agenteId: agenteBase.id })
+    );
+  });
+
+  it('o código usado é substituído, então não vale de novo', async () => {
+    comCodigoGuardado();
+
+    await agenteRepository.redefinirSenhaComCodigo('52998224725', 'ABCD-EFGH-JKLM', 'NovaSenha@1');
+
+    expect(mockedSecureStore.setItemAsync).toHaveBeenCalledWith(CHAVE_DO_CODIGO, expect.any(String));
+  });
+
+  it('aceita o código com minúscula, espaço e sem hífen', async () => {
+    comCodigoGuardado();
+
+    await agenteRepository.redefinirSenhaComCodigo('52998224725', ' abcd efgh jklm ', 'NovaSenha@1');
+
+    expect(mockedCrypto.digestStringAsync).toHaveBeenCalledWith('SHA-256', 'aabbccddABCDEFGHJKLM');
+  });
+
+  it('código errado não troca a senha', async () => {
+    comCodigoGuardado();
+    mockedCrypto.digestStringAsync.mockResolvedValueOnce('outro-hash');
+
+    expect(await agenteRepository.redefinirSenhaComCodigo('52998224725', 'XXXX-XXXX-XXXX', 'NovaSenha@1')).toBeNull();
     expect(mockDb.runAsync).not.toHaveBeenCalled();
   });
 
-  it('atualiza a senha e registra audit_log quando identidade OK', async () => {
-    mockDb.getFirstAsync
-      .mockResolvedValueOnce({ count: 1 })
-      .mockResolvedValueOnce(agenteBase);
+  it('conta sem código guardado não troca a senha, e compara mesmo assim', async () => {
+    mockDb.getFirstAsync.mockResolvedValue(agenteBase);
 
-    const resultado = await agenteRepository.resetarSenha('52998224725', 'joao@ubs.gov.br', 'Novo@2025');
-
-    expect(resultado).toBe(true);
-    expect(mockDb.runAsync).toHaveBeenCalledTimes(2); // UPDATE senha + INSERT audit_log
-    expect(mockDb.runAsync).toHaveBeenCalledWith(
-      expect.stringContaining('RESET_SENHA'),
-      expect.any(Array)
-    );
+    expect(await agenteRepository.redefinirSenhaComCodigo('52998224725', 'ABCD-EFGH-JKLM', 'NovaSenha@1')).toBeNull();
+    expect(mockDb.runAsync).not.toHaveBeenCalled();
+    expect(espiaoVerificar).toHaveBeenCalledWith('ABCDEFGHJKLM', encryption.HASH_QUE_NUNCA_CONFERE);
   });
 
-  it('retorna true mesmo sem agente no buscarPorCpf (não quebra o fluxo)', async () => {
-    mockDb.getFirstAsync
-      .mockResolvedValueOnce({ count: 1 })
-      .mockResolvedValueOnce(null);
+  it('CPF que não existe devolve o mesmo nulo', async () => {
+    expect(await agenteRepository.redefinirSenhaComCodigo('00011122233', 'ABCD-EFGH-JKLM', 'NovaSenha@1')).toBeNull();
+    expect(mockDb.runAsync).not.toHaveBeenCalled();
+  });
 
-    const resultado = await agenteRepository.resetarSenha('52998224725', 'joao@ubs.gov.br', 'Novo@2025');
+  it('bloqueia depois de cinco tentativas erradas', async () => {
+    comCodigoGuardado();
+    mockedCrypto.digestStringAsync.mockResolvedValue('outro-hash');
 
-    expect(resultado).toBe(true);
-    expect(mockDb.runAsync).toHaveBeenCalledTimes(1); // apenas UPDATE, sem audit_log
+    for (let i = 0; i < 5; i++) {
+      await agenteRepository.redefinirSenhaComCodigo('52998224725', 'XXXX-XXXX-XXXX', 'NovaSenha@1');
+    }
+
+    await expect(
+      agenteRepository.redefinirSenhaComCodigo('52998224725', 'ABCD-EFGH-JKLM', 'NovaSenha@1')
+    ).rejects.toThrow('Muitas tentativas');
   });
 });
 
-// ─── garantirAdminPadrao ─────────────────────────────────────
+// ─── administrador do aparelho ───────────────────────────────
 
 describe('agenteRepository.garantirAdminPadrao', () => {
-  it('não cria admin quando já existe', async () => {
-    mockDb.getFirstAsync.mockResolvedValue({ count: 1 });
+  it('cria o administrador sem senha nenhuma', async () => {
+    await agenteRepository.garantirAdminPadrao();
+
+    const [sql, parametros] = mockDb.runAsync.mock.calls[0];
+    expect(sql).toContain('INSERT INTO agentes');
+    expect(parametros).toContain(ADMIN_CPF);
+    expect(parametros).toContain('senha-nao-definida');
+  });
+
+  it('não sorteia, não guarda e não mostra senha em lugar nenhum', async () => {
+    // A 1.2 sorteava a senha, guardava no cofre e a tela de entrada mostrava
+    // para quem abrisse o aplicativo.
+    await agenteRepository.garantirAdminPadrao();
+
+    expect(mockedSecureStore.setItemAsync).not.toHaveBeenCalled();
+    const parametros = mockDb.runAsync.mock.calls[0][1] as unknown[];
+    expect(parametros.some((p) => typeof p === 'string' && p.includes('$'))).toBe(false);
+  });
+
+  it('não mexe no administrador que já existe', async () => {
+    mockDb.getFirstAsync.mockResolvedValue({ id: 'admin-id' });
+
+    await agenteRepository.garantirAdminPadrao();
+
+    expect(mockDb.runAsync).not.toHaveBeenCalled();
+    expect(mockedSecureStore.deleteItemAsync).not.toHaveBeenCalled();
+  });
+
+  it('instalação da 1.2: trata a senha exibida como vazada e pede configuração nova', async () => {
+    mockDb.getFirstAsync.mockResolvedValue({ id: 'admin-id' });
+    mockedSecureStore.getItemAsync.mockImplementation(async (chave: string) =>
+      chave === SECURE_KEYS.SENHA_ADMIN_INICIAL ? 'senha-sorteada-da-1.2' : null
+    );
+
+    await agenteRepository.garantirAdminPadrao();
+
+    expect(mockedSecureStore.deleteItemAsync).toHaveBeenCalledWith(SECURE_KEYS.SENHA_ADMIN_INICIAL);
+    expect(mockDb.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining('UPDATE agentes SET senha_hash'),
+      ['senha-nao-definida', expect.any(String), 'admin-id']
+    );
+    // Apaga a chave antes de desfazer a senha. Na ordem contrária, uma falha
+    // do cofre faria a próxima abertura desfazer a senha nova.
+    expect(mockedSecureStore.deleteItemAsync.mock.invocationCallOrder[0])
+      .toBeLessThan(mockDb.runAsync.mock.invocationCallOrder[0]);
+  });
+
+  it('se não conseguir apagar a senha antiga, não desfaz a senha atual', async () => {
+    mockDb.getFirstAsync.mockResolvedValue({ id: 'admin-id' });
+    mockedSecureStore.getItemAsync.mockResolvedValue('senha-antiga');
+    mockedSecureStore.deleteItemAsync.mockRejectedValueOnce(new Error('cofre'));
 
     await agenteRepository.garantirAdminPadrao();
 
     expect(mockDb.runAsync).not.toHaveBeenCalled();
   });
+});
 
-  it('cria admin quando não existe', async () => {
-    mockDb.getFirstAsync.mockResolvedValue({ count: 0 });
-
-    await agenteRepository.garantirAdminPadrao();
-
-    expect(mockDb.runAsync).toHaveBeenCalledWith(
-      expect.stringContaining('INSERT INTO agentes'),
-      expect.arrayContaining(['Administrador'])
-    );
+describe('agenteRepository.adminPrecisaConfigurar', () => {
+  it('sim, enquanto a conta não tem senha', async () => {
+    mockDb.getFirstAsync.mockResolvedValue({ senha_hash: 'senha-nao-definida' });
+    expect(await agenteRepository.adminPrecisaConfigurar()).toBe(true);
   });
 
-  it('guarda a senha sorteada no cofre do sistema', async () => {
-    // A senha era a constante `Admin@2025`, publicada no README e impressa
-    // na tela de configuracoes, num repositorio publico. Agora e sorteada e
-    // guardada no SecureStore, que usa Keychain no iOS e Keystore no
-    // Android, para ser lida uma vez por quem instalou.
-    mockDb.getFirstAsync.mockResolvedValue({ count: 0 });
+  it('sim, se a conta ainda nem foi criada (abertura em andamento)', async () => {
+    expect(await agenteRepository.adminPrecisaConfigurar()).toBe(true);
+  });
 
-    await agenteRepository.garantirAdminPadrao();
+  it('não, depois que a senha foi escolhida', async () => {
+    mockDb.getFirstAsync.mockResolvedValue({ senha_hash: HASH_DO_CODIGO });
+    expect(await agenteRepository.adminPrecisaConfigurar()).toBe(false);
+  });
+});
 
-    expect(SecureStore.setItemAsync).toHaveBeenCalledWith(
-      SECURE_KEYS.SENHA_ADMIN_INICIAL,
+describe('agenteRepository.configurarAdmin', () => {
+  beforeEach(() => {
+    mockDb.getFirstAsync
+      .mockResolvedValueOnce({ id: 'admin-id' }) // garantirAdminPadrao
+      .mockResolvedValueOnce({ ...agenteBase, id: 'admin-id', cpf: ADMIN_CPF, is_admin: 1 });
+  });
+
+  it('só grava sobre a conta sem senha e devolve o código de recuperação', async () => {
+    const codigo = await agenteRepository.configurarAdmin('SenhaForte@1');
+
+    const update = mockDb.runAsync.mock.calls.find(([sql]) => String(sql).includes('UPDATE agentes'));
+    expect(update?.[0]).toMatch(/WHERE cpf = \? AND is_admin = 1 AND senha_hash = \?/);
+    expect(update?.[1]).toEqual([expect.stringContaining('$'), expect.any(String), ADMIN_CPF, 'senha-nao-definida']);
+    expect(codigo).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+    expect(mockedSecureStore.setItemAsync).toHaveBeenCalledWith(
+      `${SECURE_KEYS.CODIGO_RECUPERACAO}admin-id`,
       expect.any(String)
     );
   });
 
-  it('nao grava a senha em texto no banco, so o hash', async () => {
-    mockDb.getFirstAsync.mockResolvedValue({ count: 0 });
+  it('recusa quando o administrador já foi configurado', async () => {
+    // Senão este caminho viraria uma troca de senha sem senha nenhuma.
+    mockDb.runAsync.mockResolvedValue({ changes: 0, lastInsertRowId: 0 });
 
-    await agenteRepository.garantirAdminPadrao();
-
-    const senhaGuardada = (SecureStore.setItemAsync as jest.Mock).mock.calls
-      .find((c) => c[0] === SECURE_KEYS.SENHA_ADMIN_INICIAL)?.[1] as string;
-    const parametrosDoInsert = mockDb.runAsync.mock.calls[0][1] as unknown[];
-
-    expect(senhaGuardada).toBeTruthy();
-    expect(parametrosDoInsert).not.toContain(senhaGuardada);
-  });
-
-  it('nao usa mais a senha fixa antiga', async () => {
-    mockDb.getFirstAsync.mockResolvedValue({ count: 0 });
-
-    await agenteRepository.garantirAdminPadrao();
-
-    const senhaGuardada = (SecureStore.setItemAsync as jest.Mock).mock.calls
-      .find((c) => c[0] === SECURE_KEYS.SENHA_ADMIN_INICIAL)?.[1];
-    expect(senhaGuardada).not.toBe('Admin@2025');
-  });
-
-  it('nao guarda senha quando o admin ja existe', async () => {
-    mockDb.getFirstAsync.mockResolvedValue({ count: 1 });
-
-    await agenteRepository.garantirAdminPadrao();
-
-    expect(SecureStore.setItemAsync).not.toHaveBeenCalledWith(
-      SECURE_KEYS.SENHA_ADMIN_INICIAL,
-      expect.anything()
-    );
-  });
-});
-
-// ─── senha inicial do admin ──────────────────────────────────
-
-describe('agenteRepository - senha inicial do admin', () => {
-  it('devolve a senha guardada', async () => {
-    (SecureStore.getItemAsync as jest.Mock).mockResolvedValueOnce('S3nh4!Sorteada');
-
-    expect(await agenteRepository.obterSenhaInicialDoAdmin()).toBe('S3nh4!Sorteada');
-  });
-
-  it('devolve nulo quando o cofre falha, em vez de lancar', async () => {
-    // A tela de configuracoes nao pode quebrar porque o cofre nao respondeu.
-    (SecureStore.getItemAsync as jest.Mock).mockRejectedValueOnce(new Error('sem cofre'));
-
-    expect(await agenteRepository.obterSenhaInicialDoAdmin()).toBeNull();
-  });
-
-  it('esquecer apaga a chave do cofre', async () => {
-    await agenteRepository.esquecerSenhaInicialDoAdmin();
-
-    expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith(
-      SECURE_KEYS.SENHA_ADMIN_INICIAL
-    );
-  });
-
-  it('esquecer nao lanca quando o cofre falha', async () => {
-    (SecureStore.deleteItemAsync as jest.Mock).mockRejectedValueOnce(new Error('x'));
-
-    await expect(
-      agenteRepository.esquecerSenhaInicialDoAdmin()
-    ).resolves.toBeUndefined();
+    await expect(agenteRepository.configurarAdmin('OutraSenha@1')).rejects.toThrow('já foi configurado');
+    expect(mockedSecureStore.setItemAsync).not.toHaveBeenCalled();
   });
 });

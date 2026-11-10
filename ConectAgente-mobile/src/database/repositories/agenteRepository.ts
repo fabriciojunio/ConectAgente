@@ -2,69 +2,74 @@ import { getDatabase } from '../database';
 import { Agente } from '../../types';
 import { apenasData, generateUUID, isoNow } from '../../utils/formatters';
 import * as SecureStore from 'expo-secure-store';
-import { hashSenha, verificarSenha, sortearSenhaForte } from '../../utils/encryption';
+import {
+  hashSenha,
+  verificarSenha,
+  precisaAtualizarHash,
+  HASH_QUE_NUNCA_CONFERE,
+  sortearCodigoRecuperacao,
+  normalizarCodigoRecuperacao,
+} from '../../utils/encryption';
 import { SECURE_KEYS } from '../../utils/constants';
+import { ACOES_AUDITORIA, auditRepository } from './auditRepository';
+import {
+  estaBloqueado,
+  registrarFalha,
+  limparFalhas,
+  situacaoDasTentativas,
+  apagarTentativas,
+} from '../limiteDeTentativas';
 
-// CPF do administrador padrão do sistema.
-//
-// A senha NÃO fica aqui. Antes era a constante `Admin@2025`, repetida no
-// README e impressa na tela de configurações, num repositório público: quem
-// encontrasse uma instalação no ar entrava como administrador e lia o
-// prontuário de todos. Agora ela é sorteada na primeira execução, guardada
-// no SecureStore e apagada quando é trocada.
 /**
- * CPF da conta de administrador criada na primeira execucao.
+ * CPF da conta de administrador do aparelho.
  *
- * Exportado porque a tela de login precisa dele para mostrar a credencial
- * inicial uma unica vez. Ver `garantirAdminPadrao`.
+ * O CPF não é segredo, e não precisa ser: o que protege a conta é a senha,
+ * que quem instala o aplicativo escolhe no primeiro uso (`configurarAdmin`).
+ *
+ * Histórico, porque explica o desenho atual:
+ * - até a 1.1, a senha era a constante `Admin@2025`, publicada no README;
+ * - na 1.2, passou a ser sorteada e mostrada na tela de entrada até alguém
+ *   tocar em "Já anotei". Na prática ficava lá: a tela dizia que o aviso
+ *   sumia quando a senha fosse trocada, mas nada apagava o aviso na troca;
+ * - e a recuperação por CPF e e-mail redefinia a senha de qualquer conta,
+ *   porque o CPF do administrador estava na tela e o e-mail no código.
  */
 export const ADMIN_CPF = '11144477735';
 
+/**
+ * Valor de `senha_hash` do administrador que ainda não escolheu a senha.
+ *
+ * Não tem `$`, então não é um hash no formato atual, e o `autenticar`
+ * recusa a conta nesse estado antes de comparar qualquer coisa.
+ */
+const SENHA_NAO_DEFINIDA = 'senha-nao-definida';
+
+function chaveDoCodigo(agenteId: string): string {
+  return `${SECURE_KEYS.CODIGO_RECUPERACAO}${agenteId}`;
+}
+
+async function lerDoCofre(chave: string): Promise<string | null> {
+  try {
+    return await SecureStore.getItemAsync(chave);
+  } catch {
+    return null;
+  }
+}
+
 // ============================================================
 // RATE LIMITING: proteção contra força bruta
-// In-memory: persiste enquanto o processo estiver ativo.
+// A contagem fica gravada no aparelho (limiteDeTentativas.ts) e sobrevive
+// ao reinício do aplicativo.
 // ============================================================
 
-const MAX_LOGIN_ATTEMPTS = 5;
-const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutos
-
-const _loginAttempts = new Map<string, { count: number; lockedUntil: number }>();
-
-function _isLocked(cpf: string): boolean {
-  const entry = _loginAttempts.get(cpf);
-  if (!entry) return false;
-  if (entry.lockedUntil === 0) return false; // ainda acumulando falhas, sem bloqueio ativo
-  if (entry.lockedUntil > Date.now()) return true;
-  _loginAttempts.delete(cpf); // bloqueio expirou, reseta contador
-  return false;
-}
-
-function _registerFailure(cpf: string): void {
-  const entry = _loginAttempts.get(cpf) ?? { count: 0, lockedUntil: 0 };
-  entry.count += 1;
-  if (entry.count >= MAX_LOGIN_ATTEMPTS) {
-    entry.lockedUntil = Date.now() + LOCKOUT_DURATION_MS;
-  }
-  _loginAttempts.set(cpf, entry);
-}
-
-function _clearFailures(cpf: string): void {
-  _loginAttempts.delete(cpf);
-}
-
 /** Limpa todo o estado de rate limiting. USE APENAS EM TESTES. */
-export function _resetLoginAttemptsForTesting(): void {
-  _loginAttempts.clear();
+export async function _resetLoginAttemptsForTesting(): Promise<void> {
+  await apagarTentativas();
 }
 
 /** Expõe tentativas restantes e tempo de desbloqueio (para testes e UI). */
 export function loginRateStatus(cpf: string): { locked: boolean; remaining: number; unlocksAt?: number } {
-  const entry = _loginAttempts.get(cpf);
-  if (!entry) return { locked: false, remaining: MAX_LOGIN_ATTEMPTS };
-  if (entry.lockedUntil > Date.now()) {
-    return { locked: true, remaining: 0, unlocksAt: entry.lockedUntil };
-  }
-  return { locked: false, remaining: MAX_LOGIN_ATTEMPTS - entry.count };
+  return situacaoDasTentativas(cpf);
 }
 
 export const agenteRepository = {
@@ -101,8 +106,8 @@ export const agenteRepository = {
   },
 
   async autenticar(cpf: string, senha: string): Promise<Agente | null> {
-    // 1. Rate limiting, bloqueia após MAX_LOGIN_ATTEMPTS falhas
-    if (_isLocked(cpf)) {
+    // 1. Rate limiting, bloqueia após MAX_TENTATIVAS falhas
+    if (await estaBloqueado(cpf)) {
       throw new Error('Conta temporariamente bloqueada. Tente novamente em 15 minutos.');
     }
 
@@ -115,20 +120,26 @@ export const agenteRepository = {
 
     // 2. Sempre executa verificarSenha, mesmo quando usuário não existe.
     //    Isso iguala o tempo de resposta para CPF válido/inválido (anti-timing-attack).
-    const hashParaVerificar = (row?.senha_hash as string) ?? '0000000000000000$0000000000000000000000000000000000000000000000000000000000000000';
+    //    Conta sem senha definida (administrador não configurado) também
+    //    passa pela comparação, contra um hash que nunca confere.
+    const semSenha = row?.senha_hash === SENHA_NAO_DEFINIDA;
+    const hashParaVerificar =
+      row && !semSenha ? (row.senha_hash as string) : HASH_QUE_NUNCA_CONFERE;
     const senhaValida = await verificarSenha(senha, hashParaVerificar);
 
-    if (!row || !senhaValida) {
-      _registerFailure(cpf);
+    if (!row || semSenha || !senhaValida) {
+      await registrarFalha(cpf);
       return null;
     }
 
     // 3. Login bem-sucedido, limpa contagem de falhas
-    _clearFailures(cpf);
+    await limparFalhas(cpf);
 
-    // 4. Migração automática: formato legado (sem salt) → formato novo
+    // 4. Migração automática: SHA-256 (com ou sem sal) ou PBKDF2 com menos
+    //    iterações que o atual → PBKDF2 atual. Só dá para fazer aqui, que é
+    //    o único momento em que a senha em texto está disponível.
     const storedHash = row.senha_hash as string;
-    if (!storedHash.includes('$')) {
+    if (precisaAtualizarHash(storedHash)) {
       const novoHash = await hashSenha(senha);
       await db.runAsync(
         `UPDATE agentes SET senha_hash = ?, updated_at = ? WHERE id = ?`,
@@ -173,69 +184,83 @@ export const agenteRepository = {
     );
   },
 
+  // ============================================================
+  // CÓDIGO DE RECUPERAÇÃO
+  // ============================================================
+
   /**
-   * Verifica identidade do agente pelo CPF + e-mail cadastrado.
-   * Retorna true se a combinação é válida (sem revelar qual campo é inválido, LGPD).
+   * Sorteia um código de recuperação novo para a conta e devolve o código.
+   *
+   * Só o hash fica guardado, no cofre do sistema (Keystore no Android,
+   * Keychain no iOS). O código em si é mostrado uma vez a quem pediu e não
+   * pode ser lido de volta. Um código novo invalida o anterior.
    */
-  async verificarIdentidade(cpf: string, email: string): Promise<boolean> {
-    const db = await getDatabase();
-    const row = await db.getFirstAsync<{ count: number }>(
-      `SELECT COUNT(*) as count FROM agentes WHERE cpf = ? AND email = ? AND ativo = 1`,
-      [cpf, email.toLowerCase().trim()]
-    );
-    return (row?.count ?? 0) > 0;
+  async gerarCodigoRecuperacao(agenteId: string): Promise<string> {
+    const codigo = await sortearCodigoRecuperacao();
+    const hash = await hashSenha(normalizarCodigoRecuperacao(codigo));
+    await SecureStore.setItemAsync(chaveDoCodigo(agenteId), hash);
+    return codigo;
   },
 
   /**
-   * Reseta a senha após verificação de identidade bem-sucedida.
-   * Registra o evento no audit_log para conformidade LGPD.
+   * Redefine a senha com CPF e código de recuperação.
+   *
+   * Substitui a antiga recuperação por CPF e e-mail, que não pedia nenhum
+   * segredo: CPF e e-mail de um colega de unidade qualquer um sabe, e os do
+   * administrador estavam na tela de entrada e no código-fonte.
+   *
+   * O código vale uma vez. Em caso de sucesso devolve um código novo, para a
+   * tela mostrar, porque sem ele a pessoa ficaria sem como recuperar a conta
+   * da próxima vez. Em caso de falha devolve `null`, sem dizer se o erro foi
+   * no CPF ou no código.
    */
-  async resetarSenha(cpf: string, email: string, novaSenha: string): Promise<boolean> {
-    const db = await getDatabase();
-    const ok = await this.verificarIdentidade(cpf, email);
-    if (!ok) return false;
-
-    const senhaHash = await hashSenha(novaSenha);
-    const now = isoNow();
-
-    await db.runAsync(
-      `UPDATE agentes SET senha_hash = ?, updated_at = ? WHERE cpf = ? AND ativo = 1`,
-      [senhaHash, now, cpf]
-    );
-
-    // Registro de auditoria da LGPD, sem guardar dado sensível.
-    //
-    // Duas coisas estavam erradas aqui. A coluna `detalhes` não existe em
-    // nenhum schema, nem local nem no servidor, e o SQLite responde
-    // `table audit_log has no column named detalhes`. E a troca da senha
-    // acontece antes: a pessoa trocava a senha, a tela recebia a exceção e
-    // dizia que não deu, e na segunda tentativa a senha antiga já não valia
-    // mais. Travamento por um erro de nome de coluna.
-    //
-    // Agora grava nas colunas que existem, e a falha de auditoria não
-    // desfaz uma troca de senha que já aconteceu: o retorno continua
-    // verdadeiro, porque a senha de fato mudou, e o erro vai para o console
-    // em vez de virar exceção na tela.
-    try {
-      const agente = await this.buscarPorCpf(cpf);
-      if (agente) {
-        await db.runAsync(
-          `INSERT INTO audit_log (id, agente_id, acao, tabela, registro_id, dados_novos, created_at)
-           VALUES (?, ?, 'RESET_SENHA', 'agentes', ?, ?, ?)`,
-          [
-            generateUUID(),
-            agente.id,
-            agente.id,
-            JSON.stringify({ origem: 'verificacao de CPF e email' }),
-            now,
-          ]
-        );
-      }
-    } catch (erro) {
-      console.error('Falha ao registrar a troca de senha na auditoria:', erro);
+  async redefinirSenhaComCodigo(
+    cpf: string,
+    codigo: string,
+    novaSenha: string
+  ): Promise<string | null> {
+    const chaveDoLimite = `recuperacao:${cpf}`;
+    if (await estaBloqueado(chaveDoLimite)) {
+      throw new Error('Muitas tentativas. Tente novamente em 15 minutos.');
     }
 
-    return true;
+    const agente = await this.buscarPorCpf(cpf);
+    const guardado = agente ? await lerDoCofre(chaveDoCodigo(agente.id)) : null;
+    // Compara mesmo sem conta ou sem código guardado, para o tempo de
+    // resposta não dizer qual dos dois existe.
+    const confere = await verificarSenha(
+      normalizarCodigoRecuperacao(codigo),
+      guardado ?? HASH_QUE_NUNCA_CONFERE
+    );
+
+    if (!agente || !guardado || !confere) {
+      await registrarFalha(chaveDoLimite);
+      return null;
+    }
+    await limparFalhas(chaveDoLimite);
+
+    const db = await getDatabase();
+    await db.runAsync(
+      `UPDATE agentes SET senha_hash = ?, updated_at = ? WHERE id = ?`,
+      [await hashSenha(novaSenha), isoNow(), agente.id]
+    );
+
+    // Código usado não vale de novo. Se o cofre falhar ao gravar o novo, o
+    // antigo continua lá; por isso o novo é gravado por cima, e não depois de
+    // apagar o antigo.
+    const novoCodigo = await this.gerarCodigoRecuperacao(agente.id);
+
+    // A falha de auditoria não desfaz a troca de senha, que já aconteceu
+    // (ver cabeçalho do auditRepository).
+    void auditRepository.registrar({
+      agenteId: agente.id,
+      acao: ACOES_AUDITORIA.RESET_SENHA,
+      tabela: 'agentes',
+      registroId: agente.id,
+      contexto: { origem: 'codigo de recuperacao' },
+    });
+
+    return novoCodigo;
   },
 
   async existeAgenteCadastrado(): Promise<boolean> {
@@ -316,61 +341,114 @@ export const agenteRepository = {
     }));
   },
 
+  // ============================================================
+  // ADMINISTRADOR DO APARELHO
+  // ============================================================
+
   /**
-   * Garante que o administrador padrão existe no banco.
+   * Garante que a conta de administrador existe. Chamado na abertura do app.
    *
-   * Chamado na inicialização do app, idempotente. Na primeira execução
-   * sorteia a senha e a guarda no SecureStore, para a tela de configurações
-   * mostrá-la uma vez a quem instalou. Nas execuções seguintes não faz nada.
+   * Instalação nova: cria a conta **sem senha**. Ninguém entra nela até
+   * alguém escolher a senha em "Configurar administrador" na tela de
+   * entrada. Nenhuma senha é sorteada, guardada ou mostrada.
+   *
+   * Instalação que veio da 1.2.x: se a senha sorteada daquela versão ainda
+   * está no cofre, ela foi exibida na tela de entrada e precisa ser tratada
+   * como vazada. A chave é apagada e a conta volta para "sem senha", e o
+   * administrador escolhe uma senha nova no próximo uso.
+   *
+   * A chave é apagada antes de a conta voltar para "sem senha", e não
+   * depois: se a ordem fosse a outra e o cofre falhasse, a próxima abertura
+   * acharia a chave de novo e desfaria a senha que o administrador acabou de
+   * escolher.
    */
   async garantirAdminPadrao(): Promise<void> {
     const db = await getDatabase();
-    const row = await db.getFirstAsync<{ count: number }>(
-      `SELECT COUNT(*) as count FROM agentes WHERE cpf = ? AND is_admin = 1`,
+    const admin = await db.getFirstAsync<{ id: string }>(
+      `SELECT id FROM agentes WHERE cpf = ? AND is_admin = 1`,
       [ADMIN_CPF]
     );
-    if ((row?.count ?? 0) > 0) return; // já existe
 
-    const senhaInicial = await sortearSenhaForte();
-    const senhaHash = await hashSenha(senhaInicial);
-    const id = generateUUID();
-    const now = isoNow();
+    if (!admin) {
+      const now = isoNow();
+      await db.runAsync(
+        `INSERT INTO agentes (
+          id, nome, cpf, email, senha_hash, telefone, area_atuacao, unidade_saude, ativo, is_admin, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?)`,
+        [generateUUID(), 'Administrador', ADMIN_CPF, 'admin@conectagente.local',
+         SENHA_NAO_DEFINIDA, null, 'Administração', 'Sistema', now, now]
+      );
+      return;
+    }
 
+    const senhaVazada = await lerDoCofre(SECURE_KEYS.SENHA_ADMIN_INICIAL);
+    if (!senhaVazada) return;
+
+    try {
+      await SecureStore.deleteItemAsync(SECURE_KEYS.SENHA_ADMIN_INICIAL);
+    } catch (erro) {
+      console.error('Não foi possível apagar a senha inicial antiga:', erro);
+      return;
+    }
     await db.runAsync(
-      `INSERT INTO agentes (
-        id, nome, cpf, email, senha_hash, telefone, area_atuacao, unidade_saude, ativo, is_admin, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?)`,
-      [id, 'Administrador', ADMIN_CPF, 'admin@conectagente.local',
-       senhaHash, null, 'Administração', 'Sistema', now, now]
+      `UPDATE agentes SET senha_hash = ?, updated_at = ? WHERE id = ?`,
+      [SENHA_NAO_DEFINIDA, isoNow(), admin.id]
     );
-
-    // Guardada para ser lida uma vez na tela de configurações. O SecureStore
-    // usa o Keychain no iOS e o Keystore no Android, então ela não fica em
-    // texto claro no armazenamento do aplicativo.
-    await SecureStore.setItemAsync(SECURE_KEYS.SENHA_ADMIN_INICIAL, senhaInicial);
   },
 
   /**
-   * Devolve a senha inicial do administrador, se ainda não foi trocada.
+   * Diz se o administrador deste aparelho ainda não escolheu a senha.
    *
-   * Some depois da troca: `esquecerSenhaInicialDoAdmin` apaga a chave.
+   * Conta que ainda não existe também conta como "precisa configurar": na
+   * primeira abertura, a tela de entrada pode perguntar antes de
+   * `garantirAdminPadrao` terminar de criar a conta, e o botão de
+   * configurar não pode sumir por causa dessa corrida.
    */
-  async obterSenhaInicialDoAdmin(): Promise<string | null> {
-    try {
-      return await SecureStore.getItemAsync(SECURE_KEYS.SENHA_ADMIN_INICIAL);
-    } catch {
-      return null;
-    }
+  async adminPrecisaConfigurar(): Promise<boolean> {
+    const db = await getDatabase();
+    const row = await db.getFirstAsync<{ senha_hash: string }>(
+      `SELECT senha_hash FROM agentes WHERE cpf = ? AND is_admin = 1`,
+      [ADMIN_CPF]
+    );
+    return !row || row.senha_hash === SENHA_NAO_DEFINIDA;
   },
 
-  /** Apaga a senha inicial guardada, depois que ela deixa de valer. */
-  async esquecerSenhaInicialDoAdmin(): Promise<void> {
-    try {
-      await SecureStore.deleteItemAsync(SECURE_KEYS.SENHA_ADMIN_INICIAL);
-    } catch {
-      // Nada a fazer: se não deu para apagar, a senha continua guardada no
-      // cofre do sistema, e não em texto claro.
+  /**
+   * Define a senha do administrador no primeiro uso e devolve o código de
+   * recuperação, para a tela mostrar uma vez.
+   *
+   * Só funciona enquanto a conta está sem senha: o `WHERE` exige o
+   * marcador, então depois de configurada ninguém usa este caminho para
+   * trocar a senha de quem já configurou.
+   */
+  async configurarAdmin(senha: string): Promise<string> {
+    // Mesma corrida de `adminPrecisaConfigurar`: garante a conta antes. Se a
+    // abertura do aplicativo criou a conta ao mesmo tempo, o CPF único recusa
+    // a segunda inserção, e isso não é erro aqui.
+    await this.garantirAdminPadrao().catch(() => undefined);
+
+    const db = await getDatabase();
+    const resultado = await db.runAsync(
+      `UPDATE agentes SET senha_hash = ?, updated_at = ?
+       WHERE cpf = ? AND is_admin = 1 AND senha_hash = ?`,
+      [await hashSenha(senha), isoNow(), ADMIN_CPF, SENHA_NAO_DEFINIDA]
+    );
+    if (resultado.changes !== 1) {
+      throw new Error('O administrador deste aparelho já foi configurado.');
     }
+
+    const admin = await this.buscarPorCpf(ADMIN_CPF);
+    if (!admin) throw new Error('Conta de administrador não encontrada.');
+
+    void auditRepository.registrar({
+      agenteId: admin.id,
+      acao: ACOES_AUDITORIA.RESET_SENHA,
+      tabela: 'agentes',
+      registroId: admin.id,
+      contexto: { origem: 'configuracao do administrador' },
+    });
+
+    return this.gerarCodigoRecuperacao(admin.id);
   },
 };
 

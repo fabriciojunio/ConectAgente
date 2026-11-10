@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, Text, Image, StyleSheet, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,7 +14,7 @@ import { Button } from '../../components/button';
 import { loginSchema, LoginFormData } from '../../utils/validators';
 import { formatCPF, stripCPF } from '../../utils/formatters';
 import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
-import { ADMIN_CPF, agenteRepository } from '../../database/repositories/agenteRepository';
+import { agenteRepository } from '../../database/repositories/agenteRepository';
 import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 export default function Login() {
@@ -25,41 +25,38 @@ export default function Login() {
   const insets = useSafeAreaInsets();
 
   /**
-   * Credencial inicial do administrador, mostrada uma unica vez.
+   * Administrador ainda sem senha neste aparelho.
    *
-   * Por que ela precisa aparecer aqui. A conta de administrador e criada na
-   * primeira execucao com senha sorteada, guardada no cofre do sistema. Quem
-   * le essa senha e a tela de configuracoes, que fica dentro da area
-   * administrativa, e so se entra la com a conta de administrador. Numa
-   * instalacao nova ninguem entrava: para ver a senha era preciso ja estar
-   * dentro, e para entrar era preciso a senha.
+   * Antes esta tela mostrava a senha sorteada do administrador para quem
+   * abrisse o aplicativo. O texto dizia que o aviso sumia quando a senha
+   * fosse trocada, mas nada apagava o aviso na troca: a senha válida ficava
+   * à vista até alguém tocar em "Já anotei" dentro da área administrativa.
    *
-   * O aviso some sozinho: `esquecerSenhaInicialDoAdmin` apaga a chave quando
-   * a senha e trocada, e `obterSenhaInicialDoAdmin` passa a devolver nulo.
+   * Agora a tela não mostra senha nenhuma. Enquanto a conta não tem senha,
+   * aparece o botão para configurar; quando tem, o botão some, porque depende
+   * do estado da conta e não de um aviso que alguém precisa lembrar de tirar.
    *
-   * O que isso custa: quem tiver o aparelho em maos antes da primeira troca
-   * ve a senha. E uma conta local, que manda no SQLite daquele aparelho e nao
-   * no servidor, onde quem decide e o RLS com a sessao do Supabase. Entre
-   * expor uma credencial local ate a primeira troca e deixar a area
-   * administrativa inalcancavel para sempre, o primeiro e o mal menor, e o
-   * texto pede a troca.
+   * Confere de novo a cada vez que a tela ganha foco, para o botão sumir ao
+   * voltar da configuração.
    */
-  const [senhaInicialAdmin, setSenhaInicialAdmin] = useState<string | null>(null);
+  const [adminSemSenha, setAdminSemSenha] = useState(false);
 
-  useEffect(() => {
-    let vivo = true;
-    agenteRepository
-      .obterSenhaInicialDoAdmin()
-      .then((senha) => {
-        if (vivo) setSenhaInicialAdmin(senha);
-      })
-      .catch(() => {
-        // Cofre indisponivel nao pode derrubar a tela de login.
-      });
-    return () => {
-      vivo = false;
-    };
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let vivo = true;
+      agenteRepository
+        .adminPrecisaConfigurar()
+        .then((precisa) => {
+          if (vivo) setAdminSemSenha(precisa);
+        })
+        .catch(() => {
+          // Banco indisponível não pode derrubar a tela de login.
+        });
+      return () => {
+        vivo = false;
+      };
+    }, [])
+  );
 
   const { control, handleSubmit } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -69,8 +66,9 @@ export default function Login() {
   async function onSubmit(data: LoginFormData) {
     setIsLoading(true);
     try {
-      const agente = await login(stripCPF(data.cpf), data.senha);
+      const { agente, aviso } = await login(stripCPF(data.cpf), data.senha);
       router.replace(agente.is_admin ? '/(admin)' : '/(app)');
+      if (aviso) Alert.alert('Sincronização parada', aviso);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Erro ao fazer login';
       Alert.alert('Erro', msg);
@@ -161,16 +159,29 @@ export default function Login() {
             />
           </View>
 
-          {senhaInicialAdmin && (
+          {adminSemSenha && (
             <View style={styles.avisoAdmin}>
-              <Text style={styles.avisoAdminTitulo}>Primeiro acesso do administrador</Text>
+              <Text style={styles.avisoAdminTitulo}>Primeiro uso deste aparelho</Text>
               <Text style={styles.avisoAdminTexto}>
-                CPF {formatCPF(ADMIN_CPF)}, senha {senhaInicialAdmin}
+                O administrador ainda não tem senha. Defina agora para liberar a área de gestão.
               </Text>
-              <Text style={styles.avisoAdminTexto}>
-                Troque a senha no primeiro acesso. Este aviso some quando ela for trocada.
-              </Text>
+              <Button
+                title="Configurar administrador"
+                variant="ghost"
+                onPress={() => router.push('/(auth)/configurar-admin')}
+              />
             </View>
+          )}
+
+          {/* Só faz sentido depois de o administrador ter senha. */}
+          {!adminSemSenha && (
+            <Text
+              style={styles.linkDiscreto}
+              onPress={() => router.push('/(auth)/reiniciar-aparelho')}
+              accessibilityRole="link"
+            >
+              Administrador perdeu a senha e o código?
+            </Text>
           )}
 
           {/* FOOTER LGPD: fixo no fundo do formContainer */}
@@ -286,6 +297,13 @@ const criarStyles = (colors: ThemeColors) =>
   avisoAdminTexto: {
     fontSize: FONT_SIZE.xs,
     color: colors.textMedium,
+  },
+  linkDiscreto: {
+    fontSize: FONT_SIZE.xs,
+    color: colors.textLight,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
+    paddingVertical: SPACING.sm,
   },
   lgpd: {
     fontSize: FONT_SIZE.xs,
