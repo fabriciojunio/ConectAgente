@@ -45,7 +45,10 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 20
+          # 22: o teste de apagarBancoLocal roda contra o SQLite de verdade
+          # pelo `node:sqlite`, que o Node 20 não tem. O 20 saiu de suporte
+          # em abril de 2026, e o 22 é o que roda na máquina de desenvolvimento.
+          node-version: 22
           cache: npm
           cache-dependency-path: ConectAgente-mobile/package-lock.json
 
