@@ -16,6 +16,7 @@ import { formatDate, formatDataDaVisita, fimExclusivo } from '@/lib/utils';
 import { selectVisitas } from './visitaService';
 import { selectResidencias } from './familiaService';
 import { buscarTudo } from '@/lib/buscarEmLotes';
+import { montarPlanilha, type ColunaPlanilha, type InformacaoPlanilha } from './planilha';
 
 /**
  * Gera dados de relatório de visitas com base nos filtros informados.
@@ -233,8 +234,9 @@ export async function gerarRelatorioAtrasos(
  * momento em que alguém da secretaria abrisse o relatório. Em sistema de
  * órgão público isso é exfiltração de dado de saúde por um clique.
  *
- * O apóstrofo faz a planilha tratar o valor como texto, e ele não aparece na
- * célula.
+ * O apóstrofo faz a planilha tratar o valor como texto. Vale só para o CSV:
+ * no .xlsx cada célula tem o tipo declarado (ver `planilha.ts`) e lá o
+ * apóstrofo aparecia escrito na célula.
  */
 function neutralizarFormula(valor: unknown): string {
   const texto = valor == null ? '' : String(valor);
@@ -325,35 +327,24 @@ export async function exportarPDF(
  * @param dados Array de objetos com os dados
  * @param titulo Título do relatório (usado como nome da aba e do arquivo)
  * @param colunas Definição das colunas (header e key)
+ * @param informacoes Filtros aplicados, para a aba "Informações"
  */
 export async function exportarExcel(
   dados: unknown[],
   titulo: string,
-  colunas: { header: string; key: string }[]
+  colunas: ColunaPlanilha[],
+  informacoes: InformacaoPlanilha[] = []
 ): Promise<void> {
   try {
     const XLSX = await import('xlsx');
-    const headers = colunas.map((c) => c.header);
-    const rows = dados.map((item) => {
-      const row = item as Record<string, unknown>;
-      return colunas.map((c) => neutralizarFormula(row[c.key]));
-    });
-
-    const worksheetData = [headers, ...rows];
-    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-
-    // Ajusta largura das colunas
-    const colWidths = colunas.map((c) => ({
-      wch: Math.max(
-        c.header.length,
-        ...rows.map((r) => String(r[colunas.indexOf(c)] ?? '').length)
-      ) + 2,
-    }));
-    worksheet['!cols'] = colWidths;
-
-    const workbook = XLSX.utils.book_new();
-    const sheetName = titulo.substring(0, 31); // Excel limita a 31 caracteres
-    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+    const workbook = montarPlanilha(
+      XLSX,
+      dados as Record<string, unknown>[],
+      titulo,
+      colunas,
+      informacoes,
+      format(new Date(), 'dd/MM/yyyy HH:mm')
+    );
 
     const nomeArquivo = `${titulo.replace(/\s+/g, '_').toLowerCase()}_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`;
     XLSX.writeFile(workbook, nomeArquivo);
@@ -421,6 +412,62 @@ export function exportarCSV(
 type ReportType = 'visitas' | 'agentes' | 'familias' | 'cobertura' | 'atrasos';
 type ExportFormat = 'pdf' | 'excel' | 'csv';
 
+/** Os relatórios mostravam o valor do banco: `nao_encontrado`, `atencao`. */
+const STATUS_VISITA: Record<string, string> = {
+  agendada: 'Agendada',
+  realizada: 'Realizada',
+  cancelada: 'Cancelada',
+  nao_encontrado: 'Não encontrado',
+};
+
+const CRITICIDADE: Record<string, string> = {
+  normal: 'Normal',
+  atencao: 'Atenção',
+  alerta: 'Alerta',
+  critico: 'Crítico',
+};
+
+function dataBR(iso: string): string {
+  const [ano, mes, dia] = iso.split('-');
+  return `${dia}/${mes}/${ano}`;
+}
+
+/**
+ * Filtros aplicados, para a aba "Informações" da planilha.
+ *
+ * Sem isto, quem recebia o arquivo não sabia de que período ou de que
+ * unidade eram os números.
+ */
+export function descreverFiltros(
+  tipo: ReportType,
+  filtros: RelatorioFiltros,
+  linhas: Array<Record<string, unknown>>
+): InformacaoPlanilha[] {
+  const info: InformacaoPlanilha[] = [];
+  const usaPeriodo = tipo === 'visitas' || tipo === 'agentes';
+
+  if (usaPeriodo) {
+    const { periodo_inicio: inicio, periodo_fim: fim } = filtros;
+    let periodo = 'Todo o histórico';
+    if (inicio && fim) periodo = `${dataBR(inicio)} a ${dataBR(fim)}`;
+    else if (inicio) periodo = `A partir de ${dataBR(inicio)}`;
+    else if (fim) periodo = `Até ${dataBR(fim)}`;
+    info.push(['Período', periodo]);
+  }
+  if (filtros.unidade_saude) info.push(['Unidade de saúde', filtros.unidade_saude]);
+  if (filtros.bairro && (tipo === 'visitas' || tipo === 'familias')) {
+    info.push(['Bairro', filtros.bairro]);
+  }
+  if (filtros.status && tipo === 'visitas') {
+    info.push(['Status', STATUS_VISITA[filtros.status] ?? filtros.status]);
+  }
+  if (filtros.agente_id && (tipo === 'visitas' || tipo === 'familias')) {
+    const nome = linhas.find((l) => l['Agente'])?.['Agente'];
+    info.push(['Agente', typeof nome === 'string' ? nome : 'Um agente selecionado']);
+  }
+  return info;
+}
+
 /**
  * Unified report generator. Fetches data, triggers file download, and returns preview rows.
  */
@@ -443,6 +490,8 @@ export async function gerarRelatorio(
     status: filters?.status,
   };
 
+  // Campo sem valor vai como null. A prévia na tela já mostra null como "-",
+  // e na planilha ele vira célula vazia em vez de um traço escrito.
   let data: Array<Record<string, unknown>> = [];
   let columns: string[] = [];
   let titulo = '';
@@ -451,18 +500,25 @@ export async function gerarRelatorio(
     titulo = 'Relatório de Visitas';
     columns = ['Data', 'Agente', 'Status', 'Logradouro', 'Bairro', 'Observações'];
     const rows = await gerarRelatorioVisitas(filtros);
-    data = rows.map((r) => {
+    // A consulta vem da mais nova para a mais antiga por causa da paginação;
+    // o relatório lê melhor em ordem cronológica.
+    const cronologicas = [...rows].sort((a, b) =>
+      String(a.data_visita ?? '').localeCompare(String(b.data_visita ?? ''))
+    );
+    data = cronologicas.map((r) => {
       const res = r.residencia as Record<string, unknown> | null | undefined;
       const ag = r.agente as Record<string, unknown> | null | undefined;
       return {
         // data_visita chega como TIMESTAMPTZ completo; somar 'T00:00:00' a ele
         // dava data inválida e o format derrubava o relatório inteiro.
-        'Data': formatDataDaVisita(r.data_visita),
-        'Agente': ag?.nome ?? '-',
-        'Status': r.status,
-        'Logradouro': res ? `${res.logradouro}, ${res.numero}` : '-',
-        'Bairro': res?.bairro ?? '-',
-        'Observações': r.observacoes ?? '-',
+        'Data': r.data_visita ? formatDataDaVisita(r.data_visita) : null,
+        'Agente': ag?.nome ?? null,
+        'Status': STATUS_VISITA[r.status] ?? r.status,
+        'Logradouro': res?.logradouro
+          ? [res.logradouro, res.numero].filter(Boolean).join(', ')
+          : null,
+        'Bairro': res?.bairro ?? null,
+        'Observações': r.observacoes || null,
       };
     });
   } else if (tipo === 'agentes') {
@@ -473,8 +529,8 @@ export async function gerarRelatorio(
       const ag = r as unknown as Record<string, unknown>;
       return {
         'Nome': r.nome,
-        'Unidade': ag.unidade_saude ?? '-',
-        'Microárea': ag.microarea ?? '-',
+        'Unidade': ag.unidade_saude ?? null,
+        'Microárea': ag.microarea ?? null,
         'Total Visitas': r.total_visitas ?? 0,
         'Realizadas': r.visitas_realizadas ?? 0,
         'Taxa (%)': r.taxa_conclusao ?? 0,
@@ -489,10 +545,10 @@ export async function gerarRelatorio(
       const ag = r.agente as Record<string, unknown> | null | undefined;
       const moradores = Array.isArray(res.moradores) ? (res.moradores as unknown[]).length : 0;
       return {
-        'Logradouro': res.logradouro ?? '-',
-        'Número': res.numero ?? '-',
-        'Bairro': res.bairro ?? '-',
-        'Agente': ag?.nome ?? '-',
+        'Logradouro': res.logradouro ?? null,
+        'Número': res.numero ?? null,
+        'Bairro': res.bairro ?? null,
+        'Agente': ag?.nome ?? null,
         'Moradores': moradores,
       };
     });
@@ -513,10 +569,11 @@ export async function gerarRelatorio(
     const rows = await gerarRelatorioAtrasos(filtros);
     data = rows.map((r) => ({
       'Família': r.endereco,
-      'Bairro': r.bairro ?? '-',
-      'Agente': r.agente_nome ?? '-',
-      'Dias s/ Visita': r.dias_sem_visita,
-      'Criticidade': r.nivel_criticidade,
+      'Bairro': r.bairro ?? null,
+      'Agente': r.agente_nome ?? null,
+      // Sem número de dias quer dizer que a família nunca recebeu visita.
+      'Dias s/ Visita': r.dias_sem_visita ?? 'Nunca visitada',
+      'Criticidade': CRITICIDADE[r.nivel_criticidade] ?? r.nivel_criticidade,
     }));
   }
 
@@ -525,7 +582,7 @@ export async function gerarRelatorio(
   if (formato === 'pdf') {
     await exportarPDF(data, titulo, colDefs);
   } else if (formato === 'excel') {
-    await exportarExcel(data, titulo, colDefs);
+    await exportarExcel(data, titulo, colDefs, descreverFiltros(tipo, filtros, data));
   } else {
     exportarCSV(data, titulo, colDefs);
   }
