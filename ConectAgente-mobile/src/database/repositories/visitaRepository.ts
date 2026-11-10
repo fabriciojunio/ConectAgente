@@ -61,7 +61,7 @@ export const visitaRepository = {
     data_inicio?: string;
     data_fim?: string;
     status?: StatusVisita;
-  }): Promise<Visita[]> {
+  }): Promise<VisitaListada[]> {
     const db = await getDatabase();
     let sql = `
       SELECT v.*, r.logradouro, r.numero, r.bairro, m.nome as morador_nome
@@ -88,7 +88,7 @@ export const visitaRepository = {
     sql += ` ORDER BY v.data_visita DESC`;
 
     const rows = await db.getAllAsync<Record<string, unknown>>(sql, params);
-    return rows.map(mapRow);
+    return rows.map(mapListada);
   },
 
   async buscarPorId(id: string): Promise<Visita | null> {
@@ -337,13 +337,7 @@ export const visitaRepository = {
     if (filtros?.status) { sql += ` AND v.status = ?`; params.push(filtros.status); }
     sql += ` ORDER BY v.data_visita DESC LIMIT 300`;
     const rows = await db.getAllAsync<Record<string, unknown>>(sql, params);
-    return rows.map((row) => ({
-      ...mapRow(row),
-      agente_nome: row.agente_nome as string | undefined,
-      logradouro: row.logradouro as string | undefined,
-      numero: row.numero as string | undefined,
-      bairro: row.bairro as string | undefined,
-    }));
+    return rows.map(mapListada);
   },
 
   async obterUltimasVisitas(limite = 10): Promise<VisitaListada[]> {
@@ -356,13 +350,7 @@ export const visitaRepository = {
        ORDER BY v.created_at DESC LIMIT ?`,
       [limite]
     );
-    return rows.map((row) => ({
-      ...mapRow(row),
-      agente_nome: row.agente_nome as string | undefined,
-      logradouro: row.logradouro as string | undefined,
-      numero: row.numero as string | undefined,
-      bairro: row.bairro as string | undefined,
-    }));
+    return rows.map(mapListada);
   },
 
   async definirMeta(agenteId: string, mes: number, ano: number, meta: number): Promise<void> {
@@ -410,6 +398,24 @@ function mapRow(row: Record<string, unknown>): Visita {
     status_sync: row.status_sync as StatusSync,
     created_at: row.created_at as string,
     updated_at: row.updated_at as string,
+  };
+}
+
+/**
+ * Visita com o que o JOIN trouxe: endereço e nomes.
+ *
+ * `listar` buscava logradouro, número, bairro e nome do morador, e o
+ * `mapRow` jogava tudo fora. O relatório exportado saía com o UUID da
+ * residência no lugar do endereço e o paciente sempre em branco.
+ */
+function mapListada(row: Record<string, unknown>): VisitaListada {
+  return {
+    ...mapRow(row),
+    agente_nome: (row.agente_nome as string | null) ?? undefined,
+    morador_nome: (row.morador_nome as string | null) ?? undefined,
+    logradouro: (row.logradouro as string | null) ?? undefined,
+    numero: (row.numero as string | null) ?? undefined,
+    bairro: (row.bairro as string | null) ?? undefined,
   };
 }
 

