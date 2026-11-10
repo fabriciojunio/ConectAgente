@@ -12,6 +12,7 @@ import { FormField } from '../../components/forms/FormField';
 import { SelectField } from '../../components/forms/SelectField';
 import { Button } from '../../components/button';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { CodigoRecuperacao } from '../../components/ui/CodigoRecuperacao';
 import { formatCPF, stripCPF } from '../../utils/formatters';
 import { validarCPF } from '../../utils/validators';
 import { SPACING, FONT_SIZE, VALIDATION } from '../../utils/constants';
@@ -37,6 +38,8 @@ export default function Cadastro() {
   const styles = useMemo(() => criarStyles(colors), [colors]);
   const { registrar } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  // Preenchido depois do cadastro: a tela troca o formulário pelo código.
+  const [codigo, setCodigo] = useState<string | null>(null);
 
   const { control, handleSubmit } = useForm<CadastroFormData>({
     resolver: zodResolver(cadastroSchema),
@@ -45,7 +48,7 @@ export default function Cadastro() {
   async function onSubmit(data: CadastroFormData) {
     setIsLoading(true);
     try {
-      await registrar({
+      const codigoRecuperacao = await registrar({
         nome: data.nome,
         cpf: stripCPF(data.cpf),
         email: data.email,
@@ -53,13 +56,27 @@ export default function Cadastro() {
         area_atuacao: data.area_atuacao,
         unidade_saude: data.unidade_saude,
       });
-      router.replace('/(app)');
+      setCodigo(codigoRecuperacao);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Erro ao cadastrar';
       Alert.alert('Erro', msg);
     } finally {
       setIsLoading(false);
     }
+  }
+
+  if (codigo) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <CodigoRecuperacao
+            codigo={codigo}
+            tituloDoBotao="Já anotei, continuar"
+            onConfirmar={() => router.replace('/(app)')}
+          />
+        </ScrollView>
+      </SafeAreaView>
+    );
   }
 
   return (

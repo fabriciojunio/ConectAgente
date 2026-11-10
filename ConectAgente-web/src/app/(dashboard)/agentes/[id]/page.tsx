@@ -5,9 +5,10 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getAgenteById, getAgenteFamilias } from '@/services/agenteService';
 import { getVisitasByAgente } from '@/services/visitaService';
-import { formatDate, calcularDiasSemVisita, getNivelCriticidade, getCriticidadeColor, withTimeout } from '@/lib/utils';
+import { formatDataDaVisita, dataDaVisita, diaLocal, calcularDiasSemVisita, getNivelCriticidade, getCriticidadeColor, withTimeout } from '@/lib/utils';
 import VisitasLineChart from '@/components/charts/VisitasLineChart';
 import { EmptyState } from '@/components/ui/empty-state';
+import { SenhaDeSincronizacao } from '@/components/agentes/SenhaDeSincronizacao';
 import type { VisitaComDetalhes } from '@/types';
 import {
   Loader2,
@@ -93,18 +94,22 @@ export default function AgenteDetailPage() {
         setAgente({ ...agenteData, familias });
 
         // Compute performance from visits data
-        const hoje = new Date().toISOString().split('T')[0];
+        // Comparação por dia civil: toISOString() dá a data em UTC, e depois
+        // das 21 h o "hoje" do painel já era o dia seguinte.
+        const hoje = diaLocal();
         const semanaInicio = new Date();
         semanaInicio.setDate(semanaInicio.getDate() - 7);
         const mesInicio = new Date();
         mesInicio.setDate(1);
+        const desdeSemana = diaLocal(semanaInicio);
+        const desdeMes = diaLocal(mesInicio);
 
         const total = visitasData.length;
         const realizadas = visitasData.filter((v) => v.status === 'realizada').length;
         setPerformance({
-          visitas_hoje: visitasData.filter((v) => v.data_visita?.startsWith(hoje)).length,
-          visitas_semana: visitasData.filter((v) => new Date(v.data_visita) >= semanaInicio).length,
-          visitas_mes: visitasData.filter((v) => new Date(v.data_visita) >= mesInicio).length,
+          visitas_hoje: visitasData.filter((v) => v.data_visita && dataDaVisita(v.data_visita) === hoje).length,
+          visitas_semana: visitasData.filter((v) => v.data_visita && dataDaVisita(v.data_visita) >= desdeSemana).length,
+          visitas_mes: visitasData.filter((v) => v.data_visita && dataDaVisita(v.data_visita) >= desdeMes).length,
           taxa_conclusao: total > 0 ? Math.round((realizadas / total) * 1000) / 10 : 0,
           visitas_por_dia: [],
         });
@@ -254,7 +259,7 @@ export default function AgenteDetailPage() {
                       </td>
                       <td className="px-4 py-3">{familia.bairro}</td>
                       <td className="px-4 py-3">
-                        {familia.ultima_visita ? formatDate(familia.ultima_visita) : 'Nunca'}
+                        {familia.ultima_visita ? formatDataDaVisita(familia.ultima_visita) : 'Nunca'}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${getCriticidadeColor(criticidade)}`}>
@@ -287,7 +292,7 @@ export default function AgenteDetailPage() {
               <tbody>
                 {visitasRecentes.map((visita) => (
                   <tr key={visita.id} className="border-b last:border-0">
-                    <td className="px-4 py-3">{formatDate(visita.data_visita)}</td>
+                    <td className="px-4 py-3">{formatDataDaVisita(visita.data_visita)}</td>
                     <td className="px-4 py-3">
                       {visita.residencia
                         ? `${visita.residencia.logradouro}, ${visita.residencia.numero}`
@@ -376,6 +381,8 @@ export default function AgenteDetailPage() {
           })()}
         </div>
       )}
+
+      <SenhaDeSincronizacao agenteId={agente.id} />
     </div>
   );
 }

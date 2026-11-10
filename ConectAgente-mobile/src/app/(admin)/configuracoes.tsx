@@ -7,7 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import { agenteRepository } from '../../database/repositories/agenteRepository';
+import { ADMIN_CPF, agenteRepository } from '../../database/repositories/agenteRepository';
+import { useAuth } from '../../contexts/AuthContext';
+import { formatCPF } from '../../utils/formatters';
 import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
 import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 import { lgpdRepository, type ItemExpirado } from '../../database/repositories/lgpdRepository';
@@ -37,21 +39,17 @@ export default function AdminConfiguracoes() {
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
   const [limite, setLimite] = useState(20);
   const [refreshing, setRefreshing] = useState(false);
-  // Senha sorteada na primeira execucao. Vem nula depois de trocada.
-  const [senhaInicial, setSenhaInicial] = useState<string | null>(null);
   const [vencidos, setVencidos] = useState<ItemExpirado[]>([]);
-  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const { agente } = useAuth();
 
   const carregar = useCallback(async () => {
-    const [s, log, senha, prazos] = await Promise.all([
+    const [s, log, prazos] = await Promise.all([
       agenteRepository.obterEstatisticasGlobais(),
       agenteRepository.listarAuditLog(limite),
-      agenteRepository.obterSenhaInicialDoAdmin(),
       lgpdRepository.levantarVencidos(),
     ]);
     setStats(s);
     setAuditLog(log);
-    setSenhaInicial(senha);
     setVencidos(prazos);
   }, [limite]);
 
@@ -83,36 +81,36 @@ export default function AdminConfiguracoes() {
 
   function handleResetAdmin() {
     Alert.alert(
-      'Administrador padrão',
-      'A senha é sorteada na primeira execução do aplicativo e aparece aqui ' +
-        'uma única vez. Troque-a no primeiro acesso: depois da troca ela ' +
-        'deixa de ser exibida.\n\n' +
-        'Se ela já não aparece, use a recuperação por CPF e e-mail na tela ' +
-        'de entrada.',
+      'Administrador do aparelho',
+      'A senha foi escolhida por quem configurou o aparelho no primeiro uso, ' +
+        'e não fica guardada em lugar nenhum: só o hash dela.\n\n' +
+        'Para trocar a senha, use "Esqueci minha senha" na tela de entrada com ' +
+        'o código de recuperação. Se perdeu o código, gere um novo aqui.',
       [{ text: 'Entendi' }]
     );
   }
 
   /**
-   * Apaga a senha inicial do cofre do sistema.
+   * Gera um código de recuperação novo para a conta de administrador.
    *
-   * Pede confirmação porque é irreversível: a senha não é guardada em
-   * nenhum outro lugar, só o hash dela fica no banco.
+   * Pede confirmação porque o código anterior deixa de valer.
    */
-  function handleEsconderSenha() {
+  function handleNovoCodigo() {
+    if (!agente) return;
     Alert.alert(
-      'Ocultar senha inicial',
-      'Confirme que já anotou ou já trocou a senha. Depois disto ela não ' +
-        'poderá mais ser exibida.',
+      'Gerar novo código de recuperação',
+      'O código anterior deixa de valer. O novo aparece uma única vez.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Já anotei',
-          style: 'destructive',
+          text: 'Gerar',
           onPress: async () => {
-            await agenteRepository.esquecerSenhaInicialDoAdmin();
-            setSenhaInicial(null);
-            setMostrarSenha(false);
+            const codigo = await agenteRepository.gerarCodigoRecuperacao(agente.id);
+            Alert.alert(
+              'Código de recuperação',
+              `${codigo}\n\nAnote e guarde longe do celular. Ele não será mostrado de novo.`,
+              [{ text: 'Já anotei' }]
+            );
           },
         },
       ]
@@ -156,31 +154,18 @@ export default function AdminConfiguracoes() {
             <View style={styles.credRow}>
               <Ionicons name="shield-checkmark-outline" size={20} color="#7B1FA2" />
               <View style={{ flex: 1 }}>
-                <Text style={styles.credLabel}>Administrador padrão</Text>
-                <Text style={styles.credValue}>CPF: 111.444.777-35</Text>
-                {senhaInicial ? (
-                  <>
-                    <Text style={styles.credValue}>
-                      Senha inicial: {mostrarSenha ? senhaInicial : '••••••••••••••••'}
+                <Text style={styles.credLabel}>Administrador do aparelho</Text>
+                <Text style={styles.credValue}>CPF: {formatCPF(ADMIN_CPF)}</Text>
+                <Text style={styles.credValue}>
+                  Senha definida no primeiro uso. Para trocar, use o código de recuperação.
+                </Text>
+                <View style={styles.credAcoes}>
+                  <TouchableOpacity onPress={handleNovoCodigo} hitSlop={8}>
+                    <Text style={[styles.credAcao, styles.credAcaoForte]}>
+                      Gerar novo código de recuperação
                     </Text>
-                    <View style={styles.credAcoes}>
-                      <TouchableOpacity onPress={() => setMostrarSenha((v) => !v)} hitSlop={8}>
-                        <Text style={styles.credAcao}>
-                          {mostrarSenha ? 'Ocultar' : 'Mostrar'}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={handleEsconderSenha} hitSlop={8}>
-                        <Text style={[styles.credAcao, styles.credAcaoForte]}>
-                          Já anotei, remover
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </>
-                ) : (
-                  <Text style={styles.credValue}>
-                    Senha já definida. Use a recuperação por CPF e e-mail se precisar.
-                  </Text>
-                )}
+                  </TouchableOpacity>
+                </View>
               </View>
               <TouchableOpacity onPress={handleResetAdmin} style={styles.infoBtn} hitSlop={8}>
                 <Ionicons name="information-circle-outline" size={20} color={colors.textLight} />

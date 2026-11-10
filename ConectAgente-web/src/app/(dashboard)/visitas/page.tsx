@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { getVisitas, getEstatisticasVisitas } from '@/services/visitaService';
 import { cacheGetStale } from '@/lib/cache';
-import { formatDate, withTimeout } from '@/lib/utils';
+import { formatDataDaVisita, withTimeout } from '@/lib/utils';
 import type { VisitaComDetalhes, PaginatedResult } from '@/types';
 import {
   Search,
@@ -198,7 +198,7 @@ export default function VisitasPage() {
                       onClick={() => setSelectedVisita(visita)}
                     >
                       <td className="px-4 py-3 whitespace-nowrap">
-                        {formatDate(visita.data_visita)}
+                        {formatDataDaVisita(visita.data_visita)}
                       </td>
                       <td className="px-4 py-3">{visita.agente?.nome ?? '-'}</td>
                       <td className="px-4 py-3 hidden md:table-cell">
@@ -281,7 +281,7 @@ export default function VisitasPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-[var(--texto-claro)]">Data</p>
-                  <p className="font-medium">{formatDate(selectedVisita.data_visita)}</p>
+                  <p className="font-medium">{formatDataDaVisita(selectedVisita.data_visita)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-[var(--texto-claro)]">Status</p>

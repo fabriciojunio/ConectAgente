@@ -70,6 +70,36 @@ export default function AdminAgentes() {
     setTimeout(() => setSelecionado(agente), 100);
   }
 
+  /**
+   * Gera um código de recuperação novo para o agente.
+   *
+   * É o caminho de quem perdeu a senha e o código: o administrador gera, entrega
+   * em mãos, e o agente usa em "Esqueci minha senha". O administrador não
+   * define nem vê a senha do agente em momento nenhum.
+   */
+  function gerarCodigoPara(agente: AgenteStats) {
+    Alert.alert(
+      'Gerar código de recuperação',
+      `O código anterior de ${agente.nome} deixa de valer. Entregue o novo ` +
+        'pessoalmente: com ele e o CPF, qualquer pessoa troca a senha desta conta.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Gerar',
+          onPress: async () => {
+            const codigo = await agenteRepository.gerarCodigoRecuperacao(agente.id);
+            Alert.alert(
+              'Código de recuperação',
+              `${agente.nome}\n\n${codigo}\n\nO agente usa este código em "Esqueci minha senha". ` +
+                'Ele não será mostrado de novo.',
+              [{ text: 'Já entreguei' }]
+            );
+          },
+        },
+      ]
+    );
+  }
+
   async function salvarMeta() {
     if (!selecionado) return;
     const meta = parseInt(metaInput, 10);
@@ -192,6 +222,13 @@ export default function AdminAgentes() {
                   >
                     <Ionicons name="flag-outline" size={18} color="#fff" />
                     <Text style={styles.metaBtnText}>Definir meta mensal</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.codigoBtn}
+                    onPress={() => gerarCodigoPara(selecionado)}
+                  >
+                    <Text style={styles.cancelBtnText}>Gerar código de recuperação</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -369,6 +406,10 @@ const criarStyles = (colors: ThemeColors) =>
     paddingVertical: SPACING.sm + 4, marginTop: SPACING.sm,
   },
   metaBtnText: { fontSize: FONT_SIZE.md, fontWeight: '700', color: '#fff' },
+  codigoBtn: {
+    borderWidth: 1, borderColor: colors.border, borderRadius: RADIUS.md,
+    paddingVertical: SPACING.sm + 4, alignItems: 'center', marginTop: SPACING.sm,
+  },
 
   metaInput: {
     borderWidth: 1, borderColor: colors.border, borderRadius: RADIUS.md,

@@ -8,6 +8,8 @@ jest.mock('../../database/repositories/agenteRepository', () => ({
     buscarPorCpf: jest.fn(),
     criar: jest.fn(),
     existeAgenteCadastrado: jest.fn(),
+    redefinirSenhaComCodigo: jest.fn(),
+    gerarCodigoRecuperacao: jest.fn(),
   },
 }));
 
@@ -27,6 +29,7 @@ jest.mock('expo-crypto', () => ({
 const mockSignIn = jest.fn().mockResolvedValue({ data: {}, error: null });
 const mockSignOut = jest.fn().mockResolvedValue({ error: null });
 const mockGetSession = jest.fn().mockResolvedValue({ data: { session: null } });
+const mockUpdateUser = jest.fn().mockResolvedValue({ error: null });
 
 jest.mock('../../lib/supabase', () => ({
   supabase: {
@@ -34,6 +37,7 @@ jest.mock('../../lib/supabase', () => ({
       signInWithPassword: (...args: unknown[]) => mockSignIn(...args),
       signOut: () => mockSignOut(),
       getSession: () => mockGetSession(),
+      updateUser: (...args: unknown[]) => mockUpdateUser(...args),
     },
   },
   supabaseConfigurado: true,
@@ -52,7 +56,7 @@ jest.mock('../../utils/encryption', () => ({
 
 import * as SecureStore from 'expo-secure-store';
 import { agenteRepository } from '../../database/repositories/agenteRepository';
-import { authService } from '../authService';
+import { authService, AVISO_SENHA_DO_SERVIDOR } from '../authService';
 
 const mockedSecureStore = SecureStore as jest.Mocked<typeof SecureStore>;
 const mockedAgenteRepo = agenteRepository as jest.Mocked<typeof agenteRepository>;
@@ -212,5 +216,94 @@ describe('authService - sessao no servidor', () => {
   it('temSessaoNoServidor devolve falso quando o cliente lanca', async () => {
     mockGetSession.mockRejectedValueOnce(new Error('sem rede'));
     expect(await authService.temSessaoNoServidor()).toBe(false);
+  });
+});
+
+describe('authService - senha trocada pela recuperação', () => {
+  // A recuperação troca a senha no aparelho. A conta do servidor usa e-mail
+  // interno, sem "esqueci a senha" de lá. Se o servidor ficasse com a senha
+  // antiga sem ninguém saber, a sincronização pararia calada.
+  const CHAVE_PENDENTE = `conectagente_senha_servidor_pendente_${agenteBase.id}`;
+
+  beforeEach(() => {
+    mockedAgenteRepo.redefinirSenhaComCodigo.mockResolvedValue('NOVO-CODI-GO23');
+    mockedAgenteRepo.buscarPorCpf.mockResolvedValue(agenteBase);
+  });
+
+  it('troca a senha no servidor quando a sessão aberta é da mesma pessoa', async () => {
+    mockGetSession.mockResolvedValueOnce({
+      data: { session: { user: { email: 'JOAO@ubs.gov.br' } } },
+    });
+
+    const r = await authService.recuperarSenha('52998224725', 'ABCD-EFGH-JKLM', 'Nova@1234');
+
+    expect(r).toEqual({ codigo: 'NOVO-CODI-GO23', servidorAtualizado: true });
+    expect(mockUpdateUser).toHaveBeenCalledWith({ password: 'Nova@1234' });
+    expect(mockedSecureStore.setItemAsync).not.toHaveBeenCalledWith(CHAVE_PENDENTE, expect.anything());
+  });
+
+  it('não usa a sessão de outra pessoa para trocar a senha', async () => {
+    mockGetSession.mockResolvedValueOnce({
+      data: { session: { user: { email: 'outra@ubs.gov.br' } } },
+    });
+
+    const r = await authService.recuperarSenha('52998224725', 'ABCD-EFGH-JKLM', 'Nova@1234');
+
+    expect(r?.servidorAtualizado).toBe(false);
+    expect(mockUpdateUser).not.toHaveBeenCalled();
+    expect(mockedSecureStore.setItemAsync).toHaveBeenCalledWith(CHAVE_PENDENTE, expect.any(String));
+  });
+
+  it('sem sessão, marca a pendência', async () => {
+    const r = await authService.recuperarSenha('52998224725', 'ABCD-EFGH-JKLM', 'Nova@1234');
+
+    expect(r?.servidorAtualizado).toBe(false);
+    expect(mockedSecureStore.setItemAsync).toHaveBeenCalledWith(CHAVE_PENDENTE, expect.any(String));
+  });
+
+  it('código errado não toca no servidor', async () => {
+    mockedAgenteRepo.redefinirSenhaComCodigo.mockResolvedValue(null);
+
+    expect(await authService.recuperarSenha('52998224725', 'XXXX', 'Nova@1234')).toBeNull();
+    expect(mockUpdateUser).not.toHaveBeenCalled();
+  });
+
+  it('administrador do aparelho não tem conta no servidor e não fica pendente', async () => {
+    mockedAgenteRepo.buscarPorCpf.mockResolvedValue({ ...agenteBase, is_admin: true });
+
+    const r = await authService.recuperarSenha('11144477735', 'ABCD-EFGH-JKLM', 'Nova@1234');
+
+    expect(r?.servidorAtualizado).toBe(true);
+    expect(mockedSecureStore.setItemAsync).not.toHaveBeenCalled();
+  });
+
+  it('o login avisa enquanto o servidor recusar a senha nova', async () => {
+    mockedAgenteRepo.autenticar.mockResolvedValue(agenteBase);
+    mockedSecureStore.getItemAsync.mockImplementation(async (chave: string) =>
+      chave === CHAVE_PENDENTE ? '2026-11-10T00:00:00.000Z' : null
+    );
+    mockSignIn.mockResolvedValueOnce({ data: {}, error: { message: 'Invalid login credentials' } });
+
+    const sessao = await authService.login('52998224725', 'Nova@1234');
+
+    expect(sessao.aviso).toBe(AVISO_SENHA_DO_SERVIDOR);
+  });
+
+  it('o aviso some quando a coordenação redefine a senha no painel', async () => {
+    mockedAgenteRepo.autenticar.mockResolvedValue(agenteBase);
+    mockedSecureStore.getItemAsync.mockImplementation(async (chave: string) =>
+      chave === CHAVE_PENDENTE ? '2026-11-10T00:00:00.000Z' : null
+    );
+
+    const sessao = await authService.login('52998224725', 'Nova@1234');
+
+    expect(sessao.aviso).toBeUndefined();
+    expect(mockedSecureStore.deleteItemAsync).toHaveBeenCalledWith(CHAVE_PENDENTE);
+  });
+
+  it('login comum não traz aviso', async () => {
+    mockedAgenteRepo.autenticar.mockResolvedValue(agenteBase);
+
+    expect((await authService.login('52998224725', 'senha123')).aviso).toBeUndefined();
   });
 });

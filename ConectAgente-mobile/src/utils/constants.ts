@@ -102,10 +102,16 @@ export const SECURE_KEYS = {
   AGENTE_ID: 'conectagente_agente_id',
   SESSION_EXPIRES: 'conectagente_session_expires',
   ENCRYPTION_KEY: 'conectagente_enc_key',
-  // Senha inicial do administrador, sorteada na primeira execucao e
-  // apagada quando ela e trocada. Fica aqui, e nao no codigo, porque
-  // senha fixa em repositorio publico e credencial publicada.
+  // Senha inicial do administrador que as versoes 1.2.x sorteavam e
+  // mostravam na tela de entrada. Nao e mais gravada; a chave so e lida
+  // para apagar o que ficou de instalacoes antigas (ver garantirAdminPadrao).
   SENHA_ADMIN_INICIAL: 'conectagente_senha_admin_inicial',
+  // Prefixo do hash do codigo de recuperacao de cada conta. A chave completa
+  // e o prefixo mais o id do agente.
+  CODIGO_RECUPERACAO: 'conectagente_recuperacao_',
+  // Prefixo da marca "a senha mudou no aparelho e o servidor ainda tem a
+  // antiga". A chave completa e o prefixo mais o id do agente.
+  SENHA_SERVIDOR_PENDENTE: 'conectagente_senha_servidor_pendente_',
 } as const;
 
 // ============================================================

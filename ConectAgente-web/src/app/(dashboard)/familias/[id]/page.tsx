@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getFamiliaById, getHistoricoVisitas } from '@/services/familiaService';
-import { formatDate, calcularDiasSemVisita, withTimeout } from '@/lib/utils';
+import { formatDate, formatDataDaVisita, calcularDiasSemVisita, withTimeout } from '@/lib/utils';
 import type { Morador, ResidenciaComDetalhes, Visita } from '@/types';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
@@ -152,7 +152,7 @@ export default function FamiliaDetailPage() {
           </div>
           <div>
             <p className="text-sm text-[var(--texto-claro)]">Última Visita</p>
-            <p className="text-xl font-bold">{ultimaVisita ? formatDate(ultimaVisita) : 'Nunca'}</p>
+            <p className="text-xl font-bold">{ultimaVisita ? formatDataDaVisita(ultimaVisita) : 'Nunca'}</p>
           </div>
         </div>
         <div className="bg-[var(--superficie)] rounded-xl border p-4 flex items-center gap-3">
@@ -227,7 +227,7 @@ export default function FamiliaDetailPage() {
                   {/* Content */}
                   <div className="pb-6 flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <p className="text-sm font-medium">{formatDate(visita.data_visita)}</p>
+                      <p className="text-sm font-medium">{formatDataDaVisita(visita.data_visita)}</p>
                       <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${config.className}`}>
                         {config.label}
                       </span>

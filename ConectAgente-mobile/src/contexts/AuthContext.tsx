@@ -10,7 +10,7 @@ interface AuthContextData {
   isLoading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
-  login: (cpf: string, senha: string) => Promise<Agente>;
+  login: (cpf: string, senha: string) => Promise<{ agente: Agente; aviso?: string }>;
   logout: () => Promise<void>;
   registrar: (data: {
     nome: string;
@@ -19,7 +19,7 @@ interface AuthContextData {
     senha: string;
     area_atuacao: string;
     unidade_saude: string;
-  }) => Promise<void>;
+  }) => Promise<string>;
   renovarSessao: () => void;
 }
 
@@ -74,11 +74,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     iniciarTimerSessao();
   }, [agente]);
 
-  async function login(cpf: string, senha: string): Promise<Agente> {
+  async function login(cpf: string, senha: string): Promise<{ agente: Agente; aviso?: string }> {
     const session = await authService.login(cpf, senha);
     setAgente(session.agente);
     iniciarTimerSessao();
-    return session.agente;
+    return { agente: session.agente, aviso: session.aviso };
   }
 
   async function logout() {
@@ -95,11 +95,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     senha: string;
     area_atuacao: string;
     unidade_saude: string;
-  }) {
-    const novoAgente = await authService.cadastrarAgente(data);
+  }): Promise<string> {
+    const { codigoRecuperacao } = await authService.cadastrarAgente(data);
     const session = await authService.login(data.cpf, data.senha);
     setAgente(session.agente);
     iniciarTimerSessao();
+    // Devolvido para a tela de cadastro mostrar uma vez.
+    return codigoRecuperacao;
   }
 
   return (

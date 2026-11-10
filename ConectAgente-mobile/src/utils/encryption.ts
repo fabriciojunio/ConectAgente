@@ -1,7 +1,8 @@
 /**
- * Hash de senha e sorteio de senha inicial.
+ * Hash de senha e sorteio do código de recuperação.
  *
- * Hash: SHA-256 com sal de 16 bytes. Formato: "<sal_hex>$<hash_hex>".
+ * Hash: PBKDF2-HMAC-SHA256 com sal de 16 bytes. Formato:
+ * "pbkdf2-sha256$<iteracoes>$<sal_hex>$<hash_hex>".
  *
  * O que **não** existe mais aqui: a cifra de campo. O módulo tinha
  * `encryptField`, `encryptSensitiveFields` e um SHA-256 em modo contador feito
@@ -22,6 +23,10 @@
  * docs/seguranca.md.
  */
 import * as Crypto from 'expo-crypto';
+import { pbkdf2Async } from '@noble/hashes/pbkdf2';
+import { sha256 } from '@noble/hashes/sha2';
+
+// ============================================================
 // HASH: SHA-256 simples (sem salt)
 // ============================================================
 
@@ -30,86 +35,149 @@ export async function hashSHA256(value: string): Promise<string> {
 }
 
 // ============================================================
-// HASH DE SENHA com salt (proteção contra rainbow tables)
-// Formato: "<salt_hex>$<sha256(salt_hex + senha)>"
+// HASH DE SENHA: PBKDF2-HMAC-SHA256
 // ============================================================
 
-export async function hashSenha(senha: string): Promise<string> {
-  const randomBytes = await Crypto.getRandomBytesAsync(16);
-  const salt = Array.from(randomBytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-  const hash = await Crypto.digestStringAsync(
-    Crypto.CryptoDigestAlgorithm.SHA256,
-    salt + senha
-  );
-  return `${salt}$${hash}`;
+/**
+ * Por que PBKDF2, e por que este número de iterações.
+ *
+ * O formato anterior era um SHA-256 com sal, uma passada só. Sal impede
+ * tabela pronta, mas não atrasa quem testa senha por senha: um computador
+ * comum faz bilhões de SHA-256 por segundo, e uma senha de 8 caracteres caía
+ * em minutos se o banco vazasse. PBKDF2 repete o HMAC milhares de vezes e
+ * multiplica esse custo pelo mesmo fator.
+ *
+ * A implementação é a `@noble/hashes`, auditada e sem dependências, em
+ * JavaScript puro: o Expo não expõe PBKDF2 nativo, e um módulo nativo a mais
+ * pesaria no build do APK. JavaScript puro no Hermes é bem mais lento que no
+ * Node, e é isso que limita o número: 100 mil iterações levaram 150 ms no
+ * Node desta máquina, o que no celular fica perto de um segundo por login. O
+ * OWASP pede 600 mil para servidor; aqui seriam vários segundos a cada entrada
+ * do agente em campo. O banco já é cifrado inteiro com SQLCipher, então o hash
+ * é a segunda camada, e não a única.
+ *
+ * O número de iterações vai dentro do hash. Subir este valor numa versão
+ * futura não quebra ninguém: o login confere com o número gravado e regrava
+ * com o novo (`precisaAtualizarHash`).
+ */
+export const ITERACOES_PBKDF2 = 100_000;
+const PREFIXO_PBKDF2 = 'pbkdf2-sha256';
+const TAMANHO_DO_HASH = 32;
+
+function paraHex(bytes: Uint8Array): string {
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
+
+/** Comparação que leva o mesmo tempo acerte ou erre o começo do texto. */
+function iguaisEmTempoConstante(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diferenca = 0;
+  for (let i = 0; i < a.length; i++) diferenca |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diferenca === 0;
+}
+
+async function derivar(senha: string, salHex: string, iteracoes: number): Promise<string> {
+  // `asyncTick` devolve o controle à interface de tempos em tempos: sem isto
+  // a tela congela durante o cálculo.
+  const bytes = await pbkdf2Async(sha256, senha, salHex, {
+    c: iteracoes,
+    dkLen: TAMANHO_DO_HASH,
+    asyncTick: 20,
+  });
+  return paraHex(bytes);
+}
+
+export async function hashSenha(senha: string): Promise<string> {
+  const sal = paraHex(await Crypto.getRandomBytesAsync(16));
+  const hash = await derivar(senha, sal, ITERACOES_PBKDF2);
+  return `${PREFIXO_PBKDF2}$${ITERACOES_PBKDF2}$${sal}$${hash}`;
+}
+
+/**
+ * Hash no formato atual que nenhuma senha produz.
+ *
+ * Quem confere senha de conta que não existe compara contra este valor, e
+ * gasta o mesmo tempo de uma conta de verdade. Sem isso, a demora (ou a falta
+ * dela) diria se o CPF está cadastrado no aparelho.
+ */
+export const HASH_QUE_NUNCA_CONFERE =
+  `${PREFIXO_PBKDF2}$${ITERACOES_PBKDF2}$${'0'.repeat(32)}$${'0'.repeat(64)}`;
 
 /**
  * Verifica senha contra hash armazenado.
- * Suporta formato legado (SHA-256 sem salt) e novo (salt$hash).
- * Sempre executa operação de hash (timing-safe: evita user-enumeration por tempo).
+ *
+ * Aceita os três formatos que já existiram, para ninguém ficar trancado fora
+ * na atualização:
+ * - `pbkdf2-sha256$<iteracoes>$<sal>$<hash>`, o atual;
+ * - `<sal>$<sha256(sal + senha)>`, da 1.0 à 1.2;
+ * - `<sha256(senha)>`, sem sal, o mais antigo.
+ *
+ * Os dois antigos são regravados no formato atual no primeiro login que
+ * acertar (`precisaAtualizarHash`).
  */
 export async function verificarSenha(senha: string, stored: string): Promise<boolean> {
-  if (stored.includes('$')) {
-    const [salt, hash] = stored.split('$');
-    const computed = await Crypto.digestStringAsync(
+  const partes = stored.split('$');
+
+  if (partes[0] === PREFIXO_PBKDF2 && partes.length === 4) {
+    const iteracoes = Number(partes[1]);
+    if (!Number.isInteger(iteracoes) || iteracoes < 1) return false;
+    const calculado = await derivar(senha, partes[2], iteracoes);
+    return iguaisEmTempoConstante(calculado, partes[3]);
+  }
+
+  if (partes.length === 2) {
+    const [salt, hash] = partes;
+    const calculado = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
       salt + senha
     );
-    return computed === hash;
+    return iguaisEmTempoConstante(calculado, hash);
   }
-  // Formato legado, migração automática ocorre em autenticar()
-  const legacyHash = await hashSHA256(senha);
-  return legacyHash === stored;
+
+  // Formato legado, sem sal.
+  return iguaisEmTempoConstante(await hashSHA256(senha), stored);
+}
+
+/** Diz se o hash está num formato antigo ou com menos iterações que o atual. */
+export function precisaAtualizarHash(stored: string): boolean {
+  const partes = stored.split('$');
+  if (partes[0] !== PREFIXO_PBKDF2 || partes.length !== 4) return true;
+  return Number(partes[1]) < ITERACOES_PBKDF2;
 }
 
 // ============================================================
-// SENHA INICIAL SORTEADA
+// CÓDIGO DE RECUPERAÇÃO
 // ============================================================
 
 /**
- * Sorteia uma senha forte para o primeiro acesso do administrador.
+ * 32 símbolos, sem os que se confundem na leitura (O e 0, I e 1).
  *
- * Existe porque a senha do administrador era uma constante no codigo
- * (`Admin@2025`), repetida no README e impressa na tela de configuracoes.
- * Em repositorio publico isso e credencial publicada: quem encontrasse uma
- * instalacao no ar entrava como administrador e lia o prontuario de todos.
- *
- * O alfabeto evita caracteres que se confundem na leitura (O e 0, l e 1),
- * porque esta senha e lida de uma tela e digitada a mao.
+ * Tamanho 32 de propósito: 256 é múltiplo de 32, então `byte % 32` sorteia
+ * cada símbolo com a mesma chance. Com outro tamanho, os primeiros símbolos
+ * sairiam mais vezes que os últimos.
  */
-export async function sortearSenhaForte(tamanho = 16): Promise<string> {
-  const MAIUSCULAS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-  const MINUSCULAS = 'abcdefghijkmnopqrstuvwxyz';
-  const NUMEROS = '23456789';
-  const SIMBOLOS = '!@#$%&*?';
-  const TODOS = MAIUSCULAS + MINUSCULAS + NUMEROS + SIMBOLOS;
+const ALFABETO_DO_CODIGO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const TAMANHO_DO_CODIGO = 12;
 
-  const bytes = await Crypto.getRandomBytesAsync(tamanho * 2);
-  let indice = 0;
-  const sortear = (alfabeto: string): string =>
-    alfabeto[bytes[indice++ % bytes.length] % alfabeto.length];
+/**
+ * Sorteia um código de recuperação de conta, no formato `XXXX-XXXX-XXXX`.
+ *
+ * É o que substitui a recuperação por CPF e e-mail. CPF e e-mail não são
+ * segredo: o CPF do administrador aparecia na própria tela de entrada e o
+ * e-mail dele estava no código, e qualquer pessoa com o aparelho na mão
+ * redefinia a senha do administrador. O código é mostrado uma vez, a quem é
+ * dono da conta, e só o hash fica guardado.
+ *
+ * 12 símbolos de um alfabeto de 32 são 60 bits: não dá para adivinhar
+ * tentando, mesmo sem limite de tentativas.
+ */
+export async function sortearCodigoRecuperacao(): Promise<string> {
+  const bytes = await Crypto.getRandomBytesAsync(TAMANHO_DO_CODIGO);
+  const simbolos = Array.from(bytes, (b) => ALFABETO_DO_CODIGO[b % ALFABETO_DO_CODIGO.length]).join('');
+  return `${simbolos.slice(0, 4)}-${simbolos.slice(4, 8)}-${simbolos.slice(8, 12)}`;
+}
 
-  // Garante um de cada classe, para a senha passar em qualquer validacao.
-  const obrigatorios = [
-    sortear(MAIUSCULAS),
-    sortear(MINUSCULAS),
-    sortear(NUMEROS),
-    sortear(SIMBOLOS),
-  ];
-  const resto = Array.from({ length: Math.max(0, tamanho - obrigatorios.length) }, () =>
-    sortear(TODOS)
-  );
-
-  // Embaralha para os obrigatorios nao ficarem sempre nas quatro primeiras
-  // posicoes, o que reduziria o espaco de busca de quem souber da regra.
-  const chars = [...obrigatorios, ...resto];
-  for (let i = chars.length - 1; i > 0; i--) {
-    const j = bytes[(indice + i) % bytes.length] % (i + 1);
-    [chars[i], chars[j]] = [chars[j], chars[i]];
-  }
-
-  return chars.join('');
+/** Aceita o código digitado com minúscula, espaço ou sem os hífens. */
+export function normalizarCodigoRecuperacao(codigo: string): string {
+  return codigo.toUpperCase().replace(/[^A-Z0-9]/g, '');
 }

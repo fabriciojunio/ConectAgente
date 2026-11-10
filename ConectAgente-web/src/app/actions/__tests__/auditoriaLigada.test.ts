@@ -31,6 +31,16 @@ describe('as ações administrativas deixam rastro', () => {
     expect(codigo()).toContain("registrarAcao('REJEITAR_CADASTRO'");
   });
 
+  it('redefinir a senha de sincronização registra na auditoria, sem a senha', () => {
+    const fonte = codigo();
+    const trecho = fonte.slice(fonte.indexOf("registrarAcao('REDEFINIR_SENHA'"));
+    const ateFechar = trecho.slice(0, trecho.indexOf('});'));
+
+    expect(ateFechar).toContain('redefinida_por');
+    expect(ateFechar.toLowerCase()).not.toContain('senha:');
+    expect(ateFechar).not.toContain('parsed.data');
+  });
+
   it('o registro guarda quem decidiu, e não o dado do solicitante', () => {
     const fonte = codigo();
     const trecho = fonte.slice(fonte.indexOf("registrarAcao('APROVAR_CADASTRO'"));

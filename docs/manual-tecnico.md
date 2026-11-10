@@ -65,8 +65,8 @@ O roteamento é feito automaticamente no login: `agente.is_admin = true` redirec
 | **Calendário** | Visualização de agendamentos por dia (react-native-calendars) |
 | **Metas** | Acompanhamento da meta mensal de visitas com progresso visual |
 | **Busca Global** | Localiza moradores por nome, CPF ou cartão SUS |
-| **Relatórios** | Exportação em CSV e Excel (xlsx) |
-| **Recuperação de senha** | Via CPF + e-mail cadastrado, sem revelar qual campo é inválido |
+| **Relatórios** | Exportação em CSV e Excel (xlsx), com datas de verdade, filtro no cabeçalho e aba de resumo |
+| **Recuperação de senha** | Via CPF + código de recuperação, sem revelar qual campo é inválido |
 
 ### Área do Administrador `/(admin)`
 
@@ -92,7 +92,7 @@ O roteamento é feito automaticamente no login: `agente.is_admin = true` redirec
 | Backend / Sync | Supabase (PostgreSQL + RLS) | ^2.45.4 |
 | Formulários | React Hook Form | ^7.54.2 |
 | Validação | Zod | ^3.24.2 |
-| Criptografia | expo-crypto (SHA-256) | ~15.0.8 |
+| Criptografia | expo-crypto (sal, sorteio) e @noble/hashes (PBKDF2) | ~15.0.8 / 1.8.0 |
 | Armazenamento seguro | expo-secure-store | ~15.0.8 |
 | Monitoramento de rede | expo-network | ~8.0.8 |
 | Calendário | react-native-calendars | ^1.1309.0 |
@@ -261,7 +261,7 @@ ConectAgent/
 │   │
 │   ├── types/index.ts        # Todos os tipos, enums e interfaces
 │   └── utils/
-│       ├── encryption.ts     # hash de senha com salt + sorteio de senha inicial
+│       ├── encryption.ts     # hash de senha com salt + sorteio do código de recuperação
 │       ├── validators.ts     # Zod schemas + validações + escapeForLike()
 │       ├── formatters.ts     # CPF, CEP, datas, máscaras
 │       ├── constants.ts      # Cores, chaves, limites
@@ -517,8 +517,10 @@ index.tsx
 | Tela | Rota | Descrição |
 |---|---|---|
 | Login | `/(auth)/login` | CPF com formatação automática + senha; redireciona por perfil; exibe erro de rate limiting |
-| Cadastro | `/(auth)/cadastro` | Disponível apenas se não houver agente cadastrado no dispositivo |
-| Recuperar senha | `/(auth)/recuperar-senha` | CPF + e-mail; mensagem genérica (não revela campo inválido) |
+| Cadastro | `/(auth)/cadastro` | Disponível apenas se não houver agente cadastrado no dispositivo; mostra o código de recuperação uma vez |
+| Recuperar senha | `/(auth)/recuperar-senha` | CPF + código de recuperação + senha nova; mensagem genérica; mostra o código novo |
+| Configurar administrador | `/(auth)/configurar-admin` | Só aparece enquanto o administrador não tem senha; quem instala escolhe a senha |
+| Reiniciar aparelho | `/(auth)/reiniciar-aparelho` | Para o administrador que perdeu senha e código; mostra o que não sincronizou e exige digitar `APAGAR` |
 
 ### (app): Área do Agente (5 abas)
 
@@ -691,7 +693,7 @@ Logout:    limpa token + chave de criptografia + cache em memória
 | SQL LIKE Injection | `escapeForLike()` escapa `%`, `_`, `\` |
 | Rainbow tables | Salt aleatório de 16 bytes nas senhas |
 | Timing attack (user enumeration) | `verificarSenha` sempre executada com hash dummy |
-| Brute force / força bruta | Rate limiting: 5 tentativas / bloqueio 15 min |
+| Brute force / força bruta | Rate limiting: 5 tentativas / bloqueio 15 min, gravado no aparelho; hash PBKDF2 com 100 mil iterações |
 | User enumeration na recuperação | Mensagem de erro genérica |
 | Dados em repouso | banco local inteiro cifrado com SQLCipher, chave de 256 bits no Keystore |
 | Interceptação na sincronização | certificado do Supabase fixado (WE1 e GTS Root R4, expira em 01/05/2027) |
@@ -797,11 +799,11 @@ junta.
 
 | Arquivo de teste | O que cobre |
 |---|---|
-| `utils/encryption.test.ts` | hashSHA256, hashSenha com salt, verificarSenha (novo + legado), sortearSenhaForte, e que a cifra de campo não voltou e a documentação diz a verdade |
+| `utils/encryption.test.ts` | hashSHA256, hashSenha em PBKDF2 conferido com o do Node, verificarSenha nos três formatos, precisaAtualizarHash, sortearCodigoRecuperacao (formato, sem viés, sem símbolo confundível), e que a cifra de campo não voltou e a documentação diz a verdade |
 | `utils/validators.test.ts` | CPF, cartão SUS, CEP, email (TLD, subdomínio, trim), telefone, datas BR, escapeForLike (%, _, \\, múltiplos), schemas Zod |
 | `utils/formatters.test.ts` | Formatação de CPF, CEP, datas, máscaras numéricas |
 | `utils/lgpd.test.ts` | Anonimização de dados, utilitários de consentimento |
-| `repositories/agenteRepository.test.ts` | criar (admin/não-admin), autenticar (correto/errado/inexistente), timing-safe, migração hash legado, rate limiting (4 falhas, bloqueio após 5, status, reset após sucesso), buscarPorId, existeAgenteCadastrado, atualizar, verificarIdentidade, resetarSenha, garantirAdminPadrao |
+| `repositories/agenteRepository.test.ts` | criar (admin/não-admin), autenticar (correto/errado/inexistente), timing-safe, migração para PBKDF2, rate limiting (4 falhas, bloqueio após 5, status, reset após sucesso, sobrevive ao reinício), buscarPorId, existeAgenteCadastrado, atualizar, código de recuperação, garantirAdminPadrao, configurarAdmin |
 | `repositories/moradorRepository.test.ts` | CRUD completo, busca com LIKE seguro |
 | `repositories/residenciaRepository.test.ts` | CRUD, soft delete |
 | `repositories/visitaRepository.test.ts` | Criar, listar, estatísticas, últimas visitas |
@@ -844,15 +846,19 @@ const mockDb = {
 ### Isolamento entre testes (estado em memória)
 
 ```typescript
-// agenteRepository mantém Map de rate limiting e cache de chave em memória
-// Ambos devem ser resetados em beforeEach para evitar vazamento de estado
+// A contagem de tentativas fica no AsyncStorage (database/limiteDeTentativas.ts),
+// com um cache em memória. Precisa ser zerada em beforeEach, senão um teste
+// herda o bloqueio do anterior.
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks();
-  clearEncryptionKeyCache();       // reseta cache da chave de criptografia
-  _resetLoginAttemptsForTesting(); // limpa o Map de tentativas de login
+  await _resetLoginAttemptsForTesting(); // apaga a contagem, no disco e na memória
   mockedCrypto.digestStringAsync.mockResolvedValue('hashed-password');
 });
+
+// Valor enfileirado com mockResolvedValueOnce que o teste não consumiu sobra
+// para o seguinte: clearAllMocks não esvazia a fila. Desde que o hash virou
+// PBKDF2, hashSenha não chama mais digestStringAsync.
 ```
 
 ---
@@ -892,17 +898,32 @@ npx expo start --ios
 
 ### Primeiro acesso do administrador
 
-Na primeira execução, o aplicativo cria um administrador com CPF
-`111.444.777-35` e **senha sorteada**. Ela aparece uma única vez em
-Sistema → Credenciais de acesso, com um botão para remover depois de anotada.
+Na primeira execução, o aplicativo cria o administrador com CPF
+`111.444.777-35` e **sem senha**. A tela de entrada mostra **Configurar
+administrador**: quem instala escolhe a senha e recebe o código de
+recuperação, que aparece uma única vez. O botão some sozinho depois, porque
+depende do estado da conta.
 
-A senha era uma constante escrita no código e publicada nesta documentação.
-Em repositório público isso é credencial publicada: quem encontrasse uma
-instalação no ar entrava como administrador e lia o prontuário de todos. Ver
-[seguranca.md](seguranca.md).
+Nenhuma senha é sorteada, guardada ou exibida. Até a 1.1 a senha era uma
+constante publicada nesta documentação; na 1.2 era sorteada e mostrada na
+tela de entrada até alguém tocar em "Já anotei". Ver [seguranca.md](seguranca.md).
 
-Se a senha inicial já foi removida da tela, use a recuperação por CPF e e-mail
-na tela de entrada.
+Instalação que vem da 1.2.x: se a senha sorteada ainda estava guardada, ela
+foi exibida e é tratada como vazada. A atualização apaga essa senha e o
+administrador escolhe uma nova em "Configurar administrador".
+
+Para trocar a senha, use "Esqueci minha senha" com o CPF e o código de
+recuperação. Sem o código, um código novo é gerado em Sistema → Credenciais de
+acesso (administrador logado) ou em Agentes → detalhes (para um agente).
+
+Se o administrador perdeu a senha **e** o código, a tela de entrada oferece
+"Administrador perdeu a senha e o código?", que reinicia o aparelho sem
+reinstalar. Peça a cada agente para sincronizar antes: a tela mostra quantos
+registros ainda não foram para o servidor e eles se perdem no reinício.
+
+Agente que recuperou a senha e ficou com a sincronização parada: no painel, em
+Agentes → detalhes → Senha de sincronização, gerente ou admin define a mesma
+senha nova que o agente escolheu no aparelho.
 
 ---
 
