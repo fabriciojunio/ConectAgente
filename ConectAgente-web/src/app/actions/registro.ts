@@ -289,6 +289,90 @@ export async function aprovarSolicitacao(
 }
 
 // ---------------------------------------------------------------------------
+// Redefinir a senha de sincronização de um agente
+// ---------------------------------------------------------------------------
+
+/** Mesma regra de senha do cadastro. */
+const senhaDeAcessoSchema = registroSchema.shape.senha;
+
+/**
+ * Papéis cuja senha cada aprovador pode redefinir.
+ *
+ * Só para baixo na hierarquia. Se um gerente pudesse redefinir a senha de
+ * outro gerente ou de um admin, entraria na conta dele: seria elevação de
+ * privilégio com um clique.
+ */
+const PODE_REDEFINIR: Record<string, string[]> = {
+  gerente: ['agente', 'coordenador'],
+  admin: ['agente', 'coordenador', 'gerente'],
+};
+
+/**
+ * Redefine a senha que o aplicativo usa para sincronizar.
+ *
+ * Por que existe. A recuperação de senha do aplicativo é local: troca a senha
+ * de entrar no aparelho com o código de recuperação, sem servidor. A conta do
+ * agente no Supabase Auth usa um e-mail interno (`<cpf>@conectagente.local`),
+ * que não recebe mensagem, então não há "esqueci a senha" do lado do
+ * servidor. Sem esta ação, o agente que recuperava a senha ficava com a
+ * sincronização parada para sempre. O aplicativo avisa e manda procurar a
+ * coordenação; é aqui que a coordenação resolve.
+ */
+export async function redefinirSenhaDeAcesso(
+  agenteId: string,
+  novaSenha: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const autorizacao = await exigirAprovador();
+    if (!autorizacao.ok) {
+      return { success: false, error: autorizacao.erro };
+    }
+    const aprovadorId = autorizacao.aprovadorId;
+
+    if (agenteId === aprovadorId) {
+      return { success: false, error: 'Para trocar a sua própria senha, use a sua conta.' };
+    }
+
+    const parsed = senhaDeAcessoSchema.safeParse(novaSenha);
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues[0].message };
+    }
+
+    const { allowed } = await rateLimit(`senha:${aprovadorId}`, 10, 60_000);
+    if (!allowed) {
+      return { success: false, error: 'Muitas tentativas. Aguarde um minuto.' };
+    }
+
+    const admin = createAdminClient();
+    const [{ data: aprovador }, { data: alvo }] = await Promise.all([
+      admin.from('agentes').select('role').eq('id', aprovadorId).maybeSingle(),
+      admin.from('agentes').select('role, ativo').eq('id', agenteId).maybeSingle(),
+    ]);
+
+    if (!alvo || alvo.ativo === false) {
+      return { success: false, error: 'Agente não encontrado ou inativo.' };
+    }
+    if (!aprovador || !(PODE_REDEFINIR[aprovador.role] ?? []).includes(alvo.role)) {
+      return { success: false, error: 'Você não pode redefinir a senha desta conta.' };
+    }
+
+    const { error } = await admin.auth.admin.updateUserById(agenteId, { password: parsed.data });
+    if (error) throw error;
+
+    // Ato administrativo: dá acesso à conta de outra pessoa. A trilha guarda
+    // quem fez, e nunca a senha.
+    await registrarAcao('REDEFINIR_SENHA', 'agentes', agenteId, undefined, {
+      redefinida_por: aprovadorId,
+    });
+
+    return { success: true };
+  } catch (err) {
+    console.error('Erro ao redefinir senha de acesso:', err);
+    return { success: false, error: 'Erro interno ao redefinir a senha.' };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Rejeitar solicitação
 // ---------------------------------------------------------------------------
 export async function rejeitarSolicitacao(

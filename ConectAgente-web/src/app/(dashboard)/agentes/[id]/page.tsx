@@ -8,6 +8,7 @@ import { getVisitasByAgente } from '@/services/visitaService';
 import { formatDataDaVisita, dataDaVisita, diaLocal, calcularDiasSemVisita, getNivelCriticidade, getCriticidadeColor, withTimeout } from '@/lib/utils';
 import VisitasLineChart from '@/components/charts/VisitasLineChart';
 import { EmptyState } from '@/components/ui/empty-state';
+import { SenhaDeSincronizacao } from '@/components/agentes/SenhaDeSincronizacao';
 import type { VisitaComDetalhes } from '@/types';
 import {
   Loader2,
@@ -380,6 +381,8 @@ export default function AgenteDetailPage() {
           })()}
         </div>
       )}
+
+      <SenhaDeSincronizacao agenteId={agente.id} />
     </div>
   );
 }
