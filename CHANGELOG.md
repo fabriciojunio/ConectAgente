@@ -6,6 +6,46 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Não Lançado]
 
+## [1.2.3] - 2026-11-10
+
+### Segurança
+
+- **A tela de entrada mostrava a senha do administrador** para quem abrisse o
+  aplicativo, e o aviso só saía com um toque dentro da área administrativa.
+  Agora o administrador nasce sem senha e quem instala escolhe a senha em
+  "Configurar administrador". Instalação vinda da 1.2.x tem a senha exibida
+  tratada como vazada: a atualização a apaga e pede configuração nova.
+- **"Esqueci minha senha" trocava a senha de qualquer conta com CPF e
+  e-mail**, que não são segredo; os do administrador estavam na tela e no
+  código. Passa a exigir o código de recuperação, mostrado uma única vez no
+  cadastro e trocado a cada uso. O administrador gera um código novo para o
+  agente que perdeu o dele.
+- **Hash de senha em PBKDF2-HMAC-SHA256** com 100 mil iterações, no lugar de
+  um SHA-256 de uma passada. Senhas antigas são regravadas no próximo login.
+- **O limite de tentativas não zera mais ao reabrir o aplicativo.**
+
+### Adicionado
+
+- Painel: gerente e admin redefinem a senha de sincronização de quem está
+  abaixo deles (Agentes → detalhes), para o agente que recuperou a senha no
+  aparelho. O aplicativo avisa no login quando a sincronização parou por isso.
+- Aplicativo: reiniciar o aparelho sem reinstalar, para o administrador que
+  perdeu senha e código. Mostra quanto ainda não sincronizou e exige
+  confirmação digitada.
+- Planilhas organizadas no aplicativo e no painel: datas e números como
+  valores de verdade, filtro no cabeçalho, largura das colunas, ordem
+  cronológica, aba de resumo (aplicativo) e de filtros aplicados (painel).
+
+### Corrigido
+
+- **A planilha exportada pelo aplicativo saía com o endereço como código** (o
+  UUID da residência) e o paciente sempre vazio: a consulta buscava os dois e
+  o mapeamento os descartava.
+- Campo vazio da planilha saía como `'-`. A proteção contra fórmula continua
+  no CSV; no Excel cada célula é gravada como texto declarado.
+- Status do relatório do painel aparecia com o valor do banco
+  (`nao_encontrado`).
+
 ## [1.2.2] - 2026-11-09
 
 ### Segurança
