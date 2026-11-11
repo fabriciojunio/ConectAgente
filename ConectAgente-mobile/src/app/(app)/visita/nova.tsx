@@ -90,7 +90,7 @@ export default function NovaVisita() {
         // Pré-preenche apenas campos contextuais (NÃO sinais vitais, queixas, observações)
         if (ultima.morador_id && !morador_id) setValue('morador_id', ultima.morador_id);
         const motivosValidos = ['rotina', 'busca_ativa', 'urgencia', 'retorno', 'solicitacao'] as const;
-        if (ultima.motivo_visita && motivosValidos.includes(ultima.motivo_visita as any)) {
+        if (ultima.motivo_visita && (motivosValidos as readonly string[]).includes(ultima.motivo_visita)) {
           setValue('motivo_visita', ultima.motivo_visita as typeof motivosValidos[number]);
         }
         if (ultima.medicamentos_em_dia != null) setValue('medicamentos_em_dia', ultima.medicamentos_em_dia);

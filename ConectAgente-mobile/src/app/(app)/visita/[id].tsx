@@ -177,13 +177,17 @@ export default function DetalheVisita() {
   );
 }
 
-function Section({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
+function Section({ title, icon, children }: {
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  children: React.ReactNode;
+}) {
   const { colors } = useTheme();
   const styles = useMemo(() => criarStyles(colors), [colors]);
   return (
     <Card style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Ionicons name={icon as any} size={18} color={colors.primary} />
+        <Ionicons name={icon} size={18} color={colors.primary} />
         <Text style={styles.sectionTitle}>{title}</Text>
       </View>
       {children}

@@ -161,7 +161,7 @@ export default function AdminDashboard() {
                     {v.logradouro}, {v.numero} - {v.bairro}
                   </Text>
                   <Text style={styles.visitaInfo} numberOfLines={1}>
-                    {(v as any).agente_nome ?? 'Agente'} · {formatDate(v.data_visita)}
+                    {v.agente_nome ?? 'Agente'} · {formatDate(v.data_visita)}
                   </Text>
                 </View>
                 <View style={[styles.statusChip, { backgroundColor: v.status === 'realizada' ? colors.successLight : colors.warningLight }]}>
