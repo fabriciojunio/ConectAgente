@@ -82,17 +82,18 @@ npm run build
 bash ConectAgente-web/supabase/testes/rodar-todos.sh
 ```
 
-Estado medido em 09/11/2026:
+Estado medido em 11/11/2026, versão 1.2.4:
 
 | O que | Resultado |
 |---|---|
-| Testes do aplicativo | 668 em 37 suítes |
-| Testes do painel | 375 em 32 suítes |
-| Verificações em banco de verdade | 127 em 5 suítes, mais a de instalação repetida |
+| Testes do aplicativo | 865 em 44 suítes, incluindo contraste do tema e navegação |
+| Testes do painel | 405 em 34 suítes |
+| Verificações em banco de verdade | 6 suítes, todas aprovadas, incluindo a de instalação repetida |
 | Erros de tipo | 0 nos dois projetos |
-| Avisos de ESLint | 3, todos de import sem uso, anteriores |
+| Avisos de ESLint | 0 |
 | Vulnerabilidade (OSV-Scanner) | 0 sem aceite; as de ferramenta de build têm motivo e prazo em `osv-scanner.toml` |
-| Análise estática (Semgrep) | 0 achados em 218 arquivos |
+| Análise estática (Semgrep) | 0 achados |
+| `as any` no aplicativo | 0 |
 
 As suítes de banco sobem um PostgreSQL descartável numa porta própria,
 aplicam o schema e as migrações, exercitam um caminho real e se autodestroem.
@@ -123,10 +124,13 @@ pull request é o momento mais caro.
 
 ```
 ConectAgente-mobile/        aplicativo Expo + React Native (28 telas)
-  src/app/                  rotas, por expo-router
+  src/app/                  rotas, por expo-router; a tela só monta
+  src/features/             regra, dados e estilo de cada tela
+  src/components/           componentes reutilizados
   src/database/             SQLite local, 18 tabelas, e os repositórios
   src/services/             autenticação, sincronização, exportação, CEP
-  src/utils/                validação, criptografia, LGPD, formatação
+  src/utils/                validação, criptografia, LGPD, formatação, navegação
+  modules/pbkdf2-nativo/    hash de senha em código nativo do Android
   supabase/schema.sql        schema do servidor (13 tabelas)
 
 ConectAgente-web/           painel Next.js 15 (16 rotas)
@@ -142,6 +146,9 @@ docs/
   seguranca.md              modelo de segurança e o que foi corrigido
   lgpd.md                   o que está implementado e o que não está
   mobsf.md                  análise do APK com MobSF: o que foi corrigido e o que fica aceito
+  modelo-de-ameacas.md      STRIDE e LINDDUN, cada ameaça com o controle e a prova
+  masvs.md                  OWASP MASVS item por item
+  auditoria-lgpd.md         auditoria LGPD em oito grupos e relatório de impacto
 ```
 
 ---
