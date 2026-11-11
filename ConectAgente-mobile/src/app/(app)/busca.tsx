@@ -121,10 +121,10 @@ export default function Busca() {
 
       <TouchableOpacity style={styles.searchBtn} onPress={buscar} disabled={isSearching}>
         {isSearching ? (
-          <ActivityIndicator color={colors.white} />
+          <ActivityIndicator color={colors.onSolid} />
         ) : (
           <>
-            <Ionicons name="search" size={18} color={colors.white} />
+            <Ionicons name="search" size={18} color={colors.onSolid} />
             <Text style={styles.searchBtnText}>Buscar</Text>
           </>
         )}
@@ -182,7 +182,7 @@ export default function Busca() {
 const criarStyles = (colors: ThemeColors) =>
   StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  modeContainer: { flexDirection: 'row', gap: SPACING.sm, padding: SPACING.md, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  modeContainer: { flexDirection: 'row', gap: SPACING.sm, padding: SPACING.md, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   modeBtn: {
     flex: 1, paddingVertical: SPACING.sm, borderRadius: RADIUS.full,
     borderWidth: 1.5, borderColor: colors.borderLight, alignItems: 'center',
@@ -192,7 +192,7 @@ const criarStyles = (colors: ThemeColors) =>
   modeBtnTextActive: { color: colors.primary },
   searchContainer: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    margin: SPACING.md, backgroundColor: colors.white, borderRadius: RADIUS.sm,
+    margin: SPACING.md, backgroundColor: colors.surface, borderRadius: RADIUS.sm,
     paddingHorizontal: SPACING.sm, borderWidth: 1.5, borderColor: colors.border, height: 48,
   },
   input: { flex: 1, fontSize: FONT_SIZE.md, color: colors.text },
@@ -201,15 +201,15 @@ const criarStyles = (colors: ThemeColors) =>
     marginHorizontal: SPACING.md, backgroundColor: colors.primary, borderRadius: RADIUS.full,
     height: 48,
   },
-  searchBtnText: { color: colors.white, fontSize: FONT_SIZE.md, fontWeight: '700' },
+  searchBtnText: { color: colors.onSolid, fontSize: FONT_SIZE.md, fontWeight: '700' },
   list: { padding: SPACING.md, gap: SPACING.sm },
   resultCard: {},
   resultRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   avatar: {
     width: 48, height: 48, borderRadius: 24,
-    backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
   },
-  avatarText: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: colors.white },
+  avatarText: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: colors.onSolid },
   resultInfo: { flex: 1 },
   resultName: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.text },
   resultMeta: { fontSize: FONT_SIZE.sm, color: colors.textLight },

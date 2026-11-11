@@ -518,7 +518,7 @@ const criarStyles = (colors: ThemeColors) =>
   container: { flex: 1, backgroundColor: colors.background },
   patientBar: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    backgroundColor: colors.white, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
+    backgroundColor: colors.surface, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
     borderBottomWidth: 1, borderBottomColor: colors.borderLight,
   },
   patientInfo: { flex: 1 },
@@ -526,7 +526,7 @@ const criarStyles = (colors: ThemeColors) =>
   patientMeta: { fontSize: FONT_SIZE.xs, color: colors.textLight },
   conditionBadges: { flexDirection: 'row', gap: 4 },
   versao: { fontSize: FONT_SIZE.xs, color: colors.placeholder },
-  stepsNav: { backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.borderLight, maxHeight: 52 },
+  stepsNav: { backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.borderLight, maxHeight: 52 },
   stepsNavContent: { paddingHorizontal: SPACING.sm, paddingVertical: SPACING.xs, gap: SPACING.xs, flexDirection: 'row', alignItems: 'center' },
   stepTab: {
     flexDirection: 'row', alignItems: 'center', gap: 4,

@@ -94,10 +94,10 @@ export default function Calendario() {
         onDayPress={onDayPress}
         markedDates={markedDates}
         theme={{
-          backgroundColor: colors.white,
-          calendarBackground: colors.white,
+          backgroundColor: colors.surface,
+          calendarBackground: colors.surface,
           selectedDayBackgroundColor: colors.primary,
-          selectedDayTextColor: colors.white,
+          selectedDayTextColor: colors.onSolid,
           todayTextColor: colors.primary,
           dayTextColor: colors.text,
           textDisabledColor: colors.placeholder,
@@ -186,5 +186,5 @@ const criarStyles = (colors: ThemeColors) =>
     backgroundColor: colors.primary, borderRadius: RADIUS.full,
     paddingHorizontal: SPACING.sm, paddingVertical: 6,
   },
-  realizarText: { color: colors.white, fontSize: FONT_SIZE.sm, fontWeight: '700' },
+  realizarText: { color: colors.onSolid, fontSize: FONT_SIZE.sm, fontWeight: '700' },
 });

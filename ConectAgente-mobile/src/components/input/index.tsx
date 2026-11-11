@@ -54,7 +54,7 @@ const criarStyles = (colors: ThemeColors) =>
     paddingHorizontal: SPACING.sm,
     fontSize: FONT_SIZE.md,
     color: colors.text,
-    backgroundColor: colors.white,
+    backgroundColor: colors.inputBg,
   },
   wrapper: {
     width: '100%',
@@ -64,7 +64,7 @@ const criarStyles = (colors: ThemeColors) =>
     borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
+    backgroundColor: colors.inputBg,
     paddingHorizontal: SPACING.sm,
   },
   inputInner: {

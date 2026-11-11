@@ -266,9 +266,9 @@ const criarStyles = (colors: ThemeColors) =>
   avatarRow: { flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.sm },
   avatar: {
     width: 60, height: 60, borderRadius: 30,
-    backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
   },
-  avatarText: { fontSize: FONT_SIZE.xxl, fontWeight: '800', color: colors.white },
+  avatarText: { fontSize: FONT_SIZE.xxl, fontWeight: '800', color: colors.onSolid },
   avatarInfo: { flex: 1, justifyContent: 'center' },
   name: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: colors.text },
   ageText: { fontSize: FONT_SIZE.md, color: colors.textLight },
@@ -285,7 +285,7 @@ const criarStyles = (colors: ThemeColors) =>
   actionBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: SPACING.xs, padding: SPACING.sm, borderRadius: RADIUS.md,
-    borderWidth: 1.5, backgroundColor: colors.white,
+    borderWidth: 1.5, backgroundColor: colors.surface,
   },
   actionText: { fontSize: FONT_SIZE.sm, fontWeight: '600' },
   section: { gap: SPACING.sm },

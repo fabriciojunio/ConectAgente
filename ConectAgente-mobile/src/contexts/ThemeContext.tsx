@@ -6,16 +6,17 @@ export type ThemeMode = 'light' | 'dark' | 'system';
 
 const LIGHT = {
   primary: '#1565C0', primaryDark: '#0D47A1', primaryLight: '#42A5F5',
-  primaryGradient: ['#0D47A1', '#1976D2', '#42A5F5'] as const,
-  secondary: '#00897B', secondaryLight: '#E0F2F1',
+  primaryGradient: ['#0D47A1', '#1565C0', '#1976D2'] as const,
+  secondary: '#00766A', secondaryLight: '#E0F2F1',
   background: '#F4F6FA', surface: '#FFFFFF', surfaceAlt: '#EEF2FB',
-  white: '#FFFFFF', black: '#000000',
-  text: '#0F1621', textMedium: '#374151', textLight: '#6B7280', placeholder: '#9CA3AF',
+  // Texto e ícone sobre fundo colorido. Ver o comentário em DARK.
+  onSolid: '#FFFFFF', onGradient: '#FFFFFF', switchThumb: '#FFFFFF',
+  text: '#0F1621', textMedium: '#374151', textLight: '#5F6876', placeholder: '#6B7280',
   border: '#D1D9E6', borderLight: '#E5EAF2',
-  error: '#D32F2F', errorLight: '#FFEBEE',
+  error: '#C62828', errorLight: '#FFEBEE',
   success: '#2E7D32', successLight: '#E8F5E9',
-  warning: '#E65100', warningLight: '#FFF3E0',
-  info: '#0277BD', infoLight: '#E1F5FE',
+  warning: '#B9470B', warningLight: '#FFF3E0',
+  info: '#01669E', infoLight: '#E1F5FE',
   card: '#FFFFFF', cardShadow: 'rgba(21,101,192,0.08)',
   disabled: '#CBD5E1', overlay: 'rgba(13,71,161,0.45)', divider: '#E8EDF5',
   hipertenso: '#C62828', diabetico: '#6A1B9A', gestante: '#AD1457',
@@ -36,10 +37,15 @@ const DARK = {
   primaryGradient: ['#0D47A1', '#1565C0', '#1976D2'] as const,
   secondary: '#4DB6AC', secondaryLight: '#1A2E2C',
   background: '#0F1117', surface: '#1A1F2E', surfaceAlt: '#222840',
-  white: '#1A1F2E', black: '#FFFFFF',
-  text: '#E8ECF4', textMedium: '#B8C2D8', textLight: '#8896B0', placeholder: '#5A6880',
+  // Antes havia `white: '#1A1F2E'`: o nome dizia branco e o valor era o fundo
+  // escuro. Todo texto "branco" sobre o gradiente azul ficava azul-marinho
+  // sobre azul (contraste 1,9:1) e sumia. Agora o nome diz o papel: sobre a
+  // cor sólida, que no escuro é clara, o texto é escuro; sobre o gradiente,
+  // que é escuro nos dois temas, é branco.
+  onSolid: '#0F1117', onGradient: '#FFFFFF', switchThumb: '#B8C2D8',
+  text: '#E8ECF4', textMedium: '#B8C2D8', textLight: '#8896B0', placeholder: '#8391AB',
   border: '#2A3348', borderLight: '#232B3E',
-  error: '#EF5350', errorLight: 'rgba(239,83,80,0.15)',
+  error: '#F47C79', errorLight: 'rgba(239,83,80,0.15)',
   success: '#66BB6A', successLight: 'rgba(102,187,106,0.15)',
   warning: '#FFA726', warningLight: 'rgba(255,167,38,0.15)',
   info: '#29B6F6', infoLight: 'rgba(41,182,246,0.15)',
@@ -69,6 +75,9 @@ const DARK = {
 export type ThemeColors = Omit<typeof LIGHT, 'primaryGradient'> & {
   primaryGradient: readonly [string, string, string];
 };
+
+/** As duas paletas, para o teste de contraste conferir cada par texto e fundo. */
+export const PALETAS: Record<'claro' | 'escuro', ThemeColors> = { claro: LIGHT, escuro: DARK };
 
 interface ThemeContextData {
   mode: ThemeMode;

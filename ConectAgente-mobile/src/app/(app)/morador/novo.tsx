@@ -176,7 +176,7 @@ export default function NovoMorador() {
                         }
                       }}
                       trackColor={{ false: colors.disabled, true: colors.primaryLight }}
-                      thumbColor={value ? colors.primary : colors.white}
+                      thumbColor={value ? colors.primary : colors.switchThumb}
                     />
                   </View>
                 )}
@@ -269,7 +269,7 @@ const criarStyles = (colors: ThemeColors) =>
   container: { flex: 1, backgroundColor: colors.background },
   stepper: {
     flexDirection: 'row', alignItems: 'center', padding: SPACING.md,
-    backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.borderLight,
+    backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.borderLight,
   },
   stepItem: { alignItems: 'center', gap: 4, flex: 1 },
   stepCircle: {
@@ -278,7 +278,7 @@ const criarStyles = (colors: ThemeColors) =>
   },
   stepCircleActive: { backgroundColor: colors.primary },
   stepNumber: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.textLight },
-  stepNumberActive: { color: colors.white },
+  stepNumberActive: { color: colors.onSolid },
   stepLabel: { fontSize: FONT_SIZE.xs, color: colors.textLight },
   stepLabelActive: { color: colors.primary, fontWeight: '600' },
   stepLine: { flex: 1, height: 2, backgroundColor: colors.borderLight },

@@ -30,7 +30,7 @@ export function SwitchField<T extends FieldValues>({
             value={Boolean(value)}
             onValueChange={onChange}
             trackColor={{ false: colors.disabled, true: colors.primaryLight }}
-            thumbColor={value ? colors.primary : colors.white}
+            thumbColor={value ? colors.primary : colors.switchThumb}
           />
         </View>
       )}

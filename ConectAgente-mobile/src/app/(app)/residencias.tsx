@@ -133,7 +133,7 @@ export default function Residencias() {
         style={styles.fab}
         onPress={() => router.push('/(app)/residencia/nova')}
       >
-        <Ionicons name="add" size={28} color={colors.white} />
+        <Ionicons name="add" size={28} color={colors.onSolid} />
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -210,7 +210,7 @@ const criarStyles = (colors: ThemeColors) =>
   container: { flex: 1, backgroundColor: colors.background },
   searchContainer: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    margin: SPACING.md, backgroundColor: colors.white,
+    margin: SPACING.md, backgroundColor: colors.surface,
     borderRadius: RADIUS.sm, paddingHorizontal: SPACING.sm,
     borderWidth: 1, borderColor: colors.borderLight,
     height: 44,

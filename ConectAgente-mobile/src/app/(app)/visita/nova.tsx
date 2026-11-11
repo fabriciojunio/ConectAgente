@@ -384,7 +384,7 @@ const criarStyles = (colors: ThemeColors) =>
     flexDirection: 'row',
     gap: SPACING.sm,
     padding: SPACING.md,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
   },
