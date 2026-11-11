@@ -86,7 +86,7 @@ Estado medido em 11/11/2026, versão 1.2.4:
 
 | O que | Resultado |
 |---|---|
-| Testes do aplicativo | 865 em 44 suítes, incluindo contraste do tema e navegação |
+| Testes do aplicativo | 884 em 48 suítes, incluindo contraste do tema e navegação; cobertura de 86,4% das instruções |
 | Testes do painel | 405 em 34 suítes |
 | Verificações em banco de verdade | 6 suítes, todas aprovadas, incluindo a de instalação repetida |
 | Erros de tipo | 0 nos dois projetos |

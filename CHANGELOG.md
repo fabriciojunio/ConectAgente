@@ -6,6 +6,11 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Não Lançado]
 
+### Testes
+
+- Testes para o resumo do Início, a foto de perfil e os cartões do painel
+  (19 casos). A cobertura do aplicativo voltou a 86,44% das instruções.
+
 ## [1.2.4] - 2026-11-11
 
 ### Corrigido
