@@ -14,6 +14,9 @@ import { visitaRepository } from '../../database/repositories/visitaRepository';
 import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
 import { formatDate } from '../../utils/formatters';
 import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
+import { SectionHeader } from '../../components/ui/SectionHeader';
+import { StatCard } from '../../components/ui/StatCard';
+import { QuickAction } from '../../components/ui/QuickAction';
 
 const ADMIN_GRADIENT = ['#4A148C', '#7B1FA2', '#AB47BC'] as const;
 
@@ -97,22 +100,22 @@ export default function AdminDashboard() {
 
         {/* STATS GLOBAIS */}
         <View style={styles.statsGrid}>
-          <StatBox icon="people-outline" label="Agentes" value={stats?.totalAgentes ?? 0} color="#7B1FA2" />
-          <StatBox icon="business-outline" label="Residências" value={stats?.totalResidencias ?? 0} color={colors.info} />
-          <StatBox icon="person-outline" label="Moradores" value={stats?.totalMoradores ?? 0} color={colors.success} />
-          <StatBox icon="today-outline" label="Visitas hoje" value={stats?.totalVisitasHoje ?? 0} color={colors.warning} />
-          <StatBox icon="calendar-outline" label="Visitas/mês" value={stats?.totalVisitasMes ?? 0} color={colors.primary} />
-          <StatBox icon="sync-outline" label="Pend. sync" value={stats?.visitasPendentesSync ?? 0} color={colors.error} />
+          <StatCard style={styles.statCard} icon="people-outline" label="Agentes" value={stats?.totalAgentes ?? 0} accent="#7B1FA2" />
+          <StatCard style={styles.statCard} icon="business-outline" label="Residências" value={stats?.totalResidencias ?? 0} accent={colors.info} />
+          <StatCard style={styles.statCard} icon="person-outline" label="Moradores" value={stats?.totalMoradores ?? 0} accent={colors.success} />
+          <StatCard style={styles.statCard} icon="today-outline" label="Visitas hoje" value={stats?.totalVisitasHoje ?? 0} accent={colors.warning} />
+          <StatCard style={styles.statCard} icon="calendar-outline" label="Visitas/mês" value={stats?.totalVisitasMes ?? 0} accent={colors.primary} />
+          <StatCard style={styles.statCard} icon="sync-outline" label="Pend. sync" value={stats?.visitasPendentesSync ?? 0} accent={colors.error} />
         </View>
 
         {/* AÇÕES RÁPIDAS */}
         <View style={styles.section}>
           <SectionHeader title="Navegação rápida" />
           <View style={styles.quickRow}>
-            <QuickBtn icon="people-outline" label="Agentes" color="#7B1FA2" onPress={() => router.push('/(admin)/agentes')} />
-            <QuickBtn icon="business-outline" label="Residências" color={colors.info} onPress={() => router.push('/(admin)/residencias')} />
-            <QuickBtn icon="clipboard-outline" label="Visitas" color={colors.primary} onPress={() => router.push('/(admin)/visitas')} />
-            <QuickBtn icon="settings-outline" label="Sistema" color={colors.textMedium} onPress={() => router.push('/(admin)/configuracoes')} />
+            <QuickAction iconBoxSize={56} style={styles.quickAction} icon="people-outline" label="Agentes" color="#7B1FA2" onPress={() => router.push('/(admin)/agentes')} />
+            <QuickAction iconBoxSize={56} style={styles.quickAction} icon="business-outline" label="Residências" color={colors.info} onPress={() => router.push('/(admin)/residencias')} />
+            <QuickAction iconBoxSize={56} style={styles.quickAction} icon="clipboard-outline" label="Visitas" color={colors.primary} onPress={() => router.push('/(admin)/visitas')} />
+            <QuickAction iconBoxSize={56} style={styles.quickAction} icon="settings-outline" label="Sistema" color={colors.textMedium} onPress={() => router.push('/(admin)/configuracoes')} />
           </View>
         </View>
 
@@ -120,6 +123,7 @@ export default function AdminDashboard() {
         {topAgentes.length > 0 && (
           <View style={styles.section}>
             <SectionHeader
+              actionColor="#7B1FA2"
               title="Top agentes (mês)"
               action={{ label: 'Ver todos', onPress: () => router.push('/(admin)/agentes') }}
             />
@@ -145,6 +149,7 @@ export default function AdminDashboard() {
         {ultimasVisitas.length > 0 && (
           <View style={styles.section}>
             <SectionHeader
+              actionColor="#7B1FA2"
               title="Últimas visitas registradas"
               action={{ label: 'Ver todas', onPress: () => router.push('/(admin)/visitas') }}
             />
@@ -175,94 +180,13 @@ export default function AdminDashboard() {
   );
 }
 
-// ─── Sub-components ───────────────────────────────────────────
-
-function SectionHeader({ title, action }: { title: string; action?: { label: string; onPress: () => void } }) {
-  const { colors } = useTheme();
-  const sh = useMemo(() => criarSh(colors), [colors]);
-  return (
-    <View style={sh.row}>
-      <Text style={sh.title}>{title}</Text>
-      {action && (
-        <TouchableOpacity onPress={action.onPress} hitSlop={8}>
-          <Text style={sh.action}>{action.label}</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-}
-const criarSh = (colors: ThemeColors) =>
-  StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm },
-  title: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: colors.text },
-  action: { fontSize: FONT_SIZE.sm, color: '#7B1FA2', fontWeight: '600' },
-});
-
-function StatBox({ icon, label, value, color }: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value: number;
-  color: string;
-}) {
-  const { colors } = useTheme();
-  const sb = useMemo(() => criarSb(colors), [colors]);
-  return (
-    <View style={[sb.box, { borderTopColor: color }]}>
-      <Ionicons name={icon} size={20} color={color} />
-      <Text style={[sb.value, { color }]}>{value}</Text>
-      <Text style={sb.label}>{label}</Text>
-    </View>
-  );
-}
-const criarSb = (colors: ThemeColors) =>
-  StyleSheet.create({
-  box: {
-    width: '30%',
-    backgroundColor: colors.card,
-    borderRadius: RADIUS.md,
-    alignItems: 'center',
-    paddingVertical: SPACING.sm + 4,
-    paddingHorizontal: SPACING.xs,
-    gap: 2,
-    borderTopWidth: 3,
-    marginBottom: SPACING.xs,
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 4 },
-      android: { elevation: 2 },
-    }),
-  },
-  value: { fontSize: FONT_SIZE.xxl, fontWeight: '800', marginTop: 2 },
-  label: { fontSize: 10, color: colors.textLight, fontWeight: '500', textAlign: 'center' },
-});
-
-function QuickBtn({ icon, label, color, onPress }: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  color: string;
-  onPress: () => void;
-}) {
-  const { colors } = useTheme();
-  const qb = useMemo(() => criarQb(colors), [colors]);
-  return (
-    <TouchableOpacity style={qb.btn} onPress={onPress} activeOpacity={0.75}>
-      <View style={[qb.wrap, { backgroundColor: color + '18' }]}>
-        <Ionicons name={icon} size={26} color={color} />
-      </View>
-      <Text style={qb.label}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-const criarQb = (colors: ThemeColors) =>
-  StyleSheet.create({
-  btn: { alignItems: 'center', gap: SPACING.xs, flex: 1 },
-  wrap: { width: 56, height: 56, borderRadius: RADIUS.lg, alignItems: 'center', justifyContent: 'center' },
-  label: { fontSize: FONT_SIZE.xs, color: colors.text, fontWeight: '600', textAlign: 'center' },
-});
 
 // ─── Styles ───────────────────────────────────────────────────
 
 const criarStyles = (colors: ThemeColors) =>
   StyleSheet.create({
+  statCard: { flex: 0, width: '30%', marginBottom: SPACING.xs },
+  quickAction: { flex: 1 },
   safe: { flex: 1, backgroundColor: '#4A148C' },
   scroll: { flex: 1, backgroundColor: colors.background },
   scrollContent: { flexGrow: 1 },

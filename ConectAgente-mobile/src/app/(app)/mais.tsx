@@ -10,6 +10,7 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import { Card } from '../../components/ui/Card';
 import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
 import { BASE_LEGAL_LGPD } from '../../utils/lgpd';
+import { CHAVE_DA_FOTO } from '../../features/perfil/useFotoDePerfil';
 
 /**
  * As tres opcoes que o ThemeContext ja suportava.
@@ -35,7 +36,7 @@ export default function Mais() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
 
   useEffect(() => {
-    AsyncStorage.getItem('profile_photo_uri').then((uri) => { if (uri) setPhotoUri(uri); });
+    AsyncStorage.getItem(CHAVE_DA_FOTO).then((uri) => { if (uri) setPhotoUri(uri); });
   }, []);
 
   function confirmarLogout() {
@@ -52,11 +53,11 @@ export default function Mais() {
       <ScrollView contentContainerStyle={styles.content}>
         {/* PERFIL */}
         <Card style={styles.profileCard}>
-          <View style={[styles.avatar, { backgroundColor: colors.primaryLight, borderColor: colors.borderLight }]}>
+          <View style={[styles.avatar, { backgroundColor: colors.primary, borderColor: colors.borderLight }]}>
             {photoUri ? (
               <Image source={{ uri: photoUri }} style={styles.avatarImage} />
             ) : (
-              <Text style={[styles.avatarText, { color: colors.white }]}>{agente?.nome.charAt(0).toUpperCase()}</Text>
+              <Text style={[styles.avatarText, { color: colors.onSolid }]}>{agente?.nome.charAt(0).toUpperCase()}</Text>
             )}
           </View>
           <View style={styles.profileInfo}>
@@ -114,12 +115,12 @@ export default function Mais() {
                   <Ionicons
                     name={opcao.icone}
                     size={20}
-                    color={selecionado ? colors.white : colors.textLight}
+                    color={selecionado ? colors.onSolid : colors.textLight}
                   />
                   <Text
                     style={[
                       styles.temaRotulo,
-                      { color: selecionado ? colors.white : colors.textMedium },
+                      { color: selecionado ? colors.onSolid : colors.textMedium },
                     ]}
                   >
                     {opcao.rotulo}

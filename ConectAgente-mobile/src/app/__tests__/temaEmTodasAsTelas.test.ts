@@ -22,6 +22,7 @@ import { join } from 'path';
 
 const PASTA_APP = join(__dirname, '..');
 const PASTA_COMPONENTES = join(PASTA_APP, '..', 'components');
+const PASTA_FUNCIONALIDADES = join(PASTA_APP, '..', 'features');
 
 function todosOsArquivos(pasta: string): string[] {
   const achados: string[] = [];
@@ -29,12 +30,17 @@ function todosOsArquivos(pasta: string): string[] {
     if (entrada.name === '__tests__') continue;
     const caminho = join(pasta, entrada.name);
     if (entrada.isDirectory()) achados.push(...todosOsArquivos(caminho));
-    else if (entrada.name.endsWith('.tsx')) achados.push(caminho);
+    else if (/\.tsx?$/.test(entrada.name)) achados.push(caminho);
   }
   return achados;
 }
 
-const ARQUIVOS = [...todosOsArquivos(PASTA_APP), ...todosOsArquivos(PASTA_COMPONENTES)];
+// As telas foram divididas: estilo e componente de cada uma moram em features/.
+const ARQUIVOS = [
+  ...todosOsArquivos(PASTA_APP),
+  ...todosOsArquivos(PASTA_COMPONENTES),
+  ...todosOsArquivos(PASTA_FUNCIONALIDADES),
+];
 
 function semComentario(fonte: string): string {
   return fonte.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
