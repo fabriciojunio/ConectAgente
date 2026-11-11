@@ -34,6 +34,11 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
   cartão de número e atalho viraram componentes compartilhados com o painel
   do administrador. Nenhum `as any` no aplicativo.
 
+### Segurança
+
+- `node-forge` 1.4.3 (GHSA-6cv4-p8m7-4r25, GHSA-j8rw-jp99-435v e
+  GHSA-w4xr-hqv8-ch44), dependência do Expo CLI usada só no build.
+
 ### Documentação
 
 - Modelo de ameaças STRIDE e LINDDUN, mapa do OWASP MASVS e auditoria LGPD
