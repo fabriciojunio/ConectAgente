@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import {
   View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity, Text,
 } from 'react-native';
-import { router } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +17,7 @@ import { residenciaSchema, ResidenciaFormDataValidated, ResidenciaFormInput } fr
 import { formatCEP, stripCEP } from '../../../utils/formatters';
 import { TIPO_IMOVEL_OPTIONS, ESTADOS_BRASIL, RISCO_OPTIONS, SPACING, FONT_SIZE } from '../../../utils/constants';
 import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
+import { sairDoFormularioPara } from '../../../utils/navegacao';
 
 export default function NovaResidencia() {
   const { colors } = useTheme();
@@ -63,7 +63,7 @@ export default function NovaResidencia() {
         cep: stripCEP(data.cep),
         num_comodos: Number(data.num_comodos),
       });
-      router.replace({
+      sairDoFormularioPara({
         pathname: '/(app)/residencia/[id]',
         params: { id: residencia.id },
       });

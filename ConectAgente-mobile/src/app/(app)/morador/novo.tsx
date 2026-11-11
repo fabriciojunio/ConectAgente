@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, Switch, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,6 +21,7 @@ import { residenciaRepository } from '../../../database/repositories/residenciaR
 import { Controller } from 'react-hook-form';
 import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
 import { lgpdRepository } from '../../../database/repositories/lgpdRepository';
+import { sairDoFormularioPara } from '../../../utils/navegacao';
 
 export default function NovoMorador() {
   const { colors } = useTheme();
@@ -87,7 +88,7 @@ export default function NovoMorador() {
           .map(([campo]) => campo),
       });
 
-      router.replace({
+      sairDoFormularioPara({
         pathname: '/(app)/prontuario/[moradorId]',
         params: { moradorId: morador.id },
       });

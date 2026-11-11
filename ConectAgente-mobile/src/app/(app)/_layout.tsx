@@ -1,13 +1,19 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
+import { medidasDaBarraDeAbas } from '../../utils/navegacao';
 
 export default function AppLayout() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
+    // history: o voltar do cabeçalho e o do celular levam à tela anterior.
+    // O padrão das abas (firstRoute) mandava sempre para a primeira aba.
     <Tabs
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
@@ -17,6 +23,7 @@ export default function AppLayout() {
           borderTopWidth: 1,
           borderTopColor: colors.borderLight,
           paddingTop: 6,
+          ...medidasDaBarraDeAbas(insets.bottom),
           ...Platform.select({
             ios: {
               shadowColor: colors.primary,
