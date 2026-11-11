@@ -31,7 +31,7 @@ O código declara isso em `ConectAgente-mobile/src/utils/lgpd.ts`, na constante
 
 | Requisito | Onde | Verificado por |
 |---|---|---|
-| Segurança do tratamento (art. 46) | RLS em todas as tabelas, hash de senha com sal, SecureStore para chave e token | `rodar-testes-rls.sh`, 22 verificações |
+| Segurança do tratamento (art. 46) | RLS em todas as tabelas, senha com PBKDF2, banco do aparelho em SQLCipher, SecureStore para chave e token | `rodar-testes-rls.sh`, 22 verificações |
 | Controle de acesso por papel | policies do banco, espelhadas nos guardas de tela | `contratoPapeis.test.ts` |
 | Trilha imutável | `audit_log` append-only, `REVOKE UPDATE, DELETE`, leitura só para gerente e admin | `rodar-testes-rls.sh` |
 | Exclusão lógica | `deleted_at` em `residencias`, `moradores` e `visitas` | schema |

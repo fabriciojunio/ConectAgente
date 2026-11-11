@@ -30,7 +30,7 @@ serve para a pessoa não errar, não para impedir quem quer invadir.
 
 | Onde | Como |
 |---|---|
-| Aplicativo, uso offline | autenticação local no SQLite, hash com sal por `expo-crypto` |
+| Aplicativo, uso offline | autenticação local no SQLite, senha com PBKDF2-HMAC-SHA256 (100 mil iterações) calculado em código nativo do Android, bloqueio de 15 minutos depois de 5 erros |
 | Aplicativo, sincronização | sessão do Supabase Auth, aberta no login quando há rede |
 | Painel web | sessão do Supabase Auth, por cookie, renovada pelo middleware |
 
@@ -67,7 +67,7 @@ não há dado em vez de que não tem permissão.
 
 ### 3. Dado em repouso
 
-- Senha: hash com sal, comparação em tempo constante.
+- Senha: PBKDF2-HMAC-SHA256 com sal de 16 bytes e 100 mil iterações, comparação em tempo constante. No Android o cálculo é nativo (`modules/pbkdf2-nativo`): em JavaScript puro, no Hermes, levava segundos por login. A saída é idêntica à da `@noble/hashes`, conferida com os vetores da RFC 7914.
 - Banco local: **cifrado inteiro com SQLCipher**. A chave é de 256 bits,
   sorteada na primeira execução e guardada no Keystore do aparelho
   (`database/chave.ts`); é aplicada com `PRAGMA key` como a primeira operação da
@@ -366,6 +366,11 @@ usuário não pode ler as colunas atualizadas (o mesmo efeito visto em
 antigo é recusado em vez de aceito em silêncio.
 
 ## O que continua em aberto
+
+A lista completa, por ameaça e com a prova de cada controle, está em
+[modelo-de-ameacas.md](modelo-de-ameacas.md); o mapa do OWASP MASVS em
+[masvs.md](masvs.md); e a auditoria LGPD com o relatório de impacto em
+[auditoria-lgpd.md](auditoria-lgpd.md).
 
 - **As fichas só fecham com a 1.2.2 instalada.** A migração recusa o upsert das
   versões anteriores, então entra no banco junto com a distribuição da 1.2.2.

@@ -6,6 +6,39 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Não Lançado]
 
+## [1.2.4] - 2026-11-11
+
+### Corrigido
+
+- **Entrar, criar conta e trocar senha demoravam segundos.** As 100 mil
+  iterações do PBKDF2 rodavam em JavaScript puro no Hermes, que não tem JIT.
+  O cálculo passou para código nativo do Android (`modules/pbkdf2-nativo`),
+  fora da thread da tela, com saída idêntica à anterior: as senhas já
+  gravadas continuam valendo.
+- **O botão de voltar não levava à tela anterior.** As abas mandavam o
+  voltar para a primeira aba, o cabeçalho abria uma tela nova em vez de
+  voltar, e o formulário salvo ficava no histórico. O botão do cabeçalho e o
+  do celular agora voltam para onde a pessoa estava.
+- **A barra de abas ficava por baixo dos botões do Android.**
+- **Tema escuro ilegível.** O "branco" da paleta escura valia o fundo escuro,
+  e o texto sobre o gradiente (nome, meta, botões) sumia, com contraste de
+  1,9:1. As duas paletas passam no mínimo do WCAG AA (4,5:1), conferido por
+  teste, inclusive cores do tema claro que estavam abaixo.
+- **Semanas de gestação vazias eram gravadas como texto** numa coluna de
+  número, e a sincronização para o servidor falhava.
+
+### Alterado
+
+- Tela de Início reorganizada: a rota só monta a tela, e regra, dados,
+  estilos e partes visuais ficam em `src/features/`. Cabeçalho de seção,
+  cartão de número e atalho viraram componentes compartilhados com o painel
+  do administrador. Nenhum `as any` no aplicativo.
+
+### Documentação
+
+- Modelo de ameaças STRIDE e LINDDUN, mapa do OWASP MASVS e auditoria LGPD
+  com relatório de impacto, em `docs/`.
+
 ## [1.2.3] - 2026-11-10
 
 ### Segurança
