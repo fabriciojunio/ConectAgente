@@ -12,7 +12,7 @@ import type {
   FamiliaEmAtraso,
   GlobalFilters,
 } from '@/types';
-import { formatDate, formatDataDaVisita, fimExclusivo } from '@/lib/utils';
+import { formatDataDaVisita, fimExclusivo } from '@/lib/utils';
 import { selectVisitas } from './visitaService';
 import { selectResidencias } from './familiaService';
 import { buscarTudo } from '@/lib/buscarEmLotes';

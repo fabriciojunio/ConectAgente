@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import type { AuditLog } from '@/types';
 
 /**
  * Registra uma ação de auditoria no banco de dados.

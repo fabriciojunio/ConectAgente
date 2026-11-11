@@ -82,17 +82,18 @@ npm run build
 bash ConectAgente-web/supabase/testes/rodar-todos.sh
 ```
 
-State measured on 09/11/2026:
+State measured on 11/11/2026, version 1.2.4:
 
 | What | Result |
 |---|---|
-| App tests | 668 in 37 suites |
-| Panel tests | 375 in 32 suites |
-| Checks against a real database | 127 in 5 suites, plus the repeated-install one |
+| App tests | 865 in 44 suites, including theme contrast and navigation |
+| Panel tests | 405 in 34 suites |
+| Checks against a real database | 6 suites, all passing, including the repeated-install one |
 | Type errors | 0 in both projects |
-| ESLint warnings | 3, all unused imports, pre-existing |
+| ESLint warnings | 0 |
 | Vulnerabilities (OSV-Scanner) | 0 unaccepted; build-tool ones have a reason and deadline in `osv-scanner.toml` |
-| Static analysis (Semgrep) | 0 findings in 218 files |
+| Static analysis (Semgrep) | 0 findings |
+| `as any` in the app | 0 |
 
 The database suites start a throwaway PostgreSQL on its own port, apply the
 schema and migrations, exercise a real path and tear themselves down. Nothing
@@ -123,10 +124,13 @@ most expensive moment.
 
 ```
 ConectAgente-mobile/        Expo + React Native app (28 screens)
-  src/app/                  routes, via expo-router
+  src/app/                  routes, via expo-router; the screen only composes
+  src/features/             rules, data and styles of each screen
+  src/components/           shared components
   src/database/             local SQLite, 18 tables, and the repositories
   src/services/             authentication, sync, export, postcode lookup
-  src/utils/                validation, cryptography, LGPD, formatting
+  src/utils/                validation, cryptography, LGPD, formatting, navigation
+  modules/pbkdf2-nativo/    password hashing in native Android code
   supabase/schema.sql       server schema (13 tables)
 
 ConectAgente-web/           Next.js 15 panel (16 routes)
@@ -141,6 +145,9 @@ docs/                       (in Portuguese)
   arquitetura.md            component overview
   seguranca.md              security model and what was fixed
   lgpd.md                   what is implemented and what is not
+  modelo-de-ameacas.md      STRIDE and LINDDUN threat model, each threat with its control and proof
+  masvs.md                  OWASP MASVS, item by item
+  auditoria-lgpd.md         LGPD audit in eight groups and the impact assessment
 ```
 
 English versions of the security documents are in [docs/en/](docs/en/), including the

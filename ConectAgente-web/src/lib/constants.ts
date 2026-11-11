@@ -1,5 +1,4 @@
 import type { UserRole, SidebarItem } from '@/types';
-import { NivelCriticidade, StatusVisita } from '@/types';
 
 // ---------------------------------------------------------------------------
 // Routes
