@@ -21,7 +21,7 @@ type GlobalStats = Awaited<ReturnType<typeof agenteRepository.obterEstatisticasG
 // mudam com o tema, e no nivel do modulo nao ha paleta para ler.
 const criarAcaoIcons = (
   colors: ThemeColors
-): Record<string, { icon: string; color: string }> => ({
+): Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string }> => ({
   RESET_SENHA: { icon: 'key-outline', color: colors.warning },
   INSERT: { icon: 'add-circle-outline', color: colors.success },
   UPDATE: { icon: 'create-outline', color: colors.info },
@@ -65,7 +65,7 @@ export default function AdminConfiguracoes() {
     setLimite((prev) => prev + 20);
   }
 
-  function getIconProps(acao: string) {
+  function getIconProps(acao: string): { icon: keyof typeof Ionicons.glyphMap; color: string } {
     const key = Object.keys(ACAO_ICONS).find((k) => acao.toUpperCase().includes(k));
     return key ? ACAO_ICONS[key] : { icon: 'ellipse-outline', color: colors.textLight };
   }
@@ -192,7 +192,7 @@ export default function AdminConfiguracoes() {
                 return (
                   <View key={entry.id} style={styles.logEntry}>
                     <View style={[styles.logIcon, { backgroundColor: color + '20' }]}>
-                      <Ionicons name={icon as any} size={16} color={color} />
+                      <Ionicons name={icon} size={16} color={color} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <View style={styles.logTopRow}>

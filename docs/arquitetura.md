@@ -15,7 +15,9 @@ dois falam direto com o Supabase; não há servidor de aplicação no meio.
 ┌──────────────────────────────────────────────────────────────┐
 │         ConectAgente-mobile (React Native 0.81, Expo 54)      │
 │                                                              │
-│  src/app/           telas, por expo-router                    │
+│  src/app/           rotas, por expo-router (só montam a tela) │
+│  src/features/      regra, dados e estilo de cada tela        │
+│  src/components/    componentes reutilizados                  │
 │  src/database/      SQLite local, 18 tabelas, cifrado inteiro │
 │                     com SQLCipher; repositórios e sync_queue  │
 │  src/services/      sincronização, autenticação, exportação,  │
@@ -38,6 +40,32 @@ dois falam direto com o Supabase; não há servidor de aplicação no meio.
 │  monitoramento, território, relatórios, aprovação de cadastro │
 └──────────────────────────────────────────────────────────────┘
 ```
+
+## Organização do código do aplicativo
+
+Cada pasta tem uma responsabilidade, e a dependência anda num sentido só:
+tela → funcionalidade → serviço e repositório → banco.
+
+| Pasta | O que mora ali | O que não mora |
+|---|---|---|
+| `src/app/` | uma rota por arquivo (expo-router); a tela só monta: chama o hook, passa os dados aos componentes e navega | regra de negócio, consulta ao banco, estilo extenso. Todo arquivo aqui vira rota, então nada que não seja tela |
+| `src/features/<tela>/` | o que é de uma tela só: `regras*.ts` (funções puras, testadas sem React), `use*.ts` (carga dos dados), `estilos.ts`, `componentes.tsx` | código usado por mais de uma tela, que sobe para `components/` |
+| `src/components/` | componentes reutilizados (botão, campo, cartão, cabeçalho de seção, cartão de número, atalho) | regra de negócio |
+| `src/services/` | o que fala com o mundo de fora: sincronização, autenticação, exportação, CEP, notificação | interface |
+| `src/database/` | esquema, migrações e um repositório por tabela; toda SQL é parametrizada | regra de tela |
+| `src/utils/` | funções puras sem estado: validação (Zod), formatação, hash de senha, navegação | acesso a banco ou rede |
+| `modules/` | módulo nativo local (`pbkdf2-nativo`) | — |
+
+A tela de Início é o exemplo do padrão: a rota tem cerca de 120 linhas, e a
+regra da meta, a carga dos números, a foto de perfil e os estilos estão em
+`features/inicio` e `features/perfil`. As guardas de tema e espaçamento
+(`src/app/__tests__`) varrem `app/`, `components/` e `features/`, e o teste de
+contraste (`src/contexts/__tests__`) confere as duas paletas pelo WCAG AA.
+
+**Cor tem nome de papel, não de cor.** `onSolid` é o texto sobre cor sólida,
+`onGradient` sobre o gradiente, `surface` o fundo de cartão. A paleta antiga
+tinha `white`, que no tema escuro valia o fundo escuro e apagava o texto sobre
+o gradiente.
 
 ## Quem decide o acesso
 

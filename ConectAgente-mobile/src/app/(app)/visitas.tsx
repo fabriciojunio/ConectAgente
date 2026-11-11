@@ -130,7 +130,7 @@ export default function Visitas() {
 
       {/* FAB */}
       <TouchableOpacity style={styles.fab} onPress={() => router.push('/(app)/visita/nova')}>
-        <Ionicons name="add" size={28} color={colors.white} />
+        <Ionicons name="add" size={28} color={colors.onSolid} />
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -236,7 +236,7 @@ function traduzirStatus(status: string): string {
 const criarStyles = (colors: ThemeColors) =>
   StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  tabs: { flexDirection: 'row', backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  tabs: { flexDirection: 'row', backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   tab: { flex: 1, paddingVertical: SPACING.sm, alignItems: 'center' },
   tabActive: { borderBottomWidth: 2.5, borderBottomColor: colors.primary },
   tabText: { fontSize: FONT_SIZE.sm, color: colors.textLight, fontWeight: '600' },

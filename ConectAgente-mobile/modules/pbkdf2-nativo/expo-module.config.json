@@ -1,0 +1,6 @@
+{
+  "platforms": ["android"],
+  "android": {
+    "modules": ["expo.modules.pbkdf2nativo.Pbkdf2NativoModule"]
+  }
+}

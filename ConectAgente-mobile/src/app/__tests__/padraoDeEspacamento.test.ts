@@ -48,15 +48,17 @@ function todasAsTelas(pasta: string): string[] {
     if (entrada.isDirectory()) {
       if (entrada.name === '__tests__') continue;
       achados.push(...todasAsTelas(caminho));
-    } else if (entrada.name.endsWith('.tsx')) {
+    } else if (/\.tsx?$/.test(entrada.name)) {
       achados.push(caminho);
     }
   }
   return achados;
 }
 
+const PASTA_FUNCIONALIDADES = join(PASTA_APP, '..', 'features');
+
 describe('space-between só em container horizontal', () => {
-  it.each(todasAsTelas(PASTA_APP).map((c) => [c.replace(PASTA_APP, ''), c]))(
+  it.each([...todasAsTelas(PASTA_APP), ...todasAsTelas(PASTA_FUNCIONALIDADES)].map((c) => [c.replace(PASTA_APP, ''), c]))(
     '%s',
     (_nome, caminho) => {
       const fonte = fonteSemComentario(caminho);

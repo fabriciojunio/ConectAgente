@@ -219,7 +219,7 @@ export default function ResidenciaDetalhe() {
               })}
               style={styles.addButton}
             >
-              <Ionicons name="add" size={18} color={colors.white} />
+              <Ionicons name="add" size={18} color={colors.onSolid} />
               <Text style={styles.addButtonText}>Adicionar</Text>
             </TouchableOpacity>
           </View>
@@ -445,7 +445,7 @@ const criarStyles = (colors: ThemeColors) =>
   riscoBotao: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3,
     paddingVertical: 6, paddingHorizontal: 2, borderRadius: RADIUS.sm, borderWidth: 1, borderColor: colors.borderLight,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
   },
   riscoBotaoText: { fontSize: 10 },
   infoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
@@ -460,21 +460,21 @@ const criarStyles = (colors: ThemeColors) =>
     backgroundColor: colors.primary, borderRadius: RADIUS.full,
     paddingHorizontal: SPACING.sm, paddingVertical: 6,
   },
-  addButtonText: { color: colors.white, fontSize: FONT_SIZE.sm, fontWeight: '600' },
+  addButtonText: { color: colors.onSolid, fontSize: FONT_SIZE.sm, fontWeight: '600' },
   moradorCard: { gap: SPACING.xs },
   moradorHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   avatar: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
   },
-  avatarText: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: colors.white },
+  avatarText: { fontSize: FONT_SIZE.xl, fontWeight: '800', color: colors.onSolid },
   moradorInfo: { flex: 1 },
   moradorNameRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, flexWrap: 'wrap' },
   moradorName: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.text },
   moradorDetails: { fontSize: FONT_SIZE.sm, color: colors.textLight },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 },
   visitaCard: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderRadius: RADIUS.md,
     padding: SPACING.sm + 2,
     marginBottom: SPACING.xs,
@@ -499,7 +499,7 @@ const criarStyles = (colors: ThemeColors) =>
   actions: { gap: SPACING.sm },
   actionBtn: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    backgroundColor: colors.white, borderRadius: RADIUS.md,
+    backgroundColor: colors.surface, borderRadius: RADIUS.md,
     padding: SPACING.md, borderWidth: 1.5, borderColor: colors.primary,
   },
   actionText: { fontSize: FONT_SIZE.md, color: colors.primary, fontWeight: '600' },

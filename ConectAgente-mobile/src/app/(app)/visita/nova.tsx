@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +20,7 @@ import { useResidencias } from '../../../hooks/useResidencias';
 import { visitaRepository } from '../../../database/repositories/visitaRepository';
 import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
 import { agendarLembreteVisita } from '../../../services/notificationService';
+import { sairDoFormularioPara } from '../../../utils/navegacao';
 
 const MOTIVO_OPTIONS = [
   { label: 'Visita de rotina', value: 'rotina' },
@@ -89,7 +90,7 @@ export default function NovaVisita() {
         // Pré-preenche apenas campos contextuais (NÃO sinais vitais, queixas, observações)
         if (ultima.morador_id && !morador_id) setValue('morador_id', ultima.morador_id);
         const motivosValidos = ['rotina', 'busca_ativa', 'urgencia', 'retorno', 'solicitacao'] as const;
-        if (ultima.motivo_visita && motivosValidos.includes(ultima.motivo_visita as any)) {
+        if (ultima.motivo_visita && (motivosValidos as readonly string[]).includes(ultima.motivo_visita)) {
           setValue('motivo_visita', ultima.motivo_visita as typeof motivosValidos[number]);
         }
         if (ultima.medicamentos_em_dia != null) setValue('medicamentos_em_dia', ultima.medicamentos_em_dia);
@@ -128,7 +129,7 @@ export default function NovaVisita() {
         precisa_agendamento: data.precisa_agendamento,
         especialidade_agendamento: data.especialidade_agendamento,
       });
-      router.replace(
+      sairDoFormularioPara(
         residencia_id
           ? { pathname: '/(app)/residencia/[id]', params: { id: residencia_id } }
           : '/(app)/visitas'
@@ -167,7 +168,7 @@ export default function NovaVisita() {
         quando: new Date(`${parseDateBR(data.data_visita)}T09:00:00`),
       });
 
-      router.replace('/(app)/calendario');
+      sairDoFormularioPara('/(app)/calendario');
     } catch (error) {
       Alert.alert('Erro', error instanceof Error ? error.message : 'Erro ao agendar');
     } finally {
@@ -383,7 +384,7 @@ const criarStyles = (colors: ThemeColors) =>
     flexDirection: 'row',
     gap: SPACING.sm,
     padding: SPACING.md,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
   },

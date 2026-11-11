@@ -22,6 +22,7 @@ import { validarDataBR } from '../../../utils/validators';
 import { SPACING, FONT_SIZE, RADIUS, ESPECIALIDADES } from '../../../utils/constants';
 import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
 import { ACOES_AUDITORIA, auditRepository } from '../../../database/repositories/auditRepository';
+import { nivelDeVulnerabilidade, semanasDeGestacao } from '../../../features/prontuario/conversoes';
 
 type Step = 'saude' | 'gestante' | 'puericultura' | 'mulher' | 'social' | 'medicamentos';
 
@@ -307,7 +308,7 @@ export default function ProntuarioScreen() {
             <Button
               title={proximaAba ? 'Salvar e continuar' : 'Salvar dados de saúde'}
               onPress={handleSaude((data) => salvar(
-                () => prontuarioRepository.salvarSaude(prontuario.id, data as any),
+                () => prontuarioRepository.salvarSaude(prontuario.id, data),
                 proximaAba,
               ))}
               loading={isSaving}
@@ -349,7 +350,10 @@ export default function ProntuarioScreen() {
             <Button
               title={proximaAba ? 'Salvar e continuar' : 'Salvar dados de gestante'}
               onPress={handleGestante((data) => salvar(
-                () => prontuarioRepository.salvarGestante(prontuario.id, data as any),
+                () => prontuarioRepository.salvarGestante(prontuario.id, {
+                  ...data,
+                  semanas_gestacao: semanasDeGestacao(data.semanas_gestacao),
+                }),
                 proximaAba,
               ))}
               loading={isSaving}
@@ -386,7 +390,7 @@ export default function ProntuarioScreen() {
             <Button
               title={proximaAba ? 'Salvar e continuar' : 'Salvar dados de puericultura'}
               onPress={handlePuericultura((data) => salvar(
-                () => prontuarioRepository.salvarPuericultura(prontuario.id, data as any),
+                () => prontuarioRepository.salvarPuericultura(prontuario.id, data),
                 proximaAba,
               ))}
               loading={isSaving}
@@ -424,7 +428,7 @@ export default function ProntuarioScreen() {
             <Button
               title={proximaAba ? 'Salvar e continuar' : 'Salvar dados'}
               onPress={handleMulher((data) => salvar(
-                () => prontuarioRepository.salvarMulher(prontuario.id, data as any),
+                () => prontuarioRepository.salvarMulher(prontuario.id, data),
                 proximaAba,
               ))}
               loading={isSaving}
@@ -475,7 +479,10 @@ export default function ProntuarioScreen() {
             <Button
               title={proximaAba ? 'Salvar e continuar' : 'Salvar dados sociais'}
               onPress={handleSocial((data) => salvar(
-                () => prontuarioRepository.salvarSocial(prontuario.id, data as any),
+                () => prontuarioRepository.salvarSocial(prontuario.id, {
+                  ...data,
+                  vulnerabilidade_social: nivelDeVulnerabilidade(data.vulnerabilidade_social),
+                }),
                 proximaAba,
               ))}
               loading={isSaving}
@@ -518,7 +525,7 @@ const criarStyles = (colors: ThemeColors) =>
   container: { flex: 1, backgroundColor: colors.background },
   patientBar: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
-    backgroundColor: colors.white, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
+    backgroundColor: colors.surface, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
     borderBottomWidth: 1, borderBottomColor: colors.borderLight,
   },
   patientInfo: { flex: 1 },
@@ -526,7 +533,7 @@ const criarStyles = (colors: ThemeColors) =>
   patientMeta: { fontSize: FONT_SIZE.xs, color: colors.textLight },
   conditionBadges: { flexDirection: 'row', gap: 4 },
   versao: { fontSize: FONT_SIZE.xs, color: colors.placeholder },
-  stepsNav: { backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.borderLight, maxHeight: 52 },
+  stepsNav: { backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.borderLight, maxHeight: 52 },
   stepsNavContent: { paddingHorizontal: SPACING.sm, paddingVertical: SPACING.xs, gap: SPACING.xs, flexDirection: 'row', alignItems: 'center' },
   stepTab: {
     flexDirection: 'row', alignItems: 'center', gap: 4,

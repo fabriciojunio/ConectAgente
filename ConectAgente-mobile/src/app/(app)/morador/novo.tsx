@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, Switch, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,6 +21,7 @@ import { residenciaRepository } from '../../../database/repositories/residenciaR
 import { Controller } from 'react-hook-form';
 import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
 import { lgpdRepository } from '../../../database/repositories/lgpdRepository';
+import { sairDoFormularioPara } from '../../../utils/navegacao';
 
 export default function NovoMorador() {
   const { colors } = useTheme();
@@ -87,7 +88,7 @@ export default function NovoMorador() {
           .map(([campo]) => campo),
       });
 
-      router.replace({
+      sairDoFormularioPara({
         pathname: '/(app)/prontuario/[moradorId]',
         params: { moradorId: morador.id },
       });
@@ -175,7 +176,7 @@ export default function NovoMorador() {
                         }
                       }}
                       trackColor={{ false: colors.disabled, true: colors.primaryLight }}
-                      thumbColor={value ? colors.primary : colors.white}
+                      thumbColor={value ? colors.primary : colors.switchThumb}
                     />
                   </View>
                 )}
@@ -268,7 +269,7 @@ const criarStyles = (colors: ThemeColors) =>
   container: { flex: 1, backgroundColor: colors.background },
   stepper: {
     flexDirection: 'row', alignItems: 'center', padding: SPACING.md,
-    backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.borderLight,
+    backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.borderLight,
   },
   stepItem: { alignItems: 'center', gap: 4, flex: 1 },
   stepCircle: {
@@ -277,7 +278,7 @@ const criarStyles = (colors: ThemeColors) =>
   },
   stepCircleActive: { backgroundColor: colors.primary },
   stepNumber: { fontSize: FONT_SIZE.md, fontWeight: '700', color: colors.textLight },
-  stepNumberActive: { color: colors.white },
+  stepNumberActive: { color: colors.onSolid },
   stepLabel: { fontSize: FONT_SIZE.xs, color: colors.textLight },
   stepLabelActive: { color: colors.primary, fontWeight: '600' },
   stepLine: { flex: 1, height: 2, backgroundColor: colors.borderLight },

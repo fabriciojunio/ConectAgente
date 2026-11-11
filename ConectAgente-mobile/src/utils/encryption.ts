@@ -23,8 +23,25 @@
  * docs/seguranca.md.
  */
 import * as Crypto from 'expo-crypto';
+import { requireOptionalNativeModule } from 'expo';
 import { pbkdf2Async } from '@noble/hashes/pbkdf2';
 import { sha256 } from '@noble/hashes/sha2';
+
+interface Pbkdf2Nativo {
+  pbkdf2Sha256(senha: string, sal: string, iteracoes: number, tamanho: number): Promise<string>;
+}
+
+/**
+ * PBKDF2 do próprio Android (modules/pbkdf2-nativo), quando existe.
+ *
+ * Em JavaScript puro, no Hermes, as 100 mil iterações levavam segundos em cada
+ * login e cadastro, porque o Hermes não tem JIT. No Android o mesmo cálculo
+ * roda em código nativo, fora da thread da tela. A saída é idêntica byte a
+ * byte (vetores da RFC 7914 e senhas com acento conferidos contra a
+ * @noble/hashes), então os hashes já gravados continuam valendo. Nos testes e
+ * no iOS o módulo não existe e a @noble faz o cálculo.
+ */
+const nativo = requireOptionalNativeModule<Pbkdf2Nativo>('Pbkdf2Nativo');
 
 // ============================================================
 // HASH: SHA-256 simples (sem salt)
@@ -47,14 +64,14 @@ export async function hashSHA256(value: string): Promise<string> {
  * em minutos se o banco vazasse. PBKDF2 repete o HMAC milhares de vezes e
  * multiplica esse custo pelo mesmo fator.
  *
- * A implementação é a `@noble/hashes`, auditada e sem dependências, em
- * JavaScript puro: o Expo não expõe PBKDF2 nativo, e um módulo nativo a mais
- * pesaria no build do APK. JavaScript puro no Hermes é bem mais lento que no
- * Node, e é isso que limita o número: 100 mil iterações levaram 150 ms no
- * Node desta máquina, o que no celular fica perto de um segundo por login. O
- * OWASP pede 600 mil para servidor; aqui seriam vários segundos a cada entrada
- * do agente em campo. O banco já é cifrado inteiro com SQLCipher, então o hash
- * é a segunda camada, e não a única.
+ * No Android o cálculo é do módulo nativo (ver `nativo`, acima): no PC, 100
+ * mil iterações levam cerca de 40 ms em Java contra 150 ms no Node, e no
+ * Hermes, sem JIT, o JavaScript puro levava segundos. Fora dele, quem calcula
+ * é a `@noble/hashes`, auditada e sem dependências, com a mesma saída.
+ *
+ * O OWASP recomenda 600 mil iterações. O número sobe quando a medição no
+ * aparelho mostrar que cabe num login rápido. O banco já é cifrado inteiro
+ * com SQLCipher, então o hash é a segunda camada, e não a única.
  *
  * O número de iterações vai dentro do hash. Subir este valor numa versão
  * futura não quebra ninguém: o login confere com o número gravado e regrava
@@ -77,6 +94,7 @@ function iguaisEmTempoConstante(a: string, b: string): boolean {
 }
 
 async function derivar(senha: string, salHex: string, iteracoes: number): Promise<string> {
+  if (nativo) return nativo.pbkdf2Sha256(senha, salHex, iteracoes, TAMANHO_DO_HASH);
   // `asyncTick` devolve o controle à interface de tempos em tempos: sem isto
   // a tela congela durante o cálculo.
   const bytes = await pbkdf2Async(sha256, senha, salHex, {

@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import { FONT_SIZE, SPACING } from '../../utils/constants';
+import { voltar } from '../../utils/navegacao';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SyncIndicator } from './SyncIndicator';
 
@@ -23,11 +23,7 @@ export function PageHeader({
   const { colors } = useTheme();
 
   function handleBack() {
-    if (backTo) {
-      router.push(backTo as any);
-    } else {
-      router.back();
-    }
+    voltar(backTo);
   }
 
   return (

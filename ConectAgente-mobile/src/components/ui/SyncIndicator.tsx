@@ -38,11 +38,11 @@ export function SyncIndicator() {
       onPress={handlePress}
     >
       {status.sincronizando ? (
-        <Ionicons name="sync" size={14} color={colors.white} />
+        <Ionicons name="sync" size={14} color={colors.onSolid} />
       ) : !isOnline ? (
-        <Ionicons name="cloud-offline" size={14} color={colors.white} />
+        <Ionicons name="cloud-offline" size={14} color={colors.onSolid} />
       ) : (
-        <Ionicons name="cloud-upload" size={14} color={colors.white} />
+        <Ionicons name="cloud-upload" size={14} color={colors.onSolid} />
       )}
       <Text style={styles.text}>
         {status.sincronizando
@@ -70,7 +70,7 @@ const criarStyles = (colors: ThemeColors) =>
     backgroundColor: colors.error,
   },
   text: {
-    color: colors.white,
+    color: colors.onSolid,
     fontSize: FONT_SIZE.xs,
     fontWeight: '600',
   },

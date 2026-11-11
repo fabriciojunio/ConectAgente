@@ -199,7 +199,7 @@ const criarStyles = (colors: ThemeColors) =>
   StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
   },
   logoArea: {
     alignItems: 'center',
@@ -211,7 +211,7 @@ const criarStyles = (colors: ThemeColors) =>
     width: 88,
     height: 88,
     borderRadius: 22,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.xs,
@@ -228,7 +228,7 @@ const criarStyles = (colors: ThemeColors) =>
   appName: {
     fontSize: FONT_SIZE.xxl,
     fontWeight: '800',
-    color: colors.white,
+    color: colors.onGradient,
     letterSpacing: -0.5,
   },
   appSubtitle: {
@@ -237,7 +237,7 @@ const criarStyles = (colors: ThemeColors) =>
   },
   formContainer: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: colors.surface,
     borderTopLeftRadius: RADIUS.xl,
     borderTopRightRadius: RADIUS.xl,
     paddingHorizontal: SPACING.lg,

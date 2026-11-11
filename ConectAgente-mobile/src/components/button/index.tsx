@@ -28,7 +28,7 @@ export function Button({ title, variant = 'primary', loading, icon, disabled, ..
           style={styles.gradient}
         >
           {loading ? (
-            <ActivityIndicator color={colors.white} size="small" />
+            <ActivityIndicator color={colors.onGradient} size="small" />
           ) : (
             <>
               {icon}
@@ -60,7 +60,7 @@ export function Button({ title, variant = 'primary', loading, icon, disabled, ..
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === 'ghost' ? colors.primary : colors.white}
+          color={variant === 'ghost' ? colors.primary : colors.onSolid}
           size="small"
         />
       ) : (
@@ -88,7 +88,7 @@ const criarStyles = (colors: ThemeColors) =>
     paddingHorizontal: SPACING.md,
   },
   primaryText: {
-    color: colors.white,
+    color: colors.onGradient,
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
   },
@@ -116,12 +116,12 @@ const criarStyles = (colors: ThemeColors) =>
     opacity: 0.5,
   },
   secondaryText: {
-    color: colors.white,
+    color: colors.onSolid,
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
   },
   dangerText: {
-    color: colors.white,
+    color: colors.onSolid,
     fontSize: FONT_SIZE.md,
     fontWeight: '700',
   },
