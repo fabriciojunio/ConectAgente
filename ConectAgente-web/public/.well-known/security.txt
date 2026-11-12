@@ -1,0 +1,7 @@
+# Como reportar uma falha de segurança no ConectAgente (RFC 9116).
+# Não abra issue pública para falha que exponha dado de munícipe.
+Contact: mailto:junioad555@gmail.com
+Expires: 2027-11-12T00:00:00.000Z
+Preferred-Languages: pt, en
+Policy: https://github.com/fabriciojunio/ConectAgente/blob/HEAD/SECURITY.md
+Canonical: https://conectagente-web.vercel.app/.well-known/security.txt

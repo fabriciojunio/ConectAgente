@@ -92,7 +92,7 @@ export interface MembroEquipe {
   id: string;
   nome: string;
   role: 'agente' | 'coordenador' | 'gerente' | 'admin';
-  unidade_saude: string;
+  unidade_saude: string | null;
   area_atuacao: string;
   microarea: string | null;
   ativo: boolean;

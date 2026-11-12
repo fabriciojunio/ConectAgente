@@ -28,7 +28,9 @@ const PUBLIC_ROUTES = ['/login', '/registro', '/demo'];
  * A resposta do /api/health ja e cuidadosa com o que mostra: nunca devolve
  * mensagem do banco nem nome de variavel, so o estado.
  */
-const ROTAS_SEM_AUTENTICACAO = ['/api/health', '/robots.txt', '/favicon.ico'];
+// security.txt (RFC 9116) precisa abrir sem login: é para quem quer
+// reportar uma falha e não tem conta.
+const ROTAS_SEM_AUTENTICACAO = ['/api/health', '/robots.txt', '/favicon.ico', '/.well-known/security.txt'];
 
 /**
  * Monta a politica de seguranca de conteudo com um nonce novo por requisicao.

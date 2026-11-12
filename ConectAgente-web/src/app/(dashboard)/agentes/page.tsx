@@ -38,7 +38,7 @@ function SkeletonRows() {
 interface AgenteListItem {
   id: string;
   nome: string;
-  unidade_saude?: string;
+  unidade_saude?: string | null;
   microarea?: string;
   visitas_mes?: number;
   visitas_realizadas?: number;
