@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View, Text, Switch, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +22,15 @@ import { Controller } from 'react-hook-form';
 import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
 import { lgpdRepository } from '../../../database/repositories/lgpdRepository';
 import { sairDoFormularioPara } from '../../../utils/navegacao';
+
+const MORADOR_VAZIO: Partial<MoradorFormDataValidated> = {
+  tem_doenca: false,
+  beneficio_bolsa_familia: false,
+  tem_convenio: false,
+  toma_medicamento: false,
+  is_responsavel: false,
+  sexo: 'masculino',
+};
 
 export default function NovoMorador() {
   const { colors } = useTheme();
@@ -45,19 +54,22 @@ export default function NovoMorador() {
     value: r.id,
   }));
 
-  const { control, handleSubmit, watch, trigger, setValue, getValues } = useForm<MoradorFormDataValidated>({
+  const { control, handleSubmit, watch, trigger, setValue, getValues, reset } = useForm<MoradorFormDataValidated>({
     resolver: zodResolver(moradorSchema),
     mode: 'onBlur',
-    defaultValues: {
-      residencia_id: residenciaParam ?? '',
-      tem_doenca: false,
-      beneficio_bolsa_familia: false,
-      tem_convenio: false,
-      toma_medicamento: false,
-      is_responsavel: false,
-      sexo: 'masculino',
-    },
+    defaultValues: { ...MORADOR_VAZIO, residencia_id: residenciaParam ?? '' },
   });
+
+  // A tela fica montada entre uma abertura e outra, e `defaultValues` só vale
+  // na primeira. Sem zerar ao abrir, quem abria "Novo morador" pela casa A e
+  // depois pela casa B cadastrava o morador na casa A, e via os dados do
+  // morador anterior no formulário.
+  useFocusEffect(
+    useCallback(() => {
+      reset({ ...MORADOR_VAZIO, residencia_id: residenciaParam ?? '' });
+      setStep('pessoal');
+    }, [reset, residenciaParam])
+  );
 
   const temDoenca = watch('tem_doenca');
   const temConvenio = watch('tem_convenio');
