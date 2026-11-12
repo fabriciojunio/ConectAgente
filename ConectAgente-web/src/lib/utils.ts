@@ -252,11 +252,14 @@ export function calcularIdade(dataNascimento: string): number {
 // Number Formatting
 // ---------------------------------------------------------------------------
 
-/**
- * Formats a number as a percentage string (e.g., 85.3%).
- */
-export function formatPercent(value: number): string {
-  return `${value.toFixed(1)}%`;
+/** Número com casas decimais fixas, no padrão brasileiro (vírgula). */
+export function formatDecimal(value: number, casas = 1): string {
+  return value.toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas });
+}
+
+/** Porcentagem no padrão brasileiro: 85,3%. */
+export function formatPercent(value: number, casas = 1): string {
+  return `${formatDecimal(value, casas)}%`;
 }
 
 // ---------------------------------------------------------------------------

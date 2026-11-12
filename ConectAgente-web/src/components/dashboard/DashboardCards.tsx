@@ -12,6 +12,7 @@ import {
   Activity,
 } from 'lucide-react';
 import { StatCard } from '@/components/ui/stat-card';
+import { formatPercent } from '@/lib/utils';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import type { DashboardStats } from '@/types';
 
@@ -65,7 +66,7 @@ export default function DashboardCards({ stats, loading }: DashboardCardsProps) 
     },
     {
       title: 'Taxa de Conclusão',
-      value: `${stats.taxa_conclusao.toFixed(1)}%`,
+      value: formatPercent(stats.taxa_conclusao),
       icon: TrendingUp,
       color: stats.taxa_conclusao >= 80 ? ('success' as const) : ('warning' as const),
       subtitle: 'das visitas planejadas',

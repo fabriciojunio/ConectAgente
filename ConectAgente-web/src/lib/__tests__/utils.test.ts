@@ -14,6 +14,7 @@ import {
   truncateText,
   calcularIdade,
   formatPercent,
+  formatDecimal,
   fimExclusivo,
   formatDataDaVisita,
   dataDaVisita,
@@ -255,20 +256,25 @@ describe('calcularIdade', () => {
 });
 
 describe('formatPercent', () => {
-  it('formats 85.5 as "85.5%"', () => {
-    expect(formatPercent(85.5)).toBe('85.5%');
+  it('usa vírgula decimal, como no Brasil', () => {
+    expect(formatPercent(85.5)).toBe('85,5%');
+    expect(formatPercent(0)).toBe('0,0%');
+    expect(formatPercent(100)).toBe('100,0%');
   });
 
-  it('formats 0 as "0.0%"', () => {
-    expect(formatPercent(0)).toBe('0.0%');
+  it('arredonda para uma casa', () => {
+    expect(formatPercent(33.333)).toBe('33,3%');
   });
 
-  it('formats 100 as "100.0%"', () => {
-    expect(formatPercent(100)).toBe('100.0%');
+  it('aceita outro número de casas', () => {
+    expect(formatPercent(66.6, 0)).toBe('67%');
   });
+});
 
-  it('rounds to one decimal place', () => {
-    expect(formatPercent(33.333)).toBe('33.3%');
+describe('formatDecimal', () => {
+  it('média com vírgula', () => {
+    expect(formatDecimal(2.25)).toBe('2,3');
+    expect(formatDecimal(1234.5, 1)).toBe('1.234,5');
   });
 });
 

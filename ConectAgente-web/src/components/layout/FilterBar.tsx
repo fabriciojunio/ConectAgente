@@ -70,7 +70,7 @@ export function FilterBar({ variant = 'dashboard', className }: FilterBarProps) 
     <div
       className={`bg-[var(--superficie)] border-b border-[var(--borda-clara)] px-6 py-3 flex flex-wrap items-end gap-3 ${className ?? ''}`}
     >
-      <div className="flex items-center gap-2 text-[var(--texto-claro)] mr-1">
+      <div className="flex h-9 items-center gap-2 self-end text-[var(--texto-claro)] mr-1">
         <SlidersHorizontal size={15} />
         <span className="text-xs font-medium">Filtros</span>
       </div>
@@ -83,7 +83,7 @@ export function FilterBar({ variant = 'dashboard', className }: FilterBarProps) 
             type="date"
             value={filters.periodo_inicio ?? ''}
             onChange={(e) => setFilter('periodo_inicio', e.target.value || undefined)}
-            className="h-8 px-2 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] focus:outline-none focus:border-[var(--primaria)]"
+            className="h-9 py-1 px-2 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] focus:outline-none focus:border-[var(--primaria)]"
           />
         </div>
       )}
@@ -96,7 +96,7 @@ export function FilterBar({ variant = 'dashboard', className }: FilterBarProps) 
             type="date"
             value={filters.periodo_fim ?? ''}
             onChange={(e) => setFilter('periodo_fim', e.target.value || undefined)}
-            className="h-8 px-2 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] focus:outline-none focus:border-[var(--primaria)]"
+            className="h-9 py-1 px-2 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] focus:outline-none focus:border-[var(--primaria)]"
           />
         </div>
       )}
@@ -108,7 +108,7 @@ export function FilterBar({ variant = 'dashboard', className }: FilterBarProps) 
             id="filtro-unidade"
             value={filters.unidade_saude ?? ''}
             onChange={(e) => setFilter('unidade_saude', e.target.value || undefined)}
-            className="h-8 px-2 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] focus:outline-none focus:border-[var(--primaria)] bg-[var(--superficie)] min-w-[11rem]"
+            className="h-9 py-1 pl-2 pr-8 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] focus:outline-none focus:border-[var(--primaria)] bg-[var(--superficie)] min-w-[11rem]"
           >
             <option value="">Todas as unidades</option>
             {unidades.map((u) => (
@@ -125,7 +125,7 @@ export function FilterBar({ variant = 'dashboard', className }: FilterBarProps) 
             id="filtro-status"
             value={filters.status ?? ''}
             onChange={(e) => setFilter('status', (e.target.value as never) || undefined)}
-            className="h-8 px-2 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] focus:outline-none focus:border-[var(--primaria)] bg-[var(--superficie)]"
+            className="h-9 py-1 pl-2 pr-8 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] focus:outline-none focus:border-[var(--primaria)] bg-[var(--superficie)]"
           >
             <option value="">Todas</option>
             {STATUS_OPTIONS.map((o) => (
@@ -140,7 +140,7 @@ export function FilterBar({ variant = 'dashboard', className }: FilterBarProps) 
       {hasActiveFilters && (
         <button
           onClick={resetFilters}
-          className="h-8 flex items-center gap-1.5 px-3 text-xs font-medium text-[var(--texto-claro)] hover:text-[var(--texto-medio)] border border-[var(--borda)] rounded-md hover:bg-[var(--fundo)] transition-colors mt-auto"
+          className="h-9 flex items-center gap-1.5 px-3 text-xs font-medium text-[var(--texto-claro)] hover:text-[var(--texto-medio)] border border-[var(--borda)] rounded-md hover:bg-[var(--fundo)] transition-colors mt-auto"
         >
           <RotateCcw size={12} />
           Limpar

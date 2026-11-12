@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatPercent } from '@/lib/utils';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { VisitaPorBairro } from '@/types';
@@ -54,7 +54,7 @@ export default function HeatmapBairros({ data, loading }: HeatmapBairrosProps) {
                 role="listitem"
               >
                 <p className="truncate text-sm font-semibold" title={bairro.bairro}>{bairro.bairro}</p>
-                <p className="mt-1 text-2xl font-bold">{bairro.cobertura_pct.toFixed(0)}%</p>
+                <p className="mt-1 text-2xl font-bold">{formatPercent(bairro.cobertura_pct, 0)}</p>
                 <p className="text-xs opacity-75">
                   {bairro.total_visitas} visita{bairro.total_visitas !== 1 ? 's' : ''}
                 </p>

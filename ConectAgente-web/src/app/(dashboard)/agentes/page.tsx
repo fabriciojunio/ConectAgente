@@ -10,7 +10,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { getAgentes } from '@/services/agenteService';
 import { cacheGetStale } from '@/lib/cache';
-import { formatPercent, withTimeout } from '@/lib/utils';
+import { formatDecimal, formatPercent, withTimeout } from '@/lib/utils';
 import type { AgenteComEstatisticas, PaginatedResult } from '@/types';
 import {
   Search,
@@ -99,7 +99,7 @@ export default function AgentesPage() {
   const statCards = [
     { label: 'Total Agentes', value: stats.total, icon: Users, color: 'neutral' as const },
     { label: 'Ativos', value: stats.ativos, icon: UserCheck, color: 'success' as const },
-    { label: 'Média Visitas/Dia', value: stats.media_visitas_dia.toFixed(1), icon: TrendingUp, color: 'primary' as const },
+    { label: 'Média Visitas/Dia', value: formatDecimal(stats.media_visitas_dia), icon: TrendingUp, color: 'primary' as const },
   ];
 
   return (
