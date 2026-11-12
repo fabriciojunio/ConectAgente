@@ -192,6 +192,32 @@ export const TIPO_IMOVEL_OPTIONS = [
   { label: 'Outros', value: 'outros' },
 ];
 
+/** Motivo da visita como aparece em lista e detalhe. */
+export const MOTIVOS_VISITA_LABEL: Record<string, string> = {
+  rotina: 'Rotina',
+  busca_ativa: 'Busca ativa',
+  urgencia: 'Urgência',
+  retorno: 'Retorno',
+  solicitacao: 'Por solicitação',
+};
+
+/**
+ * Rótulo de um valor de lista de opções.
+ *
+ * O banco guarda o valor (`medio_completo`, `proprio`); a tela mostra o
+ * rótulo. Algumas telas mostravam o valor cru, achado no aparelho. Valor
+ * desconhecido aparece como veio, para não esconder dado.
+ */
+export function rotuloDaOpcao(
+  opcoes: readonly { label: string; value: string }[] | Record<string, string>,
+  valor: string | null | undefined,
+  seVazio = 'Não informado'
+): string {
+  if (!valor) return seVazio;
+  if (Array.isArray(opcoes)) return opcoes.find((o) => o.value === valor)?.label ?? valor;
+  return (opcoes as Record<string, string>)[valor] ?? valor;
+}
+
 export const SEXO_OPTIONS = [
   { label: 'Masculino', value: 'masculino' },
   { label: 'Feminino', value: 'feminino' },

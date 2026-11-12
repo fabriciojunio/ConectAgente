@@ -10,7 +10,7 @@ import { useFocusEffect } from 'expo-router';
 import { visitaRepository } from '../../database/repositories/visitaRepository';
 import { agenteRepository } from '../../database/repositories/agenteRepository';
 import { StatusVisita, VisitaListada } from '../../types';
-import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS, MOTIVOS_VISITA_LABEL, rotuloDaOpcao } from '../../utils/constants';
 import { formatDate } from '../../utils/formatters';
 import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
@@ -119,7 +119,7 @@ export default function AdminVisitas() {
             {item.agente_nome ?? 'Agente'} · {formatDate(item.data_visita)}
           </Text>
           {item.motivo_visita ? (
-            <Text style={styles.motivo} numberOfLines={1}>{item.motivo_visita}</Text>
+            <Text style={styles.motivo} numberOfLines={1}>{rotuloDaOpcao(MOTIVOS_VISITA_LABEL, item.motivo_visita)}</Text>
           ) : null}
         </View>
         <View style={[styles.statusChip, { backgroundColor: sc.bg }]}>
@@ -270,7 +270,7 @@ export default function AdminVisitas() {
                   <InfoRow label="Bairro" value={selecionada.bairro ?? '-'} />
                   <InfoRow label="Agente" value={selecionada.agente_nome ?? '-'} />
                   <InfoRow label="Data" value={formatDate(selecionada.data_visita)} />
-                  {selecionada.motivo_visita && <InfoRow label="Motivo" value={selecionada.motivo_visita} />}
+                  {selecionada.motivo_visita && <InfoRow label="Motivo" value={rotuloDaOpcao(MOTIVOS_VISITA_LABEL, selecionada.motivo_visita)} />}
                   {selecionada.queixas && <InfoRow label="Queixas" value={selecionada.queixas} />}
                   {selecionada.observacoes && <InfoRow label="Observações" value={selecionada.observacoes} />}
 

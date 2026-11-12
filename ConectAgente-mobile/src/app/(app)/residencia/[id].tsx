@@ -15,13 +15,9 @@ import { EmptyState } from '../../../components/ui/EmptyState';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { PageHeader } from '../../../components/ui/PageHeader';
 import { calcularIdade, formatCEP, formatDate, toDateBR } from '../../../utils/formatters';
-import { SPACING, FONT_SIZE, RADIUS } from '../../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS, MOTIVOS_VISITA_LABEL } from '../../../utils/constants';
 import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
 
-const MOTIVOS_LABEL: Record<string, string> = {
-  rotina: 'Rotina', busca_ativa: 'Busca ativa',
-  urgencia: 'Urgência', retorno: 'Retorno', solicitacao: 'Por solicitação',
-};
 
 export default function ResidenciaDetalhe() {
   const { colors } = useTheme();
@@ -334,7 +330,7 @@ function VisitaHistoricoCard({ visita }: { visita: Visita }) {
     agendada: { color: colors.info, icon: 'time', label: 'Agendada' },
   };
   const cfg = statusConfig[visita.status] ?? statusConfig.realizada;
-  const motivo = visita.motivo_visita ? MOTIVOS_LABEL[visita.motivo_visita] ?? visita.motivo_visita : null;
+  const motivo = visita.motivo_visita ? MOTIVOS_VISITA_LABEL[visita.motivo_visita] ?? visita.motivo_visita : null;
 
   return (
     <View style={styles.visitaCard}>

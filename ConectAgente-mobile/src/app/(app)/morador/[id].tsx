@@ -14,7 +14,7 @@ import { EmptyState } from '../../../components/ui/EmptyState';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { PageHeader } from '../../../components/ui/PageHeader';
 import { calcularIdade, formatDate, toDateBR } from '../../../utils/formatters';
-import { SPACING, FONT_SIZE, RADIUS } from '../../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS, ESCOLARIDADE_OPTIONS, rotuloDaOpcao } from '../../../utils/constants';
 import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
 import { lgpdRepository } from '../../../database/repositories/lgpdRepository';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -146,7 +146,7 @@ export default function MoradorDetalhe() {
           <InfoRow label="Cidade natal" value={morador.cidade_nascimento ?? 'Não informada'} />
           <InfoRow label="Mãe" value={morador.nome_mae ?? 'Não informada'} />
           <InfoRow label="Pai" value={morador.nome_pai ?? 'Não informado'} />
-          <InfoRow label="Escolaridade" value={morador.escolaridade ?? 'Não informada'} />
+          <InfoRow label="Escolaridade" value={rotuloDaOpcao(ESCOLARIDADE_OPTIONS, morador.escolaridade, 'Não informada')} />
           <InfoRow label="Profissão" value={morador.profissao ?? 'Não informada'} />
         </Card>
 

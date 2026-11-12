@@ -11,7 +11,7 @@ import { residenciaRepository } from '../../database/repositories/residenciaRepo
 import { moradorRepository } from '../../database/repositories/moradorRepository';
 import { visitaRepository } from '../../database/repositories/visitaRepository';
 import { Residencia, Morador, Visita } from '../../types';
-import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS, TIPO_IMOVEL_OPTIONS, rotuloDaOpcao } from '../../utils/constants';
 import { formatDate } from '../../utils/formatters';
 import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
@@ -92,7 +92,7 @@ export default function AdminResidencias() {
           )}
         </View>
         <View style={styles.tipoBadge}>
-          <Text style={styles.tipoText}>{item.tipo_imovel}</Text>
+          <Text style={styles.tipoText}>{rotuloDaOpcao(TIPO_IMOVEL_OPTIONS, item.tipo_imovel)}</Text>
         </View>
         <Ionicons name="chevron-forward" size={16} color={colors.textLight} />
       </TouchableOpacity>
@@ -159,7 +159,7 @@ export default function AdminResidencias() {
                   <InfoRow label="Bairro" value={selecionada.bairro} />
                   <InfoRow label="Cidade/Estado" value={`${selecionada.cidade}/${selecionada.estado}`} />
                   <InfoRow label="CEP" value={selecionada.cep} />
-                  <InfoRow label="Tipo de imóvel" value={selecionada.tipo_imovel} />
+                  <InfoRow label="Tipo de imóvel" value={rotuloDaOpcao(TIPO_IMOVEL_OPTIONS, selecionada.tipo_imovel)} />
                   <InfoRow label="Nº de cômodos" value={String(selecionada.num_comodos)} />
                   <InfoRow label="Animais" value={selecionada.tem_animais ? `Sim${selecionada.animais_info ? `, ${selecionada.animais_info}` : ''}` : 'Não'} />
                   {selecionada.agente_nome && <InfoRow label="Agente responsável" value={selecionada.agente_nome} />}
