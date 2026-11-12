@@ -112,3 +112,13 @@ export async function listarEquipe(): Promise<MembroEquipe[]> {
   if (error) throw new Error('Não foi possível carregar a equipe.');
   return (data as MembroEquipe[]) ?? [];
 }
+
+/** "Microárea 001" e microárea "001" viram uma coisa só. */
+export function areaDaPessoa(p: Pick<MembroEquipe, 'area_atuacao' | 'microarea'>): string {
+  const area = p.area_atuacao?.trim() ?? '';
+  const micro = p.microarea?.trim() ?? '';
+  if (!area && !micro) return '—';
+  if (!micro || area.includes(micro)) return area || micro;
+  if (!area) return `Microárea ${micro}`;
+  return `${area} · microárea ${micro}`;
+}

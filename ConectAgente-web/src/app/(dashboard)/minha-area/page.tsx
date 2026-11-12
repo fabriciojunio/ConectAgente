@@ -9,6 +9,7 @@ import {
   designarUnidade,
   escolherMinhaUnidade,
   listarEquipe,
+  areaDaPessoa,
   listarUnidades,
   nomeUnidadeValido,
   type MembroEquipe,
@@ -67,7 +68,7 @@ function TabelaEquipe({ pessoas, mostrarUnidade }: { pessoas: MembroEquipe[]; mo
                 </td>
               )}
               <td className="px-4 py-2.5 text-[var(--texto-medio)]">
-                {[p.area_atuacao, p.microarea].filter(Boolean).join(' / ') || '—'}
+                {areaDaPessoa(p)}
               </td>
               <td className="px-4 py-2.5">
                 <span
