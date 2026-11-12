@@ -41,7 +41,8 @@ import { visitaRepository } from '../database/repositories/visitaRepository';
 import { medicamentoRepository } from '../database/repositories/medicamentoRepository';
 import { supabase, SupabaseTable } from '../lib/supabase';
 import { authService } from './authService';
-import { SYNC_BATCH_SIZE } from '../utils/constants';
+import * as SecureStore from 'expo-secure-store';
+import { SECURE_KEYS, SYNC_BATCH_SIZE } from '../utils/constants';
 
 export interface SyncStatus {
   sincronizando: boolean;
@@ -140,12 +141,14 @@ export const syncService = {
       );
     }
 
+    const dono = await donoDosRegistros();
+
     const batch = itens.slice(0, SYNC_BATCH_SIZE);
     let processados = 0;
 
     for (const item of batch) {
       try {
-        const payload = JSON.parse(item.payload);
+        const payload = trocarDonoParaOServidor(JSON.parse(item.payload), dono) as Record<string, unknown>;
         await syncParaSupabase(
           item.tabela as SupabaseTable,
           item.operacao,
@@ -233,6 +236,50 @@ async function syncParaSupabase(
     default:
       throw new Error(`Operação desconhecida: ${operacao}`);
   }
+}
+
+/**
+ * Código do agente no aparelho e na conta aberta no servidor.
+ *
+ * O "Primeiro acesso" cria o agente no aparelho com um id sorteado ali; a
+ * conta do servidor, criada na aprovação do painel, tem o id do Supabase
+ * Auth. As policies aceitam o registro só quando `agente_id = auth.uid()`,
+ * então, com os dois diferentes, nenhuma residência, morador ou visita subia
+ * mesmo com a sessão aberta. Achado no aparelho.
+ */
+async function donoDosRegistros(): Promise<{ local: string | null; servidor: string | null }> {
+  // Sem conseguir ler um dos dois, sobe como está: o pior caso é o RLS
+  // recusar, que é o que já acontecia, e não derrubar a fila inteira.
+  let local: string | null = null;
+  let servidor: string | null = null;
+  try {
+    local = await SecureStore.getItemAsync(SECURE_KEYS.AGENTE_ID);
+  } catch {
+    local = null;
+  }
+  try {
+    const { data } = await supabase.auth.getSession();
+    servidor = data.session?.user?.id ?? null;
+  } catch {
+    servidor = null;
+  }
+  return { local, servidor };
+}
+
+/**
+ * Troca o dono do registro pelo id da conta do servidor, e só quando o dono
+ * é o agente deste aparelho. Registro de outro dono passa como está, e o RLS
+ * do servidor continua sendo quem decide.
+ */
+export function trocarDonoParaOServidor(
+  payload: unknown,
+  dono: { local: string | null; servidor: string | null }
+): unknown {
+  if (!dono.local || !dono.servidor || dono.local === dono.servidor) return payload;
+  if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) return payload;
+  const registro = payload as Record<string, unknown>;
+  if (registro.agente_id !== dono.local) return payload;
+  return { ...registro, agente_id: dono.servidor };
 }
 
 async function inserirOuAtualizar(

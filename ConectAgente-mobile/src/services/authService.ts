@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabase';
 import { ACOES_AUDITORIA, auditRepository } from '../database/repositories/auditRepository';
 import { limparLembretes } from './notificationService';
 import { pararSincronizacaoEmSegundoPlano } from '../tasks/backgroundSync';
+import { falhaDeConta, MENSAGEM_CONTA_NAO_LIBERADA } from '../utils/falhaDeSincronizacao';
 
 export interface SessionData {
   agente: Agente;
@@ -32,6 +33,20 @@ export interface SessionData {
 export const AVISO_SENHA_DO_SERVIDOR =
   'Sua senha foi trocada só neste aparelho. A sincronização fica parada até a ' +
   'coordenação redefinir a sua senha de sincronização no painel, usando a mesma senha nova.';
+
+/**
+ * E-mail da conta do agente no servidor.
+ *
+ * A aprovação no painel cria a conta do Supabase Auth com `<cpf>@conectagente.local`,
+ * e o login do painel usa o mesmo formato. O aplicativo usava o e-mail que o
+ * agente digitou no cadastro do celular, que é outro endereço: o servidor
+ * respondia "Invalid login credentials" mesmo com a senha certa, nenhuma
+ * sessão abria e nada sincronizava. Achado no aparelho, com 19 registros
+ * presos na fila.
+ */
+export function emailNoServidor(cpf: string): string {
+  return `${cpf.replace(/\D/g, '')}@conectagente.local`;
+}
 
 function chaveDaPendencia(agenteId: string): string {
   return `${SECURE_KEYS.SENHA_SERVIDOR_PENDENTE}${agenteId}`;
@@ -77,7 +92,7 @@ export const authService = {
     // não tiver usuário no Supabase Auth, o acesso ao aplicativo funciona
     // normalmente e a fila espera. O que muda é que a falha passa a ser
     // visível em vez de silenciosa.
-    const servidor = await this.abrirSessaoNoServidor(agente.email, senha);
+    const servidor = await this.abrirSessaoNoServidor(emailNoServidor(agente.cpf), senha);
 
     // Senha trocada pela recuperação: enquanto o servidor tiver a antiga, a
     // sincronização fica parada, e o agente precisa saber disso agora, e não
@@ -90,6 +105,10 @@ export const authService = {
       } else {
         aviso = AVISO_SENHA_DO_SERVIDOR;
       }
+    } else if (!servidor.ok && falhaDeConta(servidor.motivo)) {
+      // Sem este aviso o agente entrava, trabalhava o dia inteiro e nada
+      // subia: o único sinal era o número de pendências crescendo.
+      aviso = MENSAGEM_CONTA_NAO_LIBERADA;
     }
 
     // Entrada no sistema. Junto com a leitura de prontuario, e o que permite
@@ -141,7 +160,7 @@ export const authService = {
     try {
       const { data } = await supabase.auth.getSession();
       const email = data.session?.user?.email?.toLowerCase();
-      if (!email || email !== agente.email.toLowerCase()) return false;
+      if (!email || email !== emailNoServidor(agente.cpf)) return false;
 
       const { error } = await supabase.auth.updateUser({ password: novaSenha });
       if (error) {

@@ -290,3 +290,31 @@ describe('syncService.sincronizar - sem sessao no servidor', () => {
     expect(mockTemSessao).not.toHaveBeenCalled();
   });
 });
+
+describe('dono do registro na sincronização', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { trocarDonoParaOServidor } = require('../syncService');
+  const dono = { local: 'id-do-aparelho', servidor: 'id-da-conta' };
+
+  it('registro do agente do aparelho sobe com o id da conta do servidor', () => {
+    const r = trocarDonoParaOServidor({ id: 'res-1', agente_id: 'id-do-aparelho', bairro: 'Centro' }, dono);
+    expect(r).toEqual({ id: 'res-1', agente_id: 'id-da-conta', bairro: 'Centro' });
+  });
+
+  it('registro de outro dono passa como está, e o servidor decide', () => {
+    const outro = { id: 'res-2', agente_id: 'outra-pessoa' };
+    expect(trocarDonoParaOServidor(outro, dono)).toBe(outro);
+  });
+
+  it('sem sessão, ou ids iguais, nada muda', () => {
+    const p = { agente_id: 'id-do-aparelho' };
+    expect(trocarDonoParaOServidor(p, { local: 'id-do-aparelho', servidor: null })).toBe(p);
+    expect(trocarDonoParaOServidor(p, { local: 'id-do-aparelho', servidor: 'id-do-aparelho' })).toBe(p);
+  });
+
+  it('payload sem agente_id (exclusão, ficha) passa intacto', () => {
+    const p = { id: 'x' };
+    expect(trocarDonoParaOServidor(p, dono)).toBe(p);
+    expect(trocarDonoParaOServidor(null, dono)).toBeNull();
+  });
+});
