@@ -3,14 +3,21 @@ import { syncService, SyncStatus } from '../services/syncService';
 import { useNetwork } from './NetworkContext';
 import { SYNC_INTERVAL_MS } from '../utils/constants';
 
+/** O que a última tentativa deu, para quem pediu a sincronização mostrar. */
+export interface ResultadoDaSincronizacao {
+  ok: boolean;
+  erro: string | null;
+  pendentes: number;
+}
+
 interface SyncContextData {
   status: SyncStatus;
-  sincronizarAgora: () => Promise<void>;
+  sincronizarAgora: () => Promise<ResultadoDaSincronizacao>;
 }
 
 const SyncContext = createContext<SyncContextData>({
   status: { sincronizando: false, pendentes: 0, ultimaSync: null, erro: null },
-  sincronizarAgora: async () => {},
+  sincronizarAgora: async () => ({ ok: true, erro: null, pendentes: 0 }),
 });
 
 export function SyncProvider({ children }: { children: React.ReactNode }) {
@@ -23,8 +30,10 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   });
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const sincronizarAgora = useCallback(async () => {
-    if (status.sincronizando || !isOnline) return;
+  const sincronizarAgora = useCallback(async (): Promise<ResultadoDaSincronizacao> => {
+    if (status.sincronizando || !isOnline) {
+      return { ok: false, erro: isOnline ? null : 'sem rede', pendentes: status.pendentes };
+    }
 
     setStatus((s) => ({ ...s, sincronizando: true, erro: null }));
 
@@ -39,6 +48,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         ultimaSync: new Date().toISOString(),
         erro: null,
       });
+      return { ok: true, erro: null, pendentes };
     } catch (error) {
       const mensagem = error instanceof Error ? error.message : 'Erro na sincronização';
       const pendentes = await syncService.contarPendentes();
@@ -48,8 +58,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         pendentes,
         erro: mensagem,
       }));
+      return { ok: false, erro: mensagem, pendentes };
     }
-  }, [isOnline, status.sincronizando]);
+  }, [isOnline, status.sincronizando, status.pendentes]);
 
   // Sincronizar quando volta para online
   useEffect(() => {
