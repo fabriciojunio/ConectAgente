@@ -6,10 +6,63 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Não Lançado]
 
+## [1.2.5] - 2026-11-12
+
+### Adicionado
+
+- **Medicamentos e dúvidas do morador.** O botão "Gerenciar medicamentos" do
+  prontuário só abria um aviso de "em breve". Agora abre a lista de remédios
+  do morador, com dose, horário, os problemas de uso que o agente observou
+  (esquecimento, horário ou quantidade errados, armazenamento, automedicação,
+  efeito colateral, falta do remédio) e a dúvida que ele leva à equipe da UBS.
+  A resposta volta com quem respondeu (enfermeiro, médico ou farmacêutico) e
+  quando. Segue as atribuições do ACS na PNAB: orientar sobre o uso correto,
+  sem prescrever. No servidor, `migration_medicamentos.sql` fecha as colunas
+  clínicas na API e só deixa o agente dono gravar, e só para morador dele.
+- **Segundo fator no painel.** Toda conta do painel cadastra um app
+  autenticador (TOTP) e confirma o código a cada login. O middleware exige o
+  nível `aal2` em toda página, e as ações que usam a chave de serviço conferem
+  de novo.
+
+### Corrigido
+
+- **O prontuário apagava dado ao ser salvo de novo.** A tela carregava só parte
+  da aba de saúde: pressão, glicemia, datas e as abas de gestante, criança,
+  mulher e social abriam em branco, e salvar gravava o branco por cima (a
+  gestante voltava a "não gestante"). Agora as cinco abas são zeradas e
+  preenchidas inteiras com o que está gravado.
+- **Formulários de cadastro reabriam com os dados anteriores.** "Nova
+  residência" voltava com o endereço da casa anterior, e "Novo morador" ficava
+  preso à residência da primeira abertura, podendo cadastrar o morador na casa
+  errada. Os dois zeram ao abrir.
+- **Botões atrás dos botões do Android.** O login não rolava e escondia
+  "Configurar administrador" e o rodapé; os seletores (risco, sexo,
+  escolaridade, UF) e as folhas do administrador cortavam a última opção.
+- **Tema escuro na Agenda.** O calendário continuava branco.
+- **Data cortada no Início** ("Quarta-feira, 11 de nove...").
+- **Abas do prontuário.** A aba seguinte abria no meio da rolagem e a fileira
+  de abas não acompanhava a aba ativa.
+
+### Segurança
+
+- **Captura de tela bloqueada** no aplicativo inteiro (`FLAG_SECURE`): print,
+  gravação e miniatura dos recentes saem pretos (MASVS-PLATFORM-3).
+- **Limite de tentativas no banco.** Login, cadastro e aprovação contavam em
+  memória de cada instância do painel; agora contam no Postgres
+  (`migration_limite_de_tentativas.sql`), com a chave em SHA-256, sem CPF nem
+  IP em claro. Sem a migração, o painel volta à contagem em memória.
+- O limitador deixou de ser Server Action: com `'use server'`, o navegador
+  conseguia chamá-lo direto e gastar o limite de outra pessoa.
+- Trilha de auditoria ao incluir, responder e remover medicamento, sem o nome
+  do remédio nem a dúvida.
+
 ### Testes
 
-- Testes para o resumo do Início, a foto de perfil e os cartões do painel
-  (19 casos). A cobertura do aplicativo voltou a 86,44% das instruções.
+- Aplicativo: 19 casos para o resumo do Início, a foto de perfil e os cartões
+  do painel, e os da tela de medicamentos, do carregamento do prontuário e
+  das guardas de layout.
+- Banco real: 149 verificações (eram 127), com a suíte de medicamentos e os
+  ataques ao limite de tentativas.
 
 ## [1.2.4] - 2026-11-11
 

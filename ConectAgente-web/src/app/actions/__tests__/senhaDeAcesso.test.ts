@@ -26,9 +26,15 @@ jest.mock('@/services/auditService', () => ({
   registrarAcao: (...args: unknown[]) => mockRegistrarAcao(...args),
 }));
 
+const mockNivel = jest.fn(async () => ({ data: { currentLevel: 'aal2', nextLevel: 'aal2' } }));
 jest.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
-    auth: { getUser: () => mockGetUser() },
+    auth: {
+      getUser: () => mockGetUser(),
+      // Sessão já com o código do autenticador confirmado; o caso sem ele
+      // tem teste próprio em registro.test.ts.
+      mfa: { getAuthenticatorAssuranceLevel: () => mockNivel() },
+    },
   }),
 }));
 

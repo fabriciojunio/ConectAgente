@@ -328,9 +328,10 @@ rather than silently accepted.
   `image-size` 2.x and `uuid` 11.x would fix the advisories but break Metro bundling, and that was
   measured: `TypeError: The "list" argument must be an instance of SharedArrayBuffer`. `node-forge`
   left this list on 02/11/2026 with 1.4.1, and `braces` and `sprintf-js` no longer show up in OSV.
-- **Rate limiting is in process memory.** Fine for one server; with more than one instance, each
-  counts separately.
-- **There is no second factor** for the panel, where everyone's records are read.
+- **The second factor covers the panel, not the database API.** The app uses the same account
+  without a second factor, so the database still accepts password-only sessions within each role's
+  RLS. Next step: bring TOTP to the app, then require `aal2` in a restrictive policy for
+  coordination and management.
 
 ---
 

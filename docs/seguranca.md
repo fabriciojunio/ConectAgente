@@ -365,6 +365,27 @@ usuário não pode ler as colunas atualizadas (o mesmo efeito visto em
 `prontuario_id`. Suíte: `09-prontuario-fechado.sql`, inclusive que o upsert
 antigo é recusado em vez de aceito em silêncio.
 
+### Prontuário que apagava dado ao ser salvo de novo (1.2.5)
+
+Achado no aparelho, com dado simulado. A tela do prontuário carregava só sete
+campos da aba de saúde. Pressão, glicemia, datas e as abas de gestante,
+criança, mulher e social abriam em branco, e o repositório grava com
+`COALESCE(?, coluna)`: branco e "falso" não são nulos, então salvar de novo
+gravava o branco por cima. A gestante voltava a "não gestante". A tela também
+fica montada entre um morador e outro, e o campo que não era carregado
+mostrava o valor do morador anterior, que podia ser gravado no prontuário
+errado. Agora as cinco abas partem do padrão inteiro e recebem o que está
+gravado (`preencherFormulario`), com teste de guarda.
+
+### Segundo fator, limite compartilhado e captura de tela (1.2.5)
+
+O painel passou a exigir o código de um app autenticador: o middleware lê o
+nível `aal` do JWT assinado e só libera páginas com `aal2`; as ações que usam
+a chave de serviço (aprovar cadastro, trocar senha) conferem o nível de novo,
+porque são endpoints por si. O limite de tentativas passou para o Postgres
+(`registrar_tentativa`, só a chave de serviço executa), com a chave em
+SHA-256. O aplicativo liga `FLAG_SECURE` no layout raiz.
+
 ## O que continua em aberto
 
 A lista completa, por ameaça e com a prova de cada controle, está em
@@ -383,10 +404,11 @@ A lista completa, por ameaça e com a prova de cada controle, está em
   The "list" argument must be an instance of SharedArrayBuffer`. O `node-forge`
   saiu desta lista em 02/11/2026, com a 1.4.1, e `braces` e `sprintf-js` já não
   aparecem no OSV.
-- **O limite de taxa é em memória do processo.** Serve para o caso de um
-  servidor; com mais de uma instância, cada uma conta separado.
-- **Não há segundo fator** para o painel, que é onde se lê o prontuário de
-  todos.
+- **O segundo fator vale para o painel, não para a API do banco.** O
+  aplicativo usa a mesma conta sem segundo fator, então o banco ainda aceita
+  sessão só com senha, dentro do RLS de cada papel. O próximo passo é levar o
+  TOTP ao aplicativo e então exigir `aal2` numa policy restritiva para
+  coordenação e gestão.
 
 ---
 

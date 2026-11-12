@@ -77,6 +77,8 @@ const TABELAS_SINCRONIZADAS = [
   // aceite e o rastro de quem abriu o prontuario sumiam com o celular.
   'consentimentos',
   'audit_log',
+  // 1.2.5: medicamentos e dúvidas levadas à equipe.
+  'medicamentos',
 ] as const;
 
 /** Palavras que abrem cláusula de tabela e não nome de coluna. */

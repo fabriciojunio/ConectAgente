@@ -1,7 +1,7 @@
 # OWASP MASVS 2.x: situação do aplicativo
 
 Cada grupo do padrão de verificação de segurança de aplicativos móveis da
-OWASP, com o que o aplicativo faz e onde isso é conferido. Base: versão 1.2.4.
+OWASP, com o que o aplicativo faz e onde isso é conferido. Base: versão 1.2.5.
 O alvo é o **L1**, mais os itens de L2 que pesam para dado de saúde
 (armazenamento e rede).
 
@@ -18,7 +18,7 @@ O alvo é o **L1**, mais os itens de L2 que pesam para dado de saúde
 | NETWORK-2 | identidade do servidor conferida além da loja do sistema | pino na intermediária WE1 e na raiz GTS Root R4, com data de expiração | `plugins/fixar-certificado.js`, MobSF | atende |
 | PLATFORM-1 | uso seguro do que o sistema oferece | atividades de biblioteca com `exported="false"`; três permissões, todas usadas | `plugins/endurecer-manifesto.js`, `docs/mobsf.md` | atende |
 | PLATFORM-2 | WebView segura | o aplicativo não usa WebView | código | não se aplica |
-| PLATFORM-3 | interface não vaza dado | — | — | **aberto**: falta `FLAG_SECURE` nas telas clínicas |
+| PLATFORM-3 | interface não vaza dado | `FLAG_SECURE` no aplicativo inteiro (captura, gravação e miniatura dos recentes saem pretas) | `app/_layout.tsx`, teste `protecaoDeTela` | atende |
 | CODE-1 | plataforma atualizada | `minSdk` 24 (Android 7) para atender aparelho antigo do agente | `docs/mobsf.md` | aceito com motivo: decisão da secretaria |
 | CODE-2 | dependências sem vulnerabilidade conhecida | OSV-Scanner a cada push; aceites com motivo e prazo | `osv-scanner.toml`, workflow de segurança | atende |
 | CODE-3 | entrada validada | esquemas Zod nos formulários; SQL sempre parametrizado; conversão tipada na fronteira | `utils/validators.ts`, `features/prontuario/conversoes.ts` | atende |

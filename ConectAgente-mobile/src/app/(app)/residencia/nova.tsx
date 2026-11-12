@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity, Text,
 } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,6 +20,14 @@ import { TIPO_IMOVEL_OPTIONS, ESTADOS_BRASIL, RISCO_OPTIONS, SPACING, FONT_SIZE 
 import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
 import { sairDoFormularioPara } from '../../../utils/navegacao';
 
+const RESIDENCIA_VAZIA: Partial<ResidenciaFormInput> = {
+  tem_animais: false,
+  num_comodos: 1,
+  tipo_imovel: 'proprio',
+  estado: 'SP',
+  nivel_risco: 'nenhum',
+};
+
 export default function NovaResidencia() {
   const { colors } = useTheme();
   const styles = useMemo(() => criarStyles(colors), [colors]);
@@ -26,17 +35,20 @@ export default function NovaResidencia() {
   const [isLoading, setIsLoading] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
 
-  const { control, handleSubmit, setValue, watch } = useForm<ResidenciaFormInput, unknown, ResidenciaFormDataValidated>({
+  const { control, handleSubmit, setValue, watch, reset } = useForm<ResidenciaFormInput, unknown, ResidenciaFormDataValidated>({
     resolver: zodResolver(residenciaSchema),
     mode: 'onBlur',
-    defaultValues: {
-      tem_animais: false,
-      num_comodos: 1,
-      tipo_imovel: 'proprio',
-      estado: 'SP',
-      nivel_risco: 'nenhum',
-    },
+    defaultValues: RESIDENCIA_VAZIA,
   });
+
+  // A tela fica montada entre uma abertura e outra (é rota escondida das
+  // abas). Sem zerar ao abrir, "Nova residência" voltava com o endereço da
+  // casa anterior, e um toque em salvar duplicava o cadastro.
+  useFocusEffect(
+    useCallback(() => {
+      reset(RESIDENCIA_VAZIA);
+    }, [reset])
+  );
 
   const temAnimais = watch('tem_animais');
 

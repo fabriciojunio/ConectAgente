@@ -38,6 +38,7 @@ import { syncQueueRepository } from '../database/repositories/syncQueueRepositor
 import { residenciaRepository } from '../database/repositories/residenciaRepository';
 import { moradorRepository } from '../database/repositories/moradorRepository';
 import { visitaRepository } from '../database/repositories/visitaRepository';
+import { medicamentoRepository } from '../database/repositories/medicamentoRepository';
 import { supabase, SupabaseTable } from '../lib/supabase';
 import { authService } from './authService';
 import { SYNC_BATCH_SIZE } from '../utils/constants';
@@ -112,7 +113,7 @@ const FICHAS_DE_PRONTUARIO = new Set<SupabaseTable>([
  * INSERT e UPDATE separados não leem nada, e dão o mesmo resultado: o
  * primeiro envio insere, a retentativa atualiza.
  */
-const GRAVADAS_SEM_UPSERT = new Set<SupabaseTable>(['moradores', ...FICHAS_DE_PRONTUARIO]);
+const GRAVADAS_SEM_UPSERT = new Set<SupabaseTable>(['moradores', 'medicamentos', ...FICHAS_DE_PRONTUARIO]);
 
 /** Código do Postgres para chave primária repetida. */
 const CHAVE_REPETIDA = '23505';
@@ -160,6 +161,8 @@ export const syncService = {
             await moradorRepository.marcarComoSincronizado(item.registro_id);
           } else if (item.tabela === 'visitas') {
             await visitaRepository.marcarComoSincronizado(item.registro_id);
+          } else if (item.tabela === 'medicamentos') {
+            await medicamentoRepository.marcarComoSincronizado(item.registro_id);
           }
         }
 

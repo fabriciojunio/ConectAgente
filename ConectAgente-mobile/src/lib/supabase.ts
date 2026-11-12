@@ -142,7 +142,8 @@ export type SupabaseTable =
   | 'agendamentos'
   | 'metas_visitas'
   | 'audit_log'
-  | 'consentimentos';
+  | 'consentimentos'
+  | 'medicamentos';
 
 /**
  * Helper para lidar com erros do Supabase de forma padronizada.

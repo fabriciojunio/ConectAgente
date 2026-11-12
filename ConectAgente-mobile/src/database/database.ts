@@ -29,6 +29,8 @@ const MIGRACOES = [
   `ALTER TABLE visitas ADD COLUMN encaminhamentos TEXT`,
   `ALTER TABLE agentes ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE residencias ADD COLUMN nivel_risco TEXT DEFAULT 'nenhum'`,
+  `ALTER TABLE medicamentos ADD COLUMN problemas_uso TEXT`,
+  `ALTER TABLE medicamentos ADD COLUMN respondido_por TEXT`,
 ];
 
 /** Tabelas, índices e migrações. Idempotente. */

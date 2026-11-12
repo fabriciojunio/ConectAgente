@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   TextInput, RefreshControl, Platform, Modal, ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
@@ -42,6 +42,9 @@ const criarStatusColors = (
 
 export default function AdminVisitas() {
   const { colors } = useTheme();
+  // As folhas de detalhe vão até a borda da tela; sem descontar a faixa dos
+  // botões do Android, o fim delas ficava atrás desses botões.
+  const { bottom: faixaInferior } = useSafeAreaInsets();
   const STATUS_COLORS = useMemo(() => criarStatusColors(colors), [colors]);
   const styles = useMemo(() => criarStyles(colors), [colors]);
   const [todas, setTodas] = useState<VisitaExt[]>([]);
@@ -181,7 +184,7 @@ export default function AdminVisitas() {
       {/* Filtros Modal */}
       <Modal visible={showFiltros} transparent animationType="slide" onRequestClose={() => setShowFiltros(false)}>
         <View style={styles.overlay}>
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: SPACING.md + faixaInferior }]}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>Filtros</Text>
               <TouchableOpacity onPress={() => setShowFiltros(false)} hitSlop={8}>
@@ -241,7 +244,7 @@ export default function AdminVisitas() {
       {/* Detalhes Modal */}
       <Modal visible={!!selecionada} transparent animationType="slide" onRequestClose={() => setSelecionada(null)}>
         <View style={styles.overlay}>
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: SPACING.md + faixaInferior }]}>
             <ScrollView showsVerticalScrollIndicator={false}>
               {selecionada && (
                 <>

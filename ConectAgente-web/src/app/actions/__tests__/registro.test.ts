@@ -38,9 +38,15 @@ jest.mock('@/lib/rateLimit', () => ({
   rateLimit: (...args: unknown[]) => mockRateLimit(...args),
 }));
 
+const mockNivel = jest.fn(async () => ({ data: { currentLevel: 'aal2', nextLevel: 'aal2' } }));
 jest.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
-    auth: { getUser: () => mockGetUser() },
+    auth: {
+      getUser: () => mockGetUser(),
+      // Sessão já com o código do autenticador confirmado; o caso sem ele
+      // tem teste próprio em registro.test.ts.
+      mfa: { getAuthenticatorAssuranceLevel: () => mockNivel() },
+    },
   }),
 }));
 
@@ -173,6 +179,19 @@ describe('aprovarSolicitacao - autorizacao', () => {
     const r = await aprovarSolicitacao('sol-1', 'Senha@123');
 
     expect(r.success).toBe(true);
+  });
+
+  it('recusa admin que entrou só com a senha, sem o código do autenticador', async () => {
+    // A ação é um endpoint por si: chamada direto, ela não passa pela tela do
+    // código. Precisa conferir o segundo fator sozinha.
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'ad-1' } } });
+    agenteRetornado = { role: 'admin', ativo: true };
+    mockNivel.mockResolvedValueOnce({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } });
+
+    const r = await aprovarSolicitacao('sol-1', 'Senha@123');
+
+    expect(r).toEqual({ success: false, error: 'Confirme o código do autenticador para continuar.' });
+    expect(mockCreateUser).not.toHaveBeenCalled();
   });
 
   it('o papel gravado e um dos que o CHECK do banco aceita', async () => {

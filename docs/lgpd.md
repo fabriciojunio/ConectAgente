@@ -31,7 +31,7 @@ O código declara isso em `ConectAgente-mobile/src/utils/lgpd.ts`, na constante
 
 | Requisito | Onde | Verificado por |
 |---|---|---|
-| Segurança do tratamento (art. 46) | RLS em todas as tabelas, senha com PBKDF2, banco do aparelho em SQLCipher, SecureStore para chave e token | `rodar-testes-rls.sh`, 22 verificações |
+| Segurança do tratamento (art. 46) | RLS em todas as tabelas, senha com PBKDF2, banco do aparelho em SQLCipher, SecureStore para chave e token, captura de tela bloqueada, segundo fator no painel | `rodar-testes-rls.sh`, 33 verificações; testes de `segundo-fator` |
 | Controle de acesso por papel | policies do banco, espelhadas nos guardas de tela | `contratoPapeis.test.ts` |
 | Trilha imutável | `audit_log` append-only, `REVOKE UPDATE, DELETE`, leitura só para gerente e admin | `rodar-testes-rls.sh` |
 | Exclusão lógica | `deleted_at` em `residencias`, `moradores` e `visitas` | schema |
@@ -57,8 +57,9 @@ Situação agora, por obrigação legal:
 
 ### Os eventos que entram na trilha
 
-No aplicativo: entrar no sistema, abrir prontuário, exportar relatório e
-anonimizar morador. No painel: aprovar e rejeitar cadastro, e abrir a ficha de
+No aplicativo: entrar no sistema, abrir prontuário, exportar relatório,
+anonimizar morador e incluir, responder ou remover medicamento (sem o nome do
+remédio nem a dúvida no registro). No painel: aprovar e rejeitar cadastro, e abrir a ficha de
 um paciente.
 
 A leitura no painel precisou de solução diferente das outras. Lá o navegador
@@ -120,6 +121,13 @@ da secretaria.
 API, e o usuário logado lê só as chaves. Como a migração recusa o upsert das
 versões anteriores do aplicativo, ela entra no banco junto com a distribuição
 da 1.2.2. Ver [seguranca.md](seguranca.md).
+
+**Medicamentos e dúvidas: mesma regra das fichas desde a 1.2.5.** A lista de
+remédios do morador, os problemas de uso observados e as dúvidas levadas à
+equipe são dado de saúde (art. 11, II, "f"). Nenhuma coluna clínica sai pela
+API (`migration_medicamentos.sql`), só o agente dono grava, e só para morador
+dele. A dúvida e a resposta são texto livre: a orientação na tela pede para
+não escrever nome nem documento ali.
 
 **Encarregado e canal do titular.** Sem definição, os pedidos de titular não
 têm a quem responder. Também é decisão administrativa.

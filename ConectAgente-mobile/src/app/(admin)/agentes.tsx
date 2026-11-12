@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   TextInput, RefreshControl, Alert, Platform, Modal, ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
@@ -16,6 +16,9 @@ type AgenteStats = Awaited<ReturnType<typeof agenteRepository.listarTodos>>[numb
 
 export default function AdminAgentes() {
   const { colors } = useTheme();
+  // As folhas de detalhe vão até a borda da tela; sem descontar a faixa dos
+  // botões do Android, o fim delas ficava atrás desses botões.
+  const { bottom: faixaInferior } = useSafeAreaInsets();
   const styles = useMemo(() => criarStyles(colors), [colors]);
   const [agentes, setAgentes] = useState<AgenteStats[]>([]);
   const [filtrados, setFiltrados] = useState<AgenteStats[]>([]);
@@ -180,7 +183,7 @@ export default function AdminAgentes() {
       {/* Detalhes Modal */}
       <Modal visible={!!selecionado && !showMetaModal} transparent animationType="slide" onRequestClose={fecharDetalhes}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: SPACING.md + faixaInferior }]}>
             <ScrollView showsVerticalScrollIndicator={false}>
               {selecionado && (
                 <>

@@ -24,3 +24,29 @@ const NIVEIS: readonly string[] = Object.values(NivelVulnerabilidade);
 export function nivelDeVulnerabilidade(valor: string | undefined): NivelVulnerabilidade {
   return NIVEIS.includes(valor ?? '') ? (valor as NivelVulnerabilidade) : NivelVulnerabilidade.NENHUM;
 }
+
+type ValoresDoFormulario = Record<string, string | boolean>;
+
+/**
+ * Monta os valores de uma aba do prontuário a partir do que está gravado.
+ *
+ * Parte sempre do padrão inteiro, e não do que o formulário tinha: a tela do
+ * prontuário fica montada entre um morador e outro, e preencher só os campos
+ * que vieram com valor deixava no formulário o texto do morador anterior.
+ * Campo de texto recebe texto (número vira texto, nulo fica vazio); campo de
+ * marcar recebe verdadeiro ou falso.
+ */
+export function preencherFormulario<T extends ValoresDoFormulario>(
+  padrao: T,
+  registro: object | null | undefined
+): T {
+  const saida: ValoresDoFormulario = { ...padrao };
+  if (!registro) return saida as T;
+  const gravado = registro as Record<string, unknown>;
+  for (const campo of Object.keys(padrao)) {
+    const valor = gravado[campo];
+    if (valor === undefined || valor === null) continue;
+    saida[campo] = typeof padrao[campo] === 'boolean' ? Boolean(valor) : String(valor);
+  }
+  return saida as T;
+}

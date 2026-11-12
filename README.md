@@ -82,13 +82,13 @@ npm run build
 bash ConectAgente-web/supabase/testes/rodar-todos.sh
 ```
 
-Estado medido em 11/11/2026, versão 1.2.4:
+Estado medido em 12/11/2026, versão 1.2.5:
 
 | O que | Resultado |
 |---|---|
-| Testes do aplicativo | 884 em 48 suítes, incluindo contraste do tema e navegação; cobertura de 86,4% das instruções |
-| Testes do painel | 405 em 34 suítes |
-| Verificações em banco de verdade | 6 suítes, todas aprovadas, incluindo a de instalação repetida |
+| Testes do aplicativo | 950 em 57 suítes, incluindo contraste do tema, navegação e guardas de layout; cobertura de 85,7% das instruções |
+| Testes do painel | 432 em 36 suítes, incluindo o segundo fator |
+| Verificações em banco de verdade | 149 em 6 suítes, todas aprovadas, incluindo a de instalação repetida |
 | Erros de tipo | 0 nos dois projetos |
 | Avisos de ESLint | 0 |
 | Vulnerabilidade (OSV-Scanner) | 0 sem aceite; as de ferramenta de build têm motivo e prazo em `osv-scanner.toml` |
@@ -245,16 +245,17 @@ localmente. A tradução e a remoção dos campos locais ficam num lugar só, em
 
 Honestidade sobre o estado, que vale mais que uma lista de recursos:
 
-- **A senha local do aplicativo é SHA-256 com sal, numa passada só.** É
-  rápida demais para senha. A troca por PBKDF2 em JavaScript puro foi medida
-  e descartada: sem JIT, como o Hermes roda, 100 mil iterações levaram 41 s.
-  O caminho é a derivação nativa (`react-native-quick-crypto`), validada no
-  Android de verdade, com migração do hash no próximo login.
 - **As fichas de prontuário só fecham com a 1.2.2 instalada.** A partir dela
   nenhuma coluna clínica sai pela API (`migration_prontuario_fechado.sql`),
   mas a migração recusa o upsert das versões anteriores e por isso entra no
   banco junto com a distribuição da 1.2.2.
-- **Não há segundo fator no painel**, que é onde se lê o prontuário de todos.
+- **O segundo fator protege o painel, não a API do banco.** O aplicativo usa a
+  mesma conta sem segundo fator, então o banco ainda aceita sessão só com
+  senha, dentro do RLS de cada papel. Exigir `aal2` no banco depende de levar
+  o segundo fator para o aplicativo.
+- **Duas migrações da 1.2.5 entram no banco à mão**
+  (`migration_limite_de_tentativas.sql` e `migration_medicamentos.sql`). Até
+  lá o painel conta tentativas em memória e os medicamentos ficam no aparelho.
 - **A classificação de risco do time já está aqui**, portada do commit do Luan
   em vez de fundida, porque a linha deles carrega junto 97 arquivos de
   relatório de cobertura, logs de erro e telas substituídas.

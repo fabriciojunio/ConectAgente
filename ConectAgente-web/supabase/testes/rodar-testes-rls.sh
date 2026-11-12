@@ -118,7 +118,7 @@ for f in \
   "$RAIZ/ConectAgente-web/supabase/migration_prontuario_sync.sql" \
   "$AQUI/02-cenario.sql" \
   "$RAIZ/ConectAgente-web/supabase/migration_rls_completo.sql" \
-  "$RAIZ/ConectAgente-web/supabase/migration_sem_anonimo.sql"
+  "$RAIZ/ConectAgente-web/supabase/migration_sem_anonimo.sql"   "$RAIZ/ConectAgente-web/supabase/migration_limite_de_tentativas.sql"
 do
   erro=$("$PSQL" $D -f "$f" 2>&1 | grep -iE "^ERRO|^ERROR" | head -2)
   [ -n "$erro" ] && { echo "FALHOU ao carregar $(basename "$f"):"; echo "$erro"; exit 1; }
@@ -194,6 +194,32 @@ case "$r" in
   *"permission denied"*) printf "  ok    %-46s bloqueado\n" "agente não apaga a auditoria"; ok=$((ok+1));;
   *) printf "  FALHA %-46s permitiu: %s\n" "agente não apaga a auditoria" "$r"; falhou=$((falhou+1));;
 esac
+
+echo
+echo "LIMITE DE TENTATIVAS (contagem única para todas as instâncias do painel)"
+checar_recusa "visitante gasta o limite de outra pessoa" "$(como_anon "SELECT permitido FROM registrar_tentativa('login_cpf:x', 5, 60000);")"
+checar_recusa "agente gasta o limite de outra pessoa"    "$(como $ANA "SELECT permitido FROM registrar_tentativa('login_cpf:x', 5, 60000);")"
+checar_recusa "agente lê quem está tentando entrar"      "$(como $ANA 'SELECT count(*) FROM limite_de_tentativas;')"
+servidor() { echo "SET ROLE service_role; $1"; }
+TENTA="SELECT permitido FROM registrar_tentativa('teste:a', 2, 60000);"
+checar "servidor: 1ª tentativa passa"               t "$(servidor "$TENTA")"
+checar "servidor: 2ª tentativa passa"               t "$(servidor "$TENTA")"
+checar "servidor: 3ª tentativa é barrada"           f "$(servidor "$TENTA")"
+checar "barrada informa quanto esperar"             t "$(servidor "SELECT espera_ms BETWEEN 1 AND 60000 FROM registrar_tentativa('teste:a', 2, 60000);")"
+checar "outra chave não herda o bloqueio"           t "$(servidor "SELECT permitido FROM registrar_tentativa('teste:b', 2, 60000);")"
+checar "janela vencida zera a contagem"             t "$(servidor "SELECT permitido FROM registrar_tentativa('teste:c', 1, 1); SELECT pg_sleep(0.05); SELECT permitido FROM registrar_tentativa('teste:c', 1, 1);")"
+checar_erro() {
+  local nome="$1" sql="$2"
+  # A mensagem do RAISE vem antes da linha de contexto, então olha a saída toda.
+  local obtido; obtido=$("$PSQL" $Q -c "$sql" 2>&1)
+  case "$obtido" in
+    *"inválidos"*) printf "  ok    %-46s %s
+" "$nome" "recusado"; ok=$((ok+1)) ;;
+    *) printf "  FALHA %-46s esperado=erro obtido=%s
+" "$nome" "$obtido"; falhou=$((falhou+1)) ;;
+  esac
+}
+checar_erro "limite zero é recusado"                "$(servidor "SELECT permitido FROM registrar_tentativa('teste:d', 0, 60000);")"
 
 echo
 echo "COBERTURA: nenhuma tabela pode ficar sem RLS ou sem policy"

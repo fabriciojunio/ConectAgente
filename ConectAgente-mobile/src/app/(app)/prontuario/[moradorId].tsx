@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useForm } from 'react-hook-form';
@@ -22,7 +22,7 @@ import { validarDataBR } from '../../../utils/validators';
 import { SPACING, FONT_SIZE, RADIUS, ESPECIALIDADES } from '../../../utils/constants';
 import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
 import { ACOES_AUDITORIA, auditRepository } from '../../../database/repositories/auditRepository';
-import { nivelDeVulnerabilidade, semanasDeGestacao } from '../../../features/prontuario/conversoes';
+import { nivelDeVulnerabilidade, semanasDeGestacao, preencherFormulario } from '../../../features/prontuario/conversoes';
 
 type Step = 'saude' | 'gestante' | 'puericultura' | 'mulher' | 'social' | 'medicamentos';
 
@@ -35,6 +35,46 @@ const STEPS: { key: Step; label: string; icon: string }[] = [
   { key: 'medicamentos', label: 'Medicamentos', icon: 'medkit-outline' },
 ];
 
+// Valores de cada aba quando não há nada gravado. Também são a lista de
+// campos que o carregamento preenche (ver preencherFormulario).
+const PADRAO_SAUDE = {
+  is_hipertenso: false, is_diabetico: false, is_domiciliado: false,
+  is_tuberculose: false, is_hanseniase: false,
+  hgt_ultima_aferição: '', hgt_valor: '',
+  pa_ultima_aferição: '', pa_valor: '',
+  tem_receita_atualizada: false, ultima_consulta: '', proxima_consulta: '',
+  precisa_agendamento: false, especialidade_agendamento: '', queixas: '', observacoes: '',
+};
+
+const PADRAO_GESTANTE = {
+  is_gestante: false, data_dum: '', semanas_gestacao: '',
+  pre_natal_em_dia: false, local_pre_natal: '', proxima_consulta_pre_natal: '',
+  vacina_tetano_em_dia: false, vacina_hepatiteb_em_dia: false,
+  sulfato_ferroso: false, acido_folico: false, observacoes: '',
+};
+
+const PADRAO_PUERICULTURA = {
+  is_crianca: false, peso_atual: '', altura_atual: '',
+  cartao_vacina_em_dia: false, vacinas_em_atraso: '',
+  consulta_acompanhamento_em_dia: false, proxima_consulta: '',
+  frequenta_escola: false, nome_escola: '', observacoes: '',
+};
+
+const PADRAO_MULHER = {
+  ultima_menstruacao: '', papanicolau_em_dia: false, data_ultimo_papanicolau: '',
+  mamografia_em_dia: false, data_ultima_mamografia: '',
+  usa_anticoncepcional: false, tipo_anticoncepcional: '',
+  consulta_ginecologica_em_dia: false, prevencao_dts: false, observacoes: '',
+};
+
+const PADRAO_SOCIAL = {
+  vulnerabilidade_social: 'nenhum', descricao_vulnerabilidade: '',
+  negligencia_parental: false, descricao_negligencia: '',
+  violencia_domestica: false, descricao_violencia: '',
+  depressao_suspeita: false, uso_alcool_drogas: false, descricao_uso: '',
+  encaminhado_assistente_social: false, data_encaminhamento: '', observacoes: '',
+};
+
 export default function ProntuarioScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => criarStyles(colors), [colors]);
@@ -45,53 +85,37 @@ export default function ProntuarioScreen() {
   const [currentStep, setCurrentStep] = useState<Step>('saude');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const conteudoRef = useRef<ScrollView>(null);
+  const abasRef = useRef<ScrollView>(null);
+  const posicaoDasAbas = useRef<Partial<Record<Step, number>>>({});
 
-  const { control: saudeControl, handleSubmit: handleSaude, setValue: setSaudeValue, getValues: getSaudeValues, watch: saudeWatch } = useForm({
-    defaultValues: {
-      is_hipertenso: false, is_diabetico: false, is_domiciliado: false,
-      is_tuberculose: false, is_hanseniase: false,
-      hgt_ultima_aferição: '', hgt_valor: '',
-      pa_ultima_aferição: '', pa_valor: '',
-      tem_receita_atualizada: false, ultima_consulta: '', proxima_consulta: '',
-      precisa_agendamento: false, especialidade_agendamento: '', queixas: '', observacoes: '',
-    },
+  // Trocar de aba abre a aba nova no topo, e a fileira de abas rola até ela.
+  // Sem isso a aba seguinte abria no meio (herdava a rolagem da anterior) e a
+  // aba ativa podia ficar fora da tela, à direita.
+  useEffect(() => {
+    conteudoRef.current?.scrollTo({ y: 0, animated: false });
+    const x = posicaoDasAbas.current[currentStep];
+    if (x !== undefined) abasRef.current?.scrollTo({ x: Math.max(0, x - SPACING.md), animated: true });
+  }, [currentStep]);
+
+  const { control: saudeControl, handleSubmit: handleSaude, setValue: setSaudeValue, getValues: getSaudeValues, watch: saudeWatch, reset: resetSaude } = useForm({
+    defaultValues: PADRAO_SAUDE,
   });
 
-  const { control: gestanteControl, handleSubmit: handleGestante, setValue: setGestanteValue, getValues: getGestanteValues, watch: gestanteWatch } = useForm({
-    defaultValues: {
-      is_gestante: false, data_dum: '', semanas_gestacao: '',
-      pre_natal_em_dia: false, local_pre_natal: '', proxima_consulta_pre_natal: '',
-      vacina_tetano_em_dia: false, vacina_hepatiteb_em_dia: false,
-      sulfato_ferroso: false, acido_folico: false, observacoes: '',
-    },
+  const { control: gestanteControl, handleSubmit: handleGestante, setValue: setGestanteValue, getValues: getGestanteValues, watch: gestanteWatch, reset: resetGestante } = useForm({
+    defaultValues: PADRAO_GESTANTE,
   });
 
-  const { control: puericulturaControl, handleSubmit: handlePuericultura, setValue: setPuericulturaValue, getValues: getPuericulturaValues, watch: puericulturaWatch } = useForm({
-    defaultValues: {
-      is_crianca: false, peso_atual: '', altura_atual: '',
-      cartao_vacina_em_dia: false, vacinas_em_atraso: '',
-      consulta_acompanhamento_em_dia: false, proxima_consulta: '',
-      frequenta_escola: false, nome_escola: '', observacoes: '',
-    },
+  const { control: puericulturaControl, handleSubmit: handlePuericultura, setValue: setPuericulturaValue, getValues: getPuericulturaValues, watch: puericulturaWatch, reset: resetPuericultura } = useForm({
+    defaultValues: PADRAO_PUERICULTURA,
   });
 
-  const { control: mulherControl, handleSubmit: handleMulher, setValue: setMulherValue, getValues: getMulherValues, watch: mulherWatch } = useForm({
-    defaultValues: {
-      ultima_menstruacao: '', papanicolau_em_dia: false, data_ultimo_papanicolau: '',
-      mamografia_em_dia: false, data_ultima_mamografia: '',
-      usa_anticoncepcional: false, tipo_anticoncepcional: '',
-      consulta_ginecologica_em_dia: false, prevencao_dts: false, observacoes: '',
-    },
+  const { control: mulherControl, handleSubmit: handleMulher, setValue: setMulherValue, getValues: getMulherValues, watch: mulherWatch, reset: resetMulher } = useForm({
+    defaultValues: PADRAO_MULHER,
   });
 
-  const { control: socialControl, handleSubmit: handleSocial, setValue: setSocialValue, getValues: getSocialValues, watch: socialWatch } = useForm({
-    defaultValues: {
-      vulnerabilidade_social: 'nenhum', descricao_vulnerabilidade: '',
-      negligencia_parental: false, descricao_negligencia: '',
-      violencia_domestica: false, descricao_violencia: '',
-      depressao_suspeita: false, uso_alcool_drogas: false, descricao_uso: '',
-      encaminhado_assistente_social: false, data_encaminhamento: '', observacoes: '',
-    },
+  const { control: socialControl, handleSubmit: handleSocial, setValue: setSocialValue, getValues: getSocialValues, watch: socialWatch, reset: resetSocial } = useForm({
+    defaultValues: PADRAO_SOCIAL,
   });
 
   // Watch para campos condicionais
@@ -134,19 +158,15 @@ export default function ProntuarioScreen() {
         contexto: { origem: 'tela de prontuario' },
       });
 
-      if (p.saude) {
-        const s = p.saude;
-        setSaudeValue('is_hipertenso', s.is_hipertenso);
-        setSaudeValue('is_diabetico', s.is_diabetico);
-        setSaudeValue('is_domiciliado', s.is_domiciliado);
-        setSaudeValue('is_tuberculose', s.is_tuberculose);
-        setSaudeValue('is_hanseniase', s.is_hanseniase);
-        setSaudeValue('tem_receita_atualizada', s.tem_receita_atualizada);
-        setSaudeValue('precisa_agendamento', s.precisa_agendamento);
-        if (s.queixas) setSaudeValue('queixas', s.queixas);
-        if (s.observacoes) setSaudeValue('observacoes', s.observacoes);
-        if (s.especialidade_agendamento) setSaudeValue('especialidade_agendamento', s.especialidade_agendamento);
-      }
+      // Zera e preenche as cinco abas com o que está gravado. Antes só parte
+      // da aba de saúde era carregada: pressão, glicemia, datas e as outras
+      // quatro abas abriam em branco, e salvar de novo apagava o que havia.
+      resetSaude(preencherFormulario(PADRAO_SAUDE, p.saude));
+      resetGestante(preencherFormulario(PADRAO_GESTANTE, p.gestante));
+      resetPuericultura(preencherFormulario(PADRAO_PUERICULTURA, p.puericultura));
+      resetMulher(preencherFormulario(PADRAO_MULHER, p.mulher));
+      resetSocial(preencherFormulario(PADRAO_SOCIAL, p.social));
+      setCurrentStep('saude');
     } catch {
       Alert.alert('Erro', 'Não foi possível carregar o prontuário.');
     } finally {
@@ -218,6 +238,7 @@ export default function ProntuarioScreen() {
 
       {/* ABAS DE NAVEGAÇÃO */}
       <ScrollView
+        ref={abasRef}
         horizontal showsHorizontalScrollIndicator={false}
         style={styles.stepsNav}
         contentContainerStyle={styles.stepsNavContent}
@@ -227,6 +248,7 @@ export default function ProntuarioScreen() {
             key={step.key}
             style={[styles.stepTab, currentStep === step.key && styles.stepTabActive]}
             onPress={() => setCurrentStep(step.key)}
+            onLayout={(e) => { posicaoDasAbas.current[step.key] = e.nativeEvent.layout.x; }}
           >
             <Ionicons
               name={step.icon as keyof typeof Ionicons.glyphMap}
@@ -245,7 +267,7 @@ export default function ProntuarioScreen() {
 
       {/* CONTEÚDO */}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={conteudoRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
         {/* =========== SAÚDE GERAL =========== */}
         {currentStep === 'saude' && (
@@ -385,7 +407,7 @@ export default function ProntuarioScreen() {
             {frequentaEscola && (
               <FormField control={puericulturaControl} name="nome_escola" label="Nome da escola/creche" placeholder="Nome da instituição" />
             )}
-            <FormField control={puericulturaControl} name="observacoes" label="Observações" multiline numberOfLines={3} />
+            <FormField control={puericulturaControl} name="observacoes" label="Observações" placeholder="Observações sobre a criança..." multiline numberOfLines={3} />
 
             <Button
               title={proximaAba ? 'Salvar e continuar' : 'Salvar dados de puericultura'}
@@ -423,7 +445,7 @@ export default function ProntuarioScreen() {
             )}
             <SwitchField control={mulherControl} name="consulta_ginecologica_em_dia" label="Consulta ginecológica em dia?" />
             <SwitchField control={mulherControl} name="prevencao_dts" label="Orientada sobre prevenção de DTSs?" />
-            <FormField control={mulherControl} name="observacoes" label="Observações" multiline numberOfLines={3} />
+            <FormField control={mulherControl} name="observacoes" label="Observações" placeholder="Observações sobre a saúde da mulher..." multiline numberOfLines={3} />
 
             <Button
               title={proximaAba ? 'Salvar e continuar' : 'Salvar dados'}
@@ -474,7 +496,7 @@ export default function ProntuarioScreen() {
                 onBlur={() => { const v = getSocialValues('data_encaminhamento'); if (v && !validarDataBR(v)) setSocialValue('data_encaminhamento', ''); }}
               />
             )}
-            <FormField control={socialControl} name="observacoes" label="Observações gerais" multiline numberOfLines={3} />
+            <FormField control={socialControl} name="observacoes" label="Observações gerais" placeholder="Observações sobre a situação da família..." multiline numberOfLines={3} />
 
             <Button
               title={proximaAba ? 'Salvar e continuar' : 'Salvar dados sociais'}
@@ -497,14 +519,17 @@ export default function ProntuarioScreen() {
             <View style={styles.medicamentosInfo}>
               <Ionicons name="information-circle-outline" size={20} color={colors.info} />
               <Text style={styles.medicamentosText}>
-                Registre dúvidas do paciente sobre medicamentos. O médico pode responder
-                na próxima visita, ficando salvo no histórico.
+                Liste os remédios que o morador usa, anote o que você observou no uso e
+                registre as dúvidas. Você leva a dúvida para a equipe da UBS e anota a
+                resposta na próxima visita.
               </Text>
             </View>
             <Button
               title="Gerenciar medicamentos"
               variant="ghost"
-              onPress={() => Alert.alert('Em breve', 'Tela de medicamentos disponível em breve.')}
+              onPress={() =>
+                router.push({ pathname: '/(app)/medicamentos/[moradorId]', params: { moradorId } })
+              }
             />
           </View>
         )}

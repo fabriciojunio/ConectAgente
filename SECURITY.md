@@ -112,19 +112,21 @@ tê-la.
   formato do arquivo muda e o banco antigo não abre com chave. Num sistema
   offline-first o dado volta do servidor na sincronização, mas o que estiver
   na fila sem sincronizar se perde: sincronizar antes de atualizar.
-- **A senha local do aplicativo usa SHA-256 com sal, numa passada só.** Serve
-  para o login sem rede, mas é rápida demais para senha: com o banco de um
-  aparelho roubado em mãos, testar senhas custa pouco. O certo é uma derivação
-  lenta (PBKDF2 com muitas iterações, scrypt ou Argon2), com migração do hash
-  no próximo login de cada agente.
 - **O fechamento das fichas depende da 1.2.2 instalada.** As versões
   anteriores gravam as fichas com upsert, que `migration_prontuario_fechado.sql`
   recusa. A migração entra no banco junto com a distribuição da 1.2.2, e um
   aparelho com versão antiga deixa de sincronizar fichas até ser atualizado.
-- **Não há segundo fator** para o painel web, que é onde se lê o prontuário de
-  todos os pacientes.
-- **O limite de taxa é em memória do processo.** Com mais de uma instância do
-  painel, cada uma conta separado.
+- **O segundo fator vale para o painel, não para a API.** Desde a 1.2.5 toda
+  conta do painel confirma o código de um app autenticador, e as ações com a
+  chave de serviço conferem o nível da sessão de novo. Quem tiver só a senha
+  ainda consegue falar direto com a API do banco, dentro do RLS do próprio
+  papel, porque o aplicativo usa a mesma conta e não pede segundo fator.
+  Exigir `aal2` no banco depende do segundo fator no aplicativo.
+- **O limite de tentativas e os medicamentos dependem de migração.** Sem
+  `migration_limite_de_tentativas.sql` aplicada, o painel volta a contar em
+  memória por instância (continua limitando, mas cada instância conta
+  separado). Sem `migration_medicamentos.sql`, os medicamentos ficam no
+  aparelho e a sincronização deles fica pendente até a migração entrar.
 - **Dependências de build com falha conhecida** (`uuid` 7, `image-size` 1,
   `deepmerge`, `glob` e `minimatch`) vêm da CLI do Expo, do Metro, do
   config-plugins e do Jest. Ou

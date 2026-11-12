@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as NavigationBar from 'expo-navigation-bar';
+import { usePreventScreenCapture } from 'expo-screen-capture';
 import { AuthProvider } from '../contexts/AuthContext';
 import { NetworkProvider } from '../contexts/NetworkContext';
 import { SyncProvider } from '../contexts/SyncContext';
@@ -20,6 +21,11 @@ import { aplicarMensagensEmPortugues } from '../utils/mensagensDeValidacao';
 aplicarMensagensEmPortugues();
 
 export default function RootLayout() {
+  // Quase toda tela mostra dado de saúde ou endereço de família. No Android
+  // isto liga o FLAG_SECURE: captura e gravação de tela saem pretas, e a
+  // miniatura na lista de apps recentes não mostra o conteúdo (MASVS-PLATFORM-3).
+  usePreventScreenCapture();
+
   useEffect(() => {
     getDatabase()
       .then(() => agenteRepository.garantirAdminPadrao())
