@@ -14,6 +14,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { CoberturaMicroarea } from '@/types';
+import { formatPercent } from '@/lib/utils';
 
 export interface CoberturaChartProps {
   data: CoberturaMicroarea[];
@@ -57,7 +58,7 @@ export default function CoberturaChart({ data, loading }: CoberturaChartProps) {
                   tickFormatter={(v: number) => `${v}%`}
                 />
                 <Tooltip
-                  formatter={(value: number) => [`${value.toFixed(1)}%`, 'Cobertura']}
+                  formatter={(value: number) => [formatPercent(value), 'Cobertura']}
                   contentStyle={{
                     borderRadius: '8px',
                     border: '1px solid var(--borda)',

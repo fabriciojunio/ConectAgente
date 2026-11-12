@@ -28,7 +28,7 @@ describe('DashboardCards', () => {
     expect(screen.getByText('Agentes Ativos')).toBeInTheDocument();
     expect(screen.getByText('20')).toBeInTheDocument();
     expect(screen.getByText('Taxa de Conclusão')).toBeInTheDocument();
-    expect(screen.getByText('83.3%')).toBeInTheDocument();
+    expect(screen.getByText('83,3%')).toBeInTheDocument();
     expect(screen.getByText('Visitas Pendentes')).toBeInTheDocument();
     expect(screen.getByText('40')).toBeInTheDocument();
     expect(screen.getByText('Visitas Realizadas')).toBeInTheDocument();
@@ -65,7 +65,7 @@ describe('DashboardCards', () => {
     // All zero values should render
     const zeroElements = screen.getAllByText('0');
     expect(zeroElements.length).toBeGreaterThanOrEqual(6);
-    expect(screen.getByText('0.0%')).toBeInTheDocument();
+    expect(screen.getByText('0,0%')).toBeInTheDocument();
   });
 
   it('displays correct section aria label when loaded', () => {

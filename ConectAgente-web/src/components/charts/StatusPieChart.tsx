@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatPercent } from '@/lib/utils';
 
 export interface StatusPieChartData {
   name: string;
@@ -52,7 +53,7 @@ export default function StatusPieChart({ data, loading }: StatusPieChartProps) {
                   dataKey="value"
                   nameKey="name"
                   label={({ name, percent }: { name: string; percent: number }) =>
-                    `${name} ${(percent * 100).toFixed(0)}%`
+                    `${name} ${formatPercent(percent * 100, 0)}`
                   }
                   labelLine={false}
                 >
