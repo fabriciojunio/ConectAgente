@@ -2870,6 +2870,11 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM agentes WHERE id = p_agente_id) THEN
     RAISE EXCEPTION 'agente não encontrado' USING ERRCODE = 'P0002';
   END IF;
+  -- Mesma regra do trigger de agentes: linha de admin, só admin mexe.
+  IF (SELECT role FROM agentes WHERE id = p_agente_id) = 'admin'
+     AND public.agente_papel() <> 'admin' THEN
+    RAISE EXCEPTION 'só a administração altera o cadastro de um administrador' USING ERRCODE = '42501';
+  END IF;
 
   INSERT INTO unidades_saude (nome, criada_por) VALUES (v_nome, auth.uid())
   ON CONFLICT (nome) DO NOTHING;
