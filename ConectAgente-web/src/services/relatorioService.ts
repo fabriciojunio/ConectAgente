@@ -269,7 +269,8 @@ async function carregarPdf() {
 export async function exportarPDF(
   dados: unknown[],
   titulo: string,
-  colunas: { header: string; key: string }[]
+  colunas: { header: string; key: string }[],
+  geradoPor?: string
 ): Promise<void> {
   try {
     const { jsPDF, autoTable } = await carregarPdf();
@@ -281,7 +282,7 @@ export async function exportarPDF(
 
     doc.setFontSize(10);
     doc.text(
-      `Gerado em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`,
+      `Gerado em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}${geradoPor ? ` por ${geradoPor}` : ''}`,
       14,
       28
     );
@@ -304,15 +305,30 @@ export async function exportarPDF(
         fontSize: 8,
         cellPadding: 3,
       },
+      // Roxo da área de administração do app (#6A1B9A), o mesmo do painel.
       headStyles: {
-        fillColor: [41, 128, 185],
+        fillColor: [106, 27, 154],
         textColor: 255,
         fontStyle: 'bold',
       },
       alternateRowStyles: {
-        fillColor: [245, 245, 245],
+        fillColor: [246, 243, 249],
       },
+      margin: { bottom: 22 },
     });
+
+    // Rodapé em toda página: sigilo, quem gerou e a numeração.
+    const paginas = doc.getNumberOfPages();
+    const largura = doc.internal.pageSize.getWidth();
+    const altura = doc.internal.pageSize.getHeight();
+    const linhasDoAviso = doc.splitTextToSize(AVISO_DE_SIGILO, largura - 28) as string[];
+    for (let i = 1; i <= paginas; i++) {
+      doc.setPage(i);
+      doc.setFontSize(7);
+      doc.setTextColor(98, 92, 110);
+      doc.text(linhasDoAviso, 14, altura - 14);
+      doc.text(`Página ${i} de ${paginas}`, largura - 14, altura - 6, { align: 'right' });
+    }
 
     const nomeArquivo = `${titulo.replace(/\s+/g, '_').toLowerCase()}_${format(new Date(), 'yyyyMMdd_HHmm')}.pdf`;
     doc.save(nomeArquivo);
@@ -413,6 +429,42 @@ export function exportarCSV(
 type ReportType = 'visitas' | 'agentes' | 'familias' | 'cobertura' | 'atrasos';
 type ExportFormat = 'pdf' | 'excel' | 'csv';
 
+/**
+ * Vai no rodapé do PDF e na aba "Informações" da planilha. O arquivo sai do
+ * sistema e passa de mão em mão; quem o recebe precisa saber o que tem nas
+ * mãos (LGPD, art. 6º, VII e art. 46).
+ */
+export const AVISO_DE_SIGILO =
+  'Documento restrito: contém dado pessoal de saúde protegido pela LGPD (Lei 13.709/2018, art. 11). ' +
+  'Use só para o atendimento da unidade, não compartilhe fora dela e descarte quando não precisar mais.';
+
+/**
+ * Registra a exportação na trilha antes de o arquivo sair.
+ *
+ * Exportar é tirar dado de saúde de dentro do sistema, onde o RLS e a
+ * trilha valem, para um arquivo que não tem nenhum dos dois. Se a trilha não
+ * aceitar o registro, o arquivo não sai: exportação sem rastro é exatamente o
+ * que a trilha existe para impedir (LGPD, art. 37).
+ */
+export async function registrarExportacao(
+  tipo: ReportType,
+  formato: ExportFormat,
+  linhas: number,
+  filtros: InformacaoPlanilha[]
+): Promise<void> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Sua sessão terminou. Entre de novo para exportar.');
+  const { error } = await supabase.from('audit_log').insert({
+    agente_id: user.id,
+    acao: 'EXPORT',
+    tabela: 'relatorio',
+    registro_id: tipo,
+    dados_novos: { formato, linhas, filtros: Object.fromEntries(filtros) },
+  });
+  if (error) throw falhaDeConsulta('registrar a exportação na trilha de auditoria', error);
+}
+
 /** Os relatórios mostravam o valor do banco: `nao_encontrado`, `atencao`. */
 const STATUS_VISITA: Record<string, string> = {
   agendada: 'Agendada',
@@ -460,7 +512,7 @@ export function descreverFiltros(
     info.push(['Bairro', filtros.bairro]);
   }
   if (filtros.status && tipo === 'visitas') {
-    info.push(['Status', STATUS_VISITA[filtros.status] ?? filtros.status]);
+    info.push(['Situação', STATUS_VISITA[filtros.status] ?? filtros.status]);
   }
   if (filtros.agente_id && (tipo === 'visitas' || tipo === 'familias')) {
     const nome = linhas.find((l) => l['Agente'])?.['Agente'];
@@ -476,6 +528,7 @@ export async function gerarRelatorio(
   tipo: ReportType,
   formato: ExportFormat,
   filters?: GlobalFilters,
+  geradoPor?: string,
 ): Promise<{
   preview: { data: Array<Record<string, unknown>>; columns: string[] };
   downloadUrl?: string;
@@ -499,7 +552,7 @@ export async function gerarRelatorio(
 
   if (tipo === 'visitas') {
     titulo = 'Relatório de Visitas';
-    columns = ['Data', 'Agente', 'Status', 'Logradouro', 'Bairro', 'Observações'];
+    columns = ['Data', 'Agente', 'Situação', 'Logradouro', 'Bairro', 'Observações'];
     const rows = await gerarRelatorioVisitas(filtros);
     // A consulta vem da mais nova para a mais antiga por causa da paginação;
     // o relatório lê melhor em ordem cronológica.
@@ -514,7 +567,7 @@ export async function gerarRelatorio(
         // dava data inválida e o format derrubava o relatório inteiro.
         'Data': r.data_visita ? formatDataDaVisita(r.data_visita) : null,
         'Agente': ag?.nome ?? null,
-        'Status': STATUS_VISITA[r.status] ?? r.status,
+        'Situação': STATUS_VISITA[r.status] ?? r.status,
         'Logradouro': res?.logradouro
           ? [res.logradouro, res.numero].filter(Boolean).join(', ')
           : null,
@@ -579,11 +632,17 @@ export async function gerarRelatorio(
   }
 
   const colDefs = columns.map((c) => ({ header: c, key: c }));
+  const descricao = descreverFiltros(tipo, filtros, data);
+
+  await registrarExportacao(tipo, formato, data.length, descricao);
 
   if (formato === 'pdf') {
-    await exportarPDF(data, titulo, colDefs);
+    await exportarPDF(data, titulo, colDefs, geradoPor);
   } else if (formato === 'excel') {
-    await exportarExcel(data, titulo, colDefs, descreverFiltros(tipo, filtros, data));
+    const informacoes: InformacaoPlanilha[] = [...descricao];
+    if (geradoPor) informacoes.push(['Gerado por', geradoPor]);
+    informacoes.push(['Sigilo', AVISO_DE_SIGILO]);
+    await exportarExcel(data, titulo, colDefs, informacoes);
   } else {
     exportarCSV(data, titulo, colDefs);
   }

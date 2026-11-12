@@ -46,6 +46,7 @@ function montarSupabase(
       c.order = jest.fn(() => Promise.resolve(terminaNoOrder[alvo]));
     }
     c.range = jest.fn(() => Promise.resolve(respostas[alvo]?.shift() ?? { data: [], error: null }));
+    c.insert = jest.fn(() => Promise.resolve(respostas[`${alvo}:insert`]?.shift() ?? { data: null, error: null }));
     cadeias.push({ alvo, c });
     return c;
   }
@@ -53,6 +54,7 @@ function montarSupabase(
   const supabase = {
     from: jest.fn((tabela: string) => cadeia(tabela)),
     rpc: jest.fn((funcao: string) => cadeia(funcao)),
+    auth: { getUser: jest.fn().mockResolvedValue({ data: { user: { id: 'conta-1' } } }) },
   };
   mockCreateClient.mockReturnValue(supabase as unknown as ReturnType<typeof createClient>);
   return { supabase, cadeias, de: (alvo: string) => cadeias.filter((x) => x.alvo === alvo).map((x) => x.c) };
@@ -240,5 +242,29 @@ describe('gerarRelatorio', () => {
     await gerarRelatorio('visitas', 'csv', { status: StatusVisita.CANCELADA });
 
     expect(de('visitas')[0].eq).toHaveBeenCalledWith('status', 'cancelada');
+  });
+
+  it('registra a exportação na trilha antes do arquivo sair', async () => {
+    const { de } = montarSupabase({ visitas: [{ data: [], error: null }] });
+    await gerarRelatorio('visitas', 'csv', { status: StatusVisita.REALIZADA });
+    const insert = de('audit_log')[0].insert;
+    expect(insert).toHaveBeenCalledWith({
+      agente_id: 'conta-1',
+      acao: 'EXPORT',
+      tabela: 'relatorio',
+      registro_id: 'visitas',
+      dados_novos: { formato: 'csv', linhas: 0, filtros: { Período: 'Todo o histórico', Situação: 'Realizada' } },
+    });
+  });
+
+  it('sem registro na trilha, o arquivo não sai', async () => {
+    montarSupabase({
+      visitas: [{ data: [], error: null }],
+      'audit_log:insert': [{ data: null, error: { message: 'new row violates row-level security policy' } }],
+    });
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const criar = jest.spyOn(URL, 'createObjectURL');
+    await expect(gerarRelatorio('visitas', 'csv', {})).rejects.toThrow('Não foi possível registrar a exportação');
+    expect(criar).not.toHaveBeenCalled();
   });
 });

@@ -122,7 +122,7 @@ describe('descreverFiltros', () => {
 
     expect(info).toEqual([
       ['Período', '01/10/2026 a 31/10/2026'],
-      ['Status', 'Não encontrado'],
+      ['Situação', 'Não encontrado'],
       ['Agente', 'Ana'],
     ]);
   });
