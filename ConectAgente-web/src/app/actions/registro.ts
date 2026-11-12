@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { rateLimit } from '@/lib/rateLimit';
+import { decidirSegundoFator } from '@/lib/segundoFator';
 import { z } from 'zod';
 import { registrarAcao } from '@/services/auditService';
 
@@ -157,6 +158,14 @@ async function exigirAprovador(): Promise<
 
   if (!user) {
     return { ok: false, erro: 'Sessao nao encontrada. Entre no painel novamente.' };
+  }
+
+  // Aprovar cadastro e trocar senha usam a chave de serviço, que passa por
+  // cima de todo o RLS. Não basta o middleware exigir o segundo fator nas
+  // páginas: a ação é um endpoint por si, e confere de novo aqui.
+  const { data: nivel } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (decidirSegundoFator(nivel) !== 'liberado') {
+    return { ok: false, erro: 'Confirme o código do autenticador para continuar.' };
   }
 
   const admin = createAdminClient();

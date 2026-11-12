@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { validarOrigem } from '@/lib/csrf';
+import { decidirSegundoFator, ROTA_DO_SEGUNDO_FATOR } from '@/lib/segundoFator';
 
 /** Rotas que exigem papel de gerente ou admin */
 const ADMIN_ROUTES = ['/admin', '/admin/usuarios'];
@@ -188,6 +189,22 @@ export async function middleware(request: NextRequest) {
   // Redirect authenticated users away from login
   if (user && isPublicRoute) {
     return comCsp(NextResponse.redirect(new URL('/', request.url)));
+  }
+
+  // Segundo fator. Senha certa abre só a tela do código: nenhuma outra página
+  // do painel carrega com sessão de um fator. O nível sai do JWT assinado,
+  // sem ida extra à rede.
+  if (user) {
+    const { data: nivel } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    const liberado = decidirSegundoFator(nivel) === 'liberado';
+    const naTelaDoCodigo = pathname === ROTA_DO_SEGUNDO_FATOR;
+
+    if (!liberado && !naTelaDoCodigo) {
+      return comCsp(NextResponse.redirect(new URL(ROTA_DO_SEGUNDO_FATOR, request.url)));
+    }
+    if (liberado && naTelaDoCodigo) {
+      return comCsp(NextResponse.redirect(new URL('/', request.url)));
+    }
   }
 
   // Role-based access control for admin routes
