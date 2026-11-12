@@ -2,6 +2,7 @@ import {
   cn,
   formatDate,
   formatCPF,
+  falhaDeConsulta,
   mascararCPF,
   formatPhone,
   formatCEP,
@@ -353,5 +354,16 @@ describe('mascararCPF', () => {
   it('CPF incompleto ou ausente não vaza parcial', () => {
     expect(mascararCPF('1234')).toBe('-');
     expect(mascararCPF(undefined)).toBe('-');
+  });
+});
+
+describe('falhaDeConsulta', () => {
+  it('diz o que falhou sem repassar o texto do banco', () => {
+    const espiao = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const erro = falhaDeConsulta('buscar agentes', { code: '42501', message: 'permission denied for table agentes' });
+    expect(erro.message).toBe('Não foi possível buscar agentes. Confira a conexão e tente de novo.');
+    expect(erro.message).not.toMatch(/permission|table|agentes_/);
+    expect(espiao).toHaveBeenCalled();
+    espiao.mockRestore();
   });
 });

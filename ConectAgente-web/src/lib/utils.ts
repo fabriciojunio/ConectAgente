@@ -284,3 +284,16 @@ export function withTimeout<T>(promise: Promise<T>, ms = 10000): Promise<T> {
   });
   return Promise.race([promise, prazo]).finally(() => clearTimeout(relogio));
 }
+
+/**
+ * Erro de consulta para mostrar na tela.
+ *
+ * A mensagem do banco ("permission denied for table x", nome de coluna,
+ * de constraint) diz a quem ataca como o sistema é por dentro e não ajuda
+ * quem está usando (OWASP ASVS V7.4.1, CWE-209). A tela recebe o que
+ * falhou, em português; o detalhe vai só para o console, para o suporte.
+ */
+export function falhaDeConsulta(acao: string, erro: { message?: string; code?: string } | null | undefined): Error {
+  if (erro) console.error(`[${acao}]`, erro.code ?? '', erro.message ?? '');
+  return new Error(`Não foi possível ${acao}. Confira a conexão e tente de novo.`);
+}

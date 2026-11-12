@@ -13,6 +13,7 @@ import type {
   PaginatedResult,
 } from '@/types';
 import { MORADOR_COLUNAS_LISTA } from './moradorColunas';
+import { falhaDeConsulta } from '@/lib/utils';
 
 /**
  * Unidade e microárea são do agente, não da residência. Para o filtro cortar
@@ -52,7 +53,7 @@ export async function getFamilias(
     query = query.order('created_at', { ascending: false }).range(from, to);
 
     const { data, error, count } = await query;
-    if (error) throw new Error(`Erro ao buscar famílias: ${error.message}`);
+    if (error) throw falhaDeConsulta('buscar famílias', error);
 
     const result = {
       data: (data as unknown as ResidenciaComDetalhes[]) ?? [],
@@ -82,7 +83,7 @@ export async function getFamiliaById(id: string): Promise<ResidenciaComDetalhes 
 
     if (error) {
       if (error.code === 'PGRST116') return null;
-      throw new Error(`Erro ao buscar família: ${error.message}`);
+      throw falhaDeConsulta('buscar família', error);
     }
 
     const result = (data as unknown as ResidenciaComDetalhes) ?? null;
@@ -108,7 +109,7 @@ export async function getFamiliasEmAtraso(
     if (filters?.unidade_saude) params.p_unidade = filters.unidade_saude;
 
     const { data, error } = await supabase.rpc('fn_familias_em_atraso', params);
-    if (error) throw new Error(`Erro ao buscar famílias em atraso: ${error.message}`);
+    if (error) throw falhaDeConsulta('buscar famílias em atraso', error);
 
     const result = (data as FamiliaEmAtraso[]) ?? [];
     cacheSet(key, result);
@@ -130,7 +131,7 @@ export async function getMoradoresByFamilia(residenciaId: string): Promise<Morad
       .is('deleted_at', null)
       .order('nome', { ascending: true });
 
-    if (error) throw new Error(`Erro ao buscar moradores: ${error.message}`);
+    if (error) throw falhaDeConsulta('buscar moradores', error);
 
     const result = (data as unknown as Morador[]) ?? [];
     cacheSet(key, result);
@@ -154,7 +155,7 @@ export async function getHistoricoVisitas(residenciaId: string): Promise<Visita[
       .eq('residencia_id', residenciaId)
       .order('data_visita', { ascending: false });
 
-    if (error) throw new Error(`Erro ao buscar histórico de visitas: ${error.message}`);
+    if (error) throw falhaDeConsulta('buscar histórico de visitas', error);
 
     const result = (data as Visita[]) ?? [];
     cacheSet(key, result);

@@ -55,7 +55,7 @@ describe('adminService', () => {
     it('should throw on error', async () => {
       chainable.range.mockResolvedValue({ data: null, error: { message: 'Forbidden' }, count: 0 });
 
-      await expect(getUsuarios()).rejects.toThrow('Erro ao buscar usuários');
+      await expect(getUsuarios()).rejects.toThrow('Não foi possível buscar usuários');
     });
   });
 

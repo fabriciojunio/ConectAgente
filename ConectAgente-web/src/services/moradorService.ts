@@ -10,6 +10,7 @@ import type {
   PaginatedResult,
 } from '@/types';
 import { MORADOR_COLUNAS_LISTA } from './moradorColunas';
+import { falhaDeConsulta } from '@/lib/utils';
 
 interface MoradorComDetalhes extends Morador {
   residencia?: {
@@ -60,7 +61,7 @@ export async function getMoradores(
     query = query.order('nome', { ascending: true }).range(from, to);
 
     const { data, error, count } = await query;
-    if (error) throw new Error(`Erro ao buscar moradores: ${error.message}`);
+    if (error) throw falhaDeConsulta('buscar moradores', error);
 
     const result = {
       data: (data as unknown as MoradorComDetalhes[]) ?? [],
@@ -139,7 +140,7 @@ export async function getMoradorAuditado(
   });
 
   if (error) {
-    throw new Error(`Erro ao abrir a ficha do paciente: ${error.message}`);
+    throw falhaDeConsulta('abrir a ficha do paciente', error);
   }
   return (data as MoradorComDetalhes | null) ?? null;
 }
@@ -161,7 +162,7 @@ export async function buscarMoradoresPorDocumento(
   });
 
   if (error) {
-    throw new Error(`Erro ao buscar por documento: ${error.message}`);
+    throw falhaDeConsulta('buscar por documento', error);
   }
   return (data as MoradorComDetalhes[] | null) ?? [];
 }

@@ -136,7 +136,7 @@ describe('agenteService', () => {
         .mockReturnValueOnce(agentesChain as never)
         .mockReturnValueOnce(visitasChain as never);
 
-      await expect(getAgentes()).rejects.toThrow('Erro ao contar visitas dos agentes: sem permissão');
+      await expect(getAgentes()).rejects.toThrow('Não foi possível contar visitas dos agentes');
     });
 
     it('sem agentes devolve lista vazia, sem dados de demonstração', async () => {
@@ -152,7 +152,7 @@ describe('agenteService', () => {
     it('throws on error', async () => {
       chainable.range.mockResolvedValueOnce({ data: null, error: { message: 'DB error' }, count: null });
 
-      await expect(getAgentes()).rejects.toThrow('Erro ao buscar agentes');
+      await expect(getAgentes()).rejects.toThrow('Não foi possível buscar agentes');
     });
   });
 
@@ -203,7 +203,7 @@ describe('agenteService', () => {
         error: { code: 'OTHER', message: 'fail' },
       });
 
-      await expect(getAgenteById('a1')).rejects.toThrow('Erro ao buscar agente');
+      await expect(getAgenteById('a1')).rejects.toThrow('Não foi possível buscar agente');
     });
   });
 
@@ -246,7 +246,7 @@ describe('agenteService', () => {
       chainable.range.mockResolvedValueOnce({ data: null, error: { message: 'fail' } });
 
       await expect(getAgenteDesempenho('a1', '2024-03-01', '2024-03-03')).rejects.toThrow(
-        'Erro ao buscar desempenho do agente'
+        'Não foi possível buscar desempenho do agente'
       );
     });
   });
@@ -279,7 +279,7 @@ describe('agenteService', () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: { message: 'fail' } });
 
       await expect(getRankingAgentes('2024-03-01', '2024-03-31')).rejects.toThrow(
-        'Erro ao buscar ranking de agentes'
+        'Não foi possível buscar ranking de agentes'
       );
     });
   });

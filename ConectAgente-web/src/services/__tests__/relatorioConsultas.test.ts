@@ -130,7 +130,7 @@ describe('gerarRelatorioVisitas', () => {
     montarSupabase({ visitas: [{ data: null, error: { message: 'falhou' } }] });
 
     await expect(gerarRelatorioVisitas(filtrosBase)).rejects.toThrow(
-      'Erro ao gerar relatório de visitas: falhou'
+      'Não foi possível gerar relatório de visitas'
     );
   });
 });

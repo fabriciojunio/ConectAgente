@@ -29,7 +29,7 @@ export default function HeatmapBairros({ data, loading }: HeatmapBairrosProps) {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3">
             {Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} className="h-24 w-full rounded-lg" />
             ))}
@@ -40,7 +40,7 @@ export default function HeatmapBairros({ data, loading }: HeatmapBairrosProps) {
           </p>
         ) : (
           <div
-            className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+            className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3"
             role="list"
             aria-label="Cobertura por bairro"
           >
@@ -53,7 +53,7 @@ export default function HeatmapBairros({ data, loading }: HeatmapBairrosProps) {
                 )}
                 role="listitem"
               >
-                <p className="truncate text-sm font-semibold">{bairro.bairro}</p>
+                <p className="truncate text-sm font-semibold" title={bairro.bairro}>{bairro.bairro}</p>
                 <p className="mt-1 text-2xl font-bold">{bairro.cobertura_pct.toFixed(0)}%</p>
                 <p className="text-xs opacity-75">
                   {bairro.total_visitas} visita{bairro.total_visitas !== 1 ? 's' : ''}

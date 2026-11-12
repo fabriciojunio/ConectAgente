@@ -171,7 +171,7 @@ export default function VisitasPage() {
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Agente</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden md:table-cell">Endereço</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden lg:table-cell">Bairro</th>
-                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Status</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Situação</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden xl:table-cell">Observações</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Ações</th>
                 </tr>
@@ -272,7 +272,7 @@ export default function VisitasPage() {
                   <p className="font-medium">{formatDataDaVisita(selectedVisita.data_visita)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-[var(--texto-claro)]">Status</p>
+                  <p className="text-xs text-[var(--texto-claro)]">Situação</p>
                   <span
                     className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       statusConfig[selectedVisita.status]?.className ?? ''

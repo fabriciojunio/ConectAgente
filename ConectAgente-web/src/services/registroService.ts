@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import { cacheGet, cacheSet } from '@/lib/cache';
 import { enqueue } from '@/lib/requestQueue';
 import type { SolicitacaoRegistro, PaginationParams, PaginatedResult } from '@/types';
+import { falhaDeConsulta } from '@/lib/utils';
 
 /**
  * Lista solicitações de registro (para admins/gerentes).
@@ -32,7 +33,7 @@ export async function getSolicitacoes(
     query = query.order('created_at', { ascending: false }).range(from, to);
 
     const { data, error, count } = await query;
-    if (error) throw new Error(`Erro ao buscar solicitações: ${error.message}`);
+    if (error) throw falhaDeConsulta('buscar solicitações', error);
 
     const result = {
       data: (data as SolicitacaoRegistro[]) ?? [],

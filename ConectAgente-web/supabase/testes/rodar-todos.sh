@@ -12,7 +12,7 @@
 #   rodar-testes-cadastro.sh   um agente consegue entrar no sistema
 #   rodar-testes-idempotencia.sh  o arquivo de instalacao aguenta rodar 2x
 #   rodar-testes-leitura.sh    abrir ficha de paciente deixa rastro
-#   rodar-testes-colunas.sh    documento e doenca so saem pela leitura auditada
+#   rodar-testes-colunas.sh    leitura auditada, unidades e papel que a conta não muda sozinha
 #
 # Por que existem fora do Jest. Os tres defeitos mais graves do projeto nao
 # apareciam em teste de unidade, porque cada lado estava coerente consigo
@@ -36,7 +36,7 @@ SUITES=(
   "rodar-testes-cadastro.sh:cadastro publico e aprovacao"
   "rodar-testes-idempotencia.sh:instalacao executada mais de uma vez"
   "rodar-testes-leitura.sh:leitura de ficha registrada na trilha"
-  "rodar-testes-colunas.sh:colunas sensiveis fechadas para leitura direta"
+  "rodar-testes-colunas.sh:colunas sensiveis, unidades e protecao de papel"
 )
 
 falhas=0

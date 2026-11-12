@@ -85,7 +85,7 @@ describe('dashboardService', () => {
     it('lança o erro do banco em vez de mostrar números de demonstração', async () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: { message: 'DB error' } });
 
-      await expect(getDashboardStats()).rejects.toThrow('Erro ao carregar indicadores: DB error');
+      await expect(getDashboardStats()).rejects.toThrow('Não foi possível carregar indicadores');
     });
 
     it('banco sem dados devolve zero', async () => {
@@ -137,7 +137,7 @@ describe('dashboardService', () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: { message: 'fail' } });
 
       await expect(getVisitasPorPeriodo('2024-03-01', '2024-03-31')).rejects.toThrow(
-        'Erro ao carregar visitas por período: fail'
+        'Não foi possível carregar visitas por período'
       );
     });
 
@@ -181,7 +181,7 @@ describe('dashboardService', () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: { message: 'fail' } });
 
       await expect(getVisitasPorAgente('2024-03-01', '2024-03-31')).rejects.toThrow(
-        'Erro ao carregar visitas por agente: fail'
+        'Não foi possível carregar visitas por agente'
       );
     });
 
@@ -222,7 +222,7 @@ describe('dashboardService', () => {
     it('lança o erro do banco', async () => {
       chainable.limit.mockResolvedValue({ data: null, error: { message: 'fail' } });
 
-      await expect(getVisitasRecentes()).rejects.toThrow('Erro ao carregar visitas recentes: fail');
+      await expect(getVisitasRecentes()).rejects.toThrow('Não foi possível carregar visitas recentes');
     });
 
     it('sem visitas devolve lista vazia', async () => {
@@ -261,7 +261,7 @@ describe('dashboardService', () => {
     it('lança o erro do banco', async () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: { message: 'fail' } });
 
-      await expect(getAlertasAtraso()).rejects.toThrow('Erro ao carregar alertas de atraso: fail');
+      await expect(getAlertasAtraso()).rejects.toThrow('Não foi possível carregar alertas de atraso');
     });
 
     it('sem famílias em atraso devolve lista vazia', async () => {

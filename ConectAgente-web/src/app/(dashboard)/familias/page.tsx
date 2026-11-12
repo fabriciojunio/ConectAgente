@@ -183,7 +183,7 @@ export default function FamiliasPage() {
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden lg:table-cell">Agente</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden xl:table-cell">Última Visita</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Dias s/ Visita</th>
-                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Status</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Situação</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]"></th>
                 </tr>
               </thead>

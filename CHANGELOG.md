@@ -6,6 +6,50 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Não Lançado]
 
+## [1.3.0] - 2026-11-12
+
+### Segurança
+
+- **Qualquer conta logada virava administradora** (CVSS 8.8). A policy de
+  UPDATE libera a própria linha de `agentes`, e o GRANT incluía `role`,
+  `unidade_saude` e `ativo`: um PATCH na API pública com `{"role":"admin"}`
+  bastava. Pelo mesmo caminho a coordenação trocava de unidade e uma conta
+  desativada se reativava. Um trigger agora exige administração para mudar
+  papel (nunca o próprio), gerência para mudar situação e unidade, protege a
+  linha de administrador e grava toda mudança de papel na trilha.
+  `migration_papel_protegido.sql`, aplicada em produção e provada lá.
+- **Dado de saúde ficava no navegador depois do "Sair".** O cache das listas
+  ia para o `localStorage` por 24 horas. Agora fica no `sessionStorage` e é
+  apagado no login, no sair e na troca de conta.
+- **Coordenação sem unidade via quem também não tinha unidade.**
+  `agente_unidade()` devolve nulo quando vazia (`migration_unidade_vazia.sql`).
+- **Telas de administração abriam pela URL** para gerência. O portão do
+  servidor segue os papéis do menu.
+- **CPF mascarado** na lista de usuários; a própria linha não oferece troca de
+  papel nem desativação.
+
+### Adicionado
+
+- **Áreas e equipes.** Catálogo de unidades (`migration_unidades.sql`). A
+  coordenação sem unidade escolhe uma ou cria a sua, uma vez; depois, só a
+  gerência troca. A gerência vê cada unidade com agentes e coordenação e
+  designa profissionais. Toda escolha e designação fica na trilha.
+- **Avisos reais no cabeçalho**: cadastros para analisar, famílias sem visita
+  há mais de 30 dias e área por definir, cada um levando à página onde se
+  resolve. Substituem notificações que estavam escritas no código.
+- O cabeçalho mostra o papel e o recorte dos dados de quem está logado.
+
+### Alterado
+
+- **Painel com a identidade da área de administração do app** (roxo
+  #4A148C, #7B1FA2, #AB47BC). As cores viraram tokens por papel com valores
+  próprios no claro e no escuro, e as classes de cor fixa das páginas seguem o
+  tema. Cartões de número no padrão do app, com filete de cor no topo.
+- Filtro de unidade virou lista do catálogo para a gerência e some para quem
+  só vê a própria unidade. A busca do cabeçalho, que não buscava nada, saiu.
+- Textos com acento, títulos de gráfico sem repetição e rótulos de filtro
+  ligados aos campos (leitor de tela).
+
 ## [1.2.5] - 2026-11-12
 
 ### Adicionado

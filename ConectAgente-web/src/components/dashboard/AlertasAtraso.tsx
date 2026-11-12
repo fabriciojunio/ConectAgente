@@ -70,29 +70,30 @@ export default function AlertasAtraso({ alertas, loading }: AlertasAtrasoProps) 
           <Table striped>
             <TableHeader>
               <TableRow>
-                <TableHead>Endereco</TableHead>
-                <TableHead>Bairro</TableHead>
+                <TableHead>Endereço</TableHead>
                 <TableHead>Agente</TableHead>
-                <TableHead>Dias sem visita</TableHead>
+                <TableHead>Sem visita</TableHead>
                 <TableHead>Criticidade</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {sorted.map((alerta) => (
                 <TableRow key={alerta.residencia_id}>
-                  <TableCell className="max-w-[200px] truncate">
-                    {alerta.endereco}
+                  {/* Bairro embaixo do endereço: com cinco colunas a tabela
+                      transbordava e cortava a criticidade. */}
+                  <TableCell className="max-w-[220px]">
+                    <span className="block truncate" title={alerta.endereco}>{alerta.endereco}</span>
+                    <span className="block truncate text-xs text-[var(--texto-claro)]">{alerta.bairro}</span>
                   </TableCell>
-                  <TableCell>{alerta.bairro}</TableCell>
                   <TableCell>{alerta.agente_nome}</TableCell>
                   <TableCell>
                     <span
                       className={cn(
-                        'font-semibold',
-                        alerta.dias_sem_visita > 30 && 'text-danger-500',
+                        'font-semibold whitespace-nowrap tabular',
+                        alerta.dias_sem_visita > 30 && 'text-danger-700',
                         alerta.dias_sem_visita > 15 &&
                           alerta.dias_sem_visita <= 30 &&
-                          'text-warning-500'
+                          'text-warning-700'
                       )}
                     >
                       {alerta.dias_sem_visita} dias

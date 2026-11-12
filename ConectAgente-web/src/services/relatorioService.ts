@@ -12,7 +12,7 @@ import type {
   FamiliaEmAtraso,
   GlobalFilters,
 } from '@/types';
-import { formatDataDaVisita, fimExclusivo } from '@/lib/utils';
+import { formatDataDaVisita, fimExclusivo, falhaDeConsulta } from '@/lib/utils';
 import { selectVisitas } from './visitaService';
 import { selectResidencias } from './familiaService';
 import { buscarTudo } from '@/lib/buscarEmLotes';
@@ -87,7 +87,7 @@ export async function gerarRelatorioAgentes(
     const { data: agentes, error } = await query;
 
     if (error) {
-      throw new Error(`Erro ao gerar relatório de agentes: ${error.message}`);
+      throw falhaDeConsulta('gerar relatório de agentes', error);
     }
 
     if (!agentes || agentes.length === 0) return [];
@@ -193,7 +193,7 @@ export async function gerarRelatorioCobertura(
     );
 
     if (error) {
-      throw new Error(`Erro ao gerar relatório de cobertura: ${error.message}`);
+      throw falhaDeConsulta('gerar relatório de cobertura', error);
     }
 
     return (data as CoberturaMicroarea[]) ?? [];

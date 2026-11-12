@@ -75,7 +75,7 @@ describe('moradorService', () => {
     it('should throw on error', async () => {
       chainable.range.mockResolvedValue({ data: null, error: { message: 'DB error' }, count: 0 });
 
-      await expect(getMoradores()).rejects.toThrow('Erro ao buscar moradores');
+      await expect(getMoradores()).rejects.toThrow('Não foi possível buscar moradores');
     });
   });
 

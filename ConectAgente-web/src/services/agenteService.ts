@@ -5,7 +5,7 @@ import { cacheGet, cacheSet } from '@/lib/cache';
 import { enqueue } from '@/lib/requestQueue';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
 import { buscarTudo } from '@/lib/buscarEmLotes';
-import { fimExclusivo } from '@/lib/utils';
+import { fimExclusivo, falhaDeConsulta } from '@/lib/utils';
 import type {
   AgenteComEstatisticas,
   ResidenciaComDetalhes,
@@ -42,7 +42,7 @@ export async function getAgentes(
     query = query.order('nome', { ascending: true }).range(from, to);
 
     const { data: agentes, error, count } = await query;
-    if (error) throw new Error(`Erro ao buscar agentes: ${error.message}`);
+    if (error) throw falhaDeConsulta('buscar agentes', error);
 
     if (!agentes || agentes.length === 0) {
       const vazio = { data: [], total: count ?? 0, page, per_page: perPage, total_pages: Math.ceil((count ?? 0) / perPage) };
@@ -101,7 +101,7 @@ export async function getAgenteById(id: string): Promise<AgenteComEstatisticas |
     const { data: agente, error } = await supabase.from('agentes').select(AGENTE_COLUNAS_LISTA).eq('id', id).single();
     if (error) {
       if (error.code === 'PGRST116') return null;
-      throw new Error(`Erro ao buscar agente: ${error.message}`);
+      throw falhaDeConsulta('buscar agente', error);
     }
     if (!agente) return null;
 
@@ -193,7 +193,7 @@ export async function getAgenteFamilias(id: string): Promise<ResidenciaComDetalh
       .select(`*, agente:agentes(id, nome, area_atuacao), moradores(${MORADOR_COLUNAS_LISTA})`)
       .eq('agente_id', id).is('deleted_at', null).order('logradouro', { ascending: true });
 
-    if (error) throw new Error(`Erro ao buscar famílias do agente: ${error.message}`);
+    if (error) throw falhaDeConsulta('buscar famílias do agente', error);
 
     const result = (data as unknown as ResidenciaComDetalhes[]) ?? [];
     cacheSet(key, result);
@@ -212,7 +212,7 @@ export async function getRankingAgentes(inicio: string, fim: string): Promise<Vi
   try {
     const supabase = createClient();
     const { data, error } = await supabase.rpc('fn_visitas_por_agente', { p_inicio: inicio, p_fim: fim });
-    if (error) throw new Error(`Erro ao buscar ranking de agentes: ${error.message}`);
+    if (error) throw falhaDeConsulta('buscar ranking de agentes', error);
 
     const result = (data as VisitaPorAgente[]) ?? [];
     cacheSet(key, result);

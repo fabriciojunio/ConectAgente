@@ -55,7 +55,7 @@ describe('monitoramentoService', () => {
     it('should throw on error', async () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: { message: 'RPC failed' } });
 
-      await expect(getCoberturaPorMicroarea()).rejects.toThrow('Erro ao buscar cobertura');
+      await expect(getCoberturaPorMicroarea()).rejects.toThrow('Não foi possível buscar cobertura');
     });
   });
 
@@ -78,7 +78,7 @@ describe('monitoramentoService', () => {
     it('should throw on error', async () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: { message: 'RPC error' } });
 
-      await expect(getMapaCobertura('2024-01-01', '2024-01-31')).rejects.toThrow('Erro ao buscar mapa de cobertura');
+      await expect(getMapaCobertura('2024-01-01', '2024-01-31')).rejects.toThrow('Não foi possível buscar mapa de cobertura');
     });
   });
 });

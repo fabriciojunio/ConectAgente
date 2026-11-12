@@ -12,6 +12,7 @@ import type {
   VisitaComDetalhes,
   GlobalFilters,
 } from '@/types';
+import { falhaDeConsulta } from '@/lib/utils';
 
 /*
  * Banco vazio é resposta válida: a tela mostra zero. Antes, lista vazia ou
@@ -38,7 +39,7 @@ export async function getDashboardStats(
     if (filters?.agente_id) params.p_agente_id = filters.agente_id;
 
     const { data, error } = await supabase.rpc('fn_dashboard_stats', params);
-    if (error) throw new Error(`Erro ao carregar indicadores: ${error.message}`);
+    if (error) throw falhaDeConsulta('carregar indicadores', error);
 
     const result = (data as DashboardStats) ?? SEM_INDICADORES;
     cacheSet(key, result);
@@ -61,7 +62,7 @@ export async function getVisitasPorPeriodo(
     if (filters?.unidade_saude) params.p_unidade = filters.unidade_saude;
 
     const { data, error } = await supabase.rpc('fn_visitas_por_periodo', params);
-    if (error) throw new Error(`Erro ao carregar visitas por período: ${error.message}`);
+    if (error) throw falhaDeConsulta('carregar visitas por período', error);
 
     const result = (data as VisitaPorPeriodo[]) ?? [];
     cacheSet(key, result);
@@ -84,7 +85,7 @@ export async function getVisitasPorAgente(
     if (filters?.unidade_saude) params.p_unidade = filters.unidade_saude;
 
     const { data, error } = await supabase.rpc('fn_visitas_por_agente', params);
-    if (error) throw new Error(`Erro ao carregar visitas por agente: ${error.message}`);
+    if (error) throw falhaDeConsulta('carregar visitas por agente', error);
 
     const result = (data as VisitaPorAgente[]) ?? [];
     cacheSet(key, result);
@@ -103,7 +104,7 @@ export async function getVisitasPorBairro(
   return enqueue(async () => {
     const supabase = createClient();
     const { data, error } = await supabase.rpc('fn_visitas_por_bairro', { p_inicio: inicio, p_fim: fim });
-    if (error) throw new Error(`Erro ao carregar visitas por bairro: ${error.message}`);
+    if (error) throw falhaDeConsulta('carregar visitas por bairro', error);
 
     const result = (data as VisitaPorBairro[]) ?? [];
     cacheSet(key, result);
@@ -126,7 +127,7 @@ export async function getVisitasRecentes(
       .order('data_visita', { ascending: false })
       .limit(limit);
 
-    if (error) throw new Error(`Erro ao carregar visitas recentes: ${error.message}`);
+    if (error) throw falhaDeConsulta('carregar visitas recentes', error);
 
     const result = (data as unknown as VisitaComDetalhes[]) ?? [];
     cacheSet(key, result);
@@ -144,7 +145,7 @@ export async function getAlertasAtraso(
   return enqueue(async () => {
     const supabase = createClient();
     const { data, error } = await supabase.rpc('fn_familias_em_atraso', { p_dias: dias });
-    if (error) throw new Error(`Erro ao carregar alertas de atraso: ${error.message}`);
+    if (error) throw falhaDeConsulta('carregar alertas de atraso', error);
 
     const result = (data as FamiliaEmAtraso[]) ?? [];
     cacheSet(key, result);

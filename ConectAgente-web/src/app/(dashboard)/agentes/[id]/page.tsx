@@ -231,7 +231,7 @@ export default function AgenteDetailPage() {
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Endereço</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Bairro</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Última Visita</th>
-                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Status</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Situação</th>
                 </tr>
               </thead>
               <tbody>
@@ -276,7 +276,7 @@ export default function AgenteDetailPage() {
                 <tr className="border-b bg-[var(--superficie-alt)]">
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Data</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Endereço</th>
-                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Status</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Situação</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden md:table-cell">Observações</th>
                 </tr>
               </thead>
