@@ -17,6 +17,7 @@ import { selectVisitas } from './visitaService';
 import { selectResidencias } from './familiaService';
 import { buscarTudo } from '@/lib/buscarEmLotes';
 import { montarPlanilha, type ColunaPlanilha, type InformacaoPlanilha } from './planilha';
+import { AGENTE_COLUNAS_LISTA } from './agenteColunas';
 
 /**
  * Gera dados de relatório de visitas com base nos filtros informados.
@@ -74,7 +75,7 @@ export async function gerarRelatorioAgentes(
 
     let query = supabase
       .from('agentes')
-      .select('*')
+      .select(AGENTE_COLUNAS_LISTA)
       .eq('ativo', true);
 
     if (filtros.unidade_saude) {

@@ -10,6 +10,7 @@ import type {
   PaginationParams,
   PaginatedResult,
 } from '@/types';
+import { AGENTE_COLUNAS_LISTA } from './agenteColunas';
 
 /**
  * Lista todos os usuários (agentes) do sistema com paginação.
@@ -31,7 +32,7 @@ export async function getUsuarios(
 
     const { data, error, count } = await supabase
       .from('agentes')
-      .select('*', { count: 'exact', head: false })
+      .select(AGENTE_COLUNAS_LISTA, { count: 'exact', head: false })
       .order('nome', { ascending: true })
       .range(from, to);
 
@@ -58,7 +59,7 @@ export async function getUsuarioById(id: string): Promise<Agente | null> {
 
     const { data, error } = await supabase
       .from('agentes')
-      .select('*')
+      .select(AGENTE_COLUNAS_LISTA)
       .eq('id', id)
       .single();
 
@@ -232,12 +233,15 @@ export async function getEstatisticasSistema(): Promise<{
           .from('agentes')
           .select('id', { count: 'exact', head: true })
           .eq('ativo', true),
+        // Não existe tabela de sincronização no servidor (a consulta antiga
+        // dava 404). O registro mais recente que chegou dos aparelhos é a
+        // visita criada por último.
         supabase
-          .from('sync_log')
+          .from('visitas')
           .select('created_at')
           .order('created_at', { ascending: false })
           .limit(1)
-          .single(),
+          .maybeSingle(),
       ]);
 
     const result = {

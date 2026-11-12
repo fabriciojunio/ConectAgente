@@ -15,6 +15,7 @@ import type {
   PaginatedResult,
 } from '@/types';
 import { MORADOR_COLUNAS_LISTA } from './moradorColunas';
+import { AGENTE_COLUNAS_LISTA } from './agenteColunas';
 
 export async function getAgentes(
   filters?: GlobalFilters,
@@ -33,7 +34,7 @@ export async function getAgentes(
 
     let query = supabase
       .from('agentes')
-      .select('*', { count: 'exact', head: false })
+      .select(AGENTE_COLUNAS_LISTA, { count: 'exact', head: false })
       .eq('ativo', true);
 
     if (filters?.unidade_saude) query = query.eq('unidade_saude', filters.unidade_saude);
@@ -97,7 +98,7 @@ export async function getAgenteById(id: string): Promise<AgenteComEstatisticas |
 
   try {
     const supabase = createClient();
-    const { data: agente, error } = await supabase.from('agentes').select('*').eq('id', id).single();
+    const { data: agente, error } = await supabase.from('agentes').select(AGENTE_COLUNAS_LISTA).eq('id', id).single();
     if (error) {
       if (error.code === 'PGRST116') return null;
       throw new Error(`Erro ao buscar agente: ${error.message}`);
