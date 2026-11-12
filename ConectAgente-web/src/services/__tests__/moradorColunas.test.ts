@@ -91,10 +91,13 @@ describe('buscarMoradoresPorDocumento', () => {
     expect(await buscarMoradoresPorDocumento('11144477735')).toEqual([]);
   });
 
-  it('propaga o erro do banco', async () => {
+  it('falha do banco vira mensagem para a tela, sem o texto técnico', async () => {
     const rpc = jest.fn().mockResolvedValue({ data: null, error: { message: 'permission denied' } });
     mockCreateClient.mockReturnValue({ rpc } as unknown as ReturnType<typeof createClient>);
+    jest.spyOn(console, 'error').mockImplementation(() => {});
 
-    await expect(buscarMoradoresPorDocumento('11144477735')).rejects.toThrow('permission denied');
+    const busca = buscarMoradoresPorDocumento('11144477735');
+    await expect(busca).rejects.toThrow('Não foi possível buscar por documento');
+    await expect(busca).rejects.not.toThrow('permission denied');
   });
 });

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { falhaDeConsulta } from '@/lib/utils';
 
 /**
  * Registra uma ação de auditoria no banco de dados.
@@ -35,7 +36,7 @@ export async function registrarAcao(
     });
 
     if (error) {
-      throw new Error(`Erro ao registrar ação de auditoria: ${error.message}`);
+      throw falhaDeConsulta('registrar ação de auditoria', error);
     }
   } catch (err) {
     // Não propaga erros de auditoria para não quebrar o fluxo principal.

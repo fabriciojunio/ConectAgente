@@ -148,7 +148,7 @@ describe('visitaService', () => {
     it('throws on error', async () => {
       chainable.range.mockResolvedValue({ data: null, error: { message: 'DB error' }, count: null });
 
-      await expect(getVisitas()).rejects.toThrow('Erro ao buscar visitas');
+      await expect(getVisitas()).rejects.toThrow('Não foi possível buscar visitas');
     });
   });
 
@@ -176,7 +176,7 @@ describe('visitaService', () => {
     it('throws on other errors', async () => {
       chainable.single.mockResolvedValue({ data: null, error: { code: 'OTHER', message: 'fail' } });
 
-      await expect(getVisitaById('v1')).rejects.toThrow('Erro ao buscar visita');
+      await expect(getVisitaById('v1')).rejects.toThrow('Não foi possível buscar visita');
     });
   });
 
@@ -222,7 +222,7 @@ describe('visitaService', () => {
     it('throws on error', async () => {
       chainable.range.mockResolvedValue({ data: null, error: { message: 'fail' } });
 
-      await expect(getVisitasByAgente('agent-1')).rejects.toThrow('Erro ao buscar visitas do agente');
+      await expect(getVisitasByAgente('agent-1')).rejects.toThrow('Não foi possível buscar visitas do agente');
     });
   });
 
@@ -286,7 +286,7 @@ describe('visitaService', () => {
         return c;
       });
 
-      await expect(getEstatisticasVisitas()).rejects.toThrow('Erro ao contar visitas: sem permissão');
+      await expect(getEstatisticasVisitas()).rejects.toThrow('Não foi possível contar visitas');
     });
 
     it('conta por unidade pelo agente, não por coluna da visita', async () => {

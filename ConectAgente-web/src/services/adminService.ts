@@ -11,6 +11,7 @@ import type {
   PaginatedResult,
 } from '@/types';
 import { AGENTE_COLUNAS_LISTA } from './agenteColunas';
+import { falhaDeConsulta } from '@/lib/utils';
 
 /**
  * Lista todos os usuários (agentes) do sistema com paginação.
@@ -36,7 +37,7 @@ export async function getUsuarios(
       .order('nome', { ascending: true })
       .range(from, to);
 
-    if (error) throw new Error(`Erro ao buscar usuários: ${error.message}`);
+    if (error) throw falhaDeConsulta('buscar usuários', error);
 
     const result = {
       data: (data as Agente[]) ?? [],
@@ -65,7 +66,7 @@ export async function getUsuarioById(id: string): Promise<Agente | null> {
 
     if (error) {
       if (error.code === 'PGRST116') return null;
-      throw new Error(`Erro ao buscar usuário: ${error.message}`);
+      throw falhaDeConsulta('buscar usuário', error);
     }
 
     return (data as Agente) ?? null;

@@ -91,7 +91,7 @@ describe('familiaService', () => {
     it('should throw on error', async () => {
       chainable.range.mockResolvedValue({ data: null, error: { message: 'DB error' }, count: 0 });
 
-      await expect(getFamilias()).rejects.toThrow('Erro ao buscar famílias');
+      await expect(getFamilias()).rejects.toThrow('Não foi possível buscar famílias');
     });
   });
 
@@ -129,7 +129,7 @@ describe('familiaService', () => {
     it('should throw on RPC error', async () => {
       supabaseMock.rpc.mockResolvedValue({ data: null, error: { message: 'RPC failed' } });
 
-      await expect(getFamiliasEmAtraso(30)).rejects.toThrow('Erro ao buscar famílias em atraso');
+      await expect(getFamiliasEmAtraso(30)).rejects.toThrow('Não foi possível buscar famílias em atraso');
     });
   });
 

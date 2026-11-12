@@ -1,3 +1,4 @@
+import { falhaDeConsulta } from './utils';
 /** Teto padrão de linhas por resposta do PostgREST no Supabase. */
 export const LINHAS_POR_LOTE = 1000;
 
@@ -18,7 +19,7 @@ export async function buscarTudo<T>(
   const linhas: T[] = [];
   for (let de = 0; ; de += LINHAS_POR_LOTE) {
     const { data, error } = await lote(de, de + LINHAS_POR_LOTE - 1);
-    if (error) throw new Error(`${mensagemDeErro}: ${error.message}`);
+    if (error) throw falhaDeConsulta(mensagemDeErro.replace(/^Erro ao /, ''), error);
     linhas.push(...(data ?? []));
     if (!data || data.length < LINHAS_POR_LOTE) return linhas;
   }

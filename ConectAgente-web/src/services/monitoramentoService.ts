@@ -8,6 +8,7 @@ import type {
   VisitaPorBairro,
   GlobalFilters,
 } from '@/types';
+import { falhaDeConsulta } from '@/lib/utils';
 
 export async function getCoberturaPorMicroarea(
   filters?: GlobalFilters
@@ -22,7 +23,7 @@ export async function getCoberturaPorMicroarea(
     if (filters?.unidade_saude) params.p_unidade = filters.unidade_saude;
 
     const { data, error } = await supabase.rpc('fn_cobertura_por_microarea', params);
-    if (error) throw new Error(`Erro ao buscar cobertura por microárea: ${error.message}`);
+    if (error) throw falhaDeConsulta('buscar cobertura por microárea', error);
 
     const result = (data as CoberturaMicroarea[]) ?? [];
     cacheSet(key, result);
@@ -79,7 +80,7 @@ export async function getMapaCobertura(inicio: string, fim: string): Promise<Vis
   try {
     const supabase = createClient();
     const { data, error } = await supabase.rpc('fn_visitas_por_bairro', { p_inicio: inicio, p_fim: fim });
-    if (error) throw new Error(`Erro ao buscar mapa de cobertura: ${error.message}`);
+    if (error) throw falhaDeConsulta('buscar mapa de cobertura', error);
 
     const result = (data as VisitaPorBairro[]) ?? [];
     cacheSet(key, result);

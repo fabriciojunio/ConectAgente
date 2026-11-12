@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/client';
 import { cacheGet, cacheSet } from '@/lib/cache';
 import { enqueue } from '@/lib/requestQueue';
-import { fimExclusivo } from '@/lib/utils';
+import { fimExclusivo, falhaDeConsulta } from '@/lib/utils';
 import { buscarTudo } from '@/lib/buscarEmLotes';
 import type {
   VisitaComDetalhes,
@@ -56,7 +56,7 @@ export async function getVisitas(
     query = query.order('data_visita', { ascending: false }).range(from, to);
 
     const { data, error, count } = await query;
-    if (error) throw new Error(`Erro ao buscar visitas: ${error.message}`);
+    if (error) throw falhaDeConsulta('buscar visitas', error);
 
     const result = {
       data: (data as unknown as VisitaComDetalhes[]) ?? [],
@@ -85,7 +85,7 @@ export async function getVisitaById(id: string): Promise<VisitaComDetalhes | nul
 
     if (error) {
       if (error.code === 'PGRST116') return null;
-      throw new Error(`Erro ao buscar visita: ${error.message}`);
+      throw falhaDeConsulta('buscar visita', error);
     }
 
     const result = (data as unknown as VisitaComDetalhes) ?? null;
@@ -164,7 +164,7 @@ export async function getEstatisticasVisitas(filters?: GlobalFilters): Promise<{
     // Contagem nula com erro não é zero: a tela precisa saber que falhou.
     const erro = [totalRes, realizadasRes, agendadasRes, canceladasRes, naoEncontradoRes]
       .find((r) => r.error)?.error;
-    if (erro) throw new Error(`Erro ao contar visitas: ${erro.message}`);
+    if (erro) throw falhaDeConsulta('contar visitas', erro);
 
     const total = totalRes.count ?? 0;
     const realizadas = realizadasRes.count ?? 0;
