@@ -82,7 +82,7 @@ describe('adminService', () => {
     it('should update user role', async () => {
       chainable.eq.mockResolvedValue({ error: null });
 
-      await expect(atualizarRole('1', 'supervisor')).resolves.not.toThrow();
+      await expect(atualizarRole('1', 'coordenador')).resolves.not.toThrow();
 
       expect(supabaseMock.from).toHaveBeenCalledWith('agentes');
       expect(chainable.update).toHaveBeenCalled();
@@ -91,7 +91,17 @@ describe('adminService', () => {
     it('should throw on error', async () => {
       chainable.eq.mockResolvedValue({ error: { message: 'Forbidden' } });
 
-      await expect(atualizarRole('1', 'admin')).rejects.toThrow('Erro ao atualizar role');
+      await expect(atualizarRole('1', 'admin')).rejects.toThrow('Não foi possível salvar agora');
+    });
+
+    it('recusa do banco por mudar o próprio papel vira mensagem clara', async () => {
+      chainable.eq.mockResolvedValue({ error: { code: '42501', message: 'ninguém muda o próprio papel' } });
+      await expect(atualizarRole('1', 'agente')).rejects.toThrow('Ninguém muda o próprio papel');
+    });
+
+    it('o texto técnico do banco não chega na tela', async () => {
+      chainable.eq.mockResolvedValue({ error: { code: '23514', message: 'new row violates check constraint "agentes_role_check"' } });
+      await expect(atualizarRole('1', 'admin')).rejects.not.toThrow('check constraint');
     });
   });
 
@@ -102,6 +112,11 @@ describe('adminService', () => {
       await expect(toggleAtivoUsuario('1', false)).resolves.not.toThrow();
 
       expect(chainable.update).toHaveBeenCalled();
+    });
+
+    it('desativar a própria conta é recusado com mensagem clara', async () => {
+      chainable.eq.mockResolvedValue({ error: { code: '42501', message: 'ninguém ativa ou desativa a própria conta' } });
+      await expect(toggleAtivoUsuario('1', false)).rejects.toThrow('Ninguém ativa ou desativa a própria conta');
     });
   });
 });

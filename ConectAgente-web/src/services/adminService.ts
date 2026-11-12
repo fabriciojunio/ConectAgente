@@ -79,6 +79,19 @@ export async function getUsuarioById(id: string): Promise<Agente | null> {
  * Atualiza o role de um usuário.
  * Requer permissão de administrador (controlado por RLS).
  */
+/**
+ * O banco decide quem muda papel e situação (trigger em `agentes`). A tela
+ * só traduz a recusa; o texto técnico não vai para quem está usando.
+ */
+export function mensagemDeAlteracao(erro: { code?: string; message?: string }): string {
+  const msg = erro.message ?? '';
+  if (msg.includes('próprio papel')) return 'Ninguém muda o próprio papel. Peça a outra pessoa da administração.';
+  if (msg.includes('própria conta')) return 'Ninguém ativa ou desativa a própria conta.';
+  if (msg.includes('administrador')) return 'Só a administração altera o cadastro de um administrador.';
+  if (erro.code === '42501') return 'Sua conta não tem permissão para esta mudança.';
+  return 'Não foi possível salvar agora. Confira a conexão e tente de novo.';
+}
+
 export async function atualizarRole(
   id: string,
   role: UserRole
@@ -92,7 +105,7 @@ export async function atualizarRole(
       .eq('id', id);
 
     if (error) {
-      throw new Error(`Erro ao atualizar role do usuário: ${error.message}`);
+      throw new Error(mensagemDeAlteracao(error));
     }
   } catch (err) {
     if (err instanceof Error) throw err;
@@ -102,7 +115,7 @@ export async function atualizarRole(
 
 /**
  * Ativa ou desativa um usuário.
- * Requer permissão de administrador (controlado por RLS).
+ * Gerência ou administração, e nunca a própria conta (trigger em `agentes`).
  */
 export async function toggleAtivoUsuario(
   id: string,
@@ -117,7 +130,7 @@ export async function toggleAtivoUsuario(
       .eq('id', id);
 
     if (error) {
-      throw new Error(`Erro ao alterar status do usuário: ${error.message}`);
+      throw new Error(mensagemDeAlteracao(error));
     }
   } catch (err) {
     if (err instanceof Error) throw err;

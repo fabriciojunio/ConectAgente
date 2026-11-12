@@ -98,6 +98,19 @@ export function formatCPF(cpf: string): string {
 }
 
 /**
+ * CPF mascarado no padrão do governo federal: ***.456.789-**.
+ *
+ * Para listas, onde o CPF só serve para diferenciar homônimos. Mostrar os
+ * onze dígitos de toda a equipe a cada abertura da tela é exposição sem
+ * finalidade (LGPD, art. 6º, III, necessidade).
+ */
+export function mascararCPF(cpf?: string | null): string {
+  const digits = (cpf ?? '').replace(/\D/g, '');
+  if (digits.length !== 11) return '-';
+  return `***.${digits.slice(3, 6)}.${digits.slice(6, 9)}-**`;
+}
+
+/**
  * Formats a phone number as (XX) XXXXX-XXXX or (XX) XXXX-XXXX.
  * Accepts raw digits.
  */
@@ -162,15 +175,15 @@ export function getNivelCriticidade(dias: number): NivelCriticidade {
 export function getCriticidadeColor(nivel: NivelCriticidade): string {
   switch (nivel) {
     case NivelCriticidade.NORMAL:
-      return 'text-green-600 bg-green-50 border-green-200';
+      return 'text-green-700 bg-green-50 border-green-200';
     case NivelCriticidade.ATENCAO:
-      return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      return 'text-yellow-700 bg-yellow-50 border-yellow-200';
     case NivelCriticidade.ALERTA:
-      return 'text-orange-600 bg-orange-50 border-orange-200';
+      return 'text-orange-700 bg-orange-50 border-orange-200';
     case NivelCriticidade.CRITICO:
-      return 'text-red-600 bg-red-50 border-red-200';
+      return 'text-red-700 bg-red-50 border-red-200';
     default:
-      return 'text-gray-600 bg-gray-50 border-gray-200';
+      return 'text-[var(--texto-medio)] bg-[var(--superficie-alt)] border-[var(--borda)]';
   }
 }
 
@@ -188,7 +201,7 @@ export function getStatusColor(status: StatusVisita): string {
     case StatusVisita.NAO_ENCONTRADO:
       return 'text-amber-700 bg-amber-100 border-amber-300';
     default:
-      return 'text-gray-700 bg-gray-100 border-gray-300';
+      return 'text-[var(--texto-medio)] bg-[var(--superficie-alt)] border-[var(--borda)]';
   }
 }
 

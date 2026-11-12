@@ -2,6 +2,7 @@ import {
   cn,
   formatDate,
   formatCPF,
+  mascararCPF,
   formatPhone,
   formatCEP,
   calcularDiasSemVisita,
@@ -155,23 +156,23 @@ describe('getNivelCriticidade', () => {
 describe('getCriticidadeColor', () => {
   it('returns green classes for NORMAL', () => {
     const result = getCriticidadeColor(NivelCriticidade.NORMAL);
-    expect(result).toContain('text-green-600');
+    expect(result).toContain('text-green-700');
     expect(result).toContain('bg-green-50');
   });
 
   it('returns yellow classes for ATENCAO', () => {
     const result = getCriticidadeColor(NivelCriticidade.ATENCAO);
-    expect(result).toContain('text-yellow-600');
+    expect(result).toContain('text-yellow-700');
   });
 
   it('returns orange classes for ALERTA', () => {
     const result = getCriticidadeColor(NivelCriticidade.ALERTA);
-    expect(result).toContain('text-orange-600');
+    expect(result).toContain('text-orange-700');
   });
 
   it('returns red classes for CRITICO', () => {
     const result = getCriticidadeColor(NivelCriticidade.CRITICO);
-    expect(result).toContain('text-red-600');
+    expect(result).toContain('text-red-700');
   });
 });
 
@@ -340,5 +341,17 @@ describe('withTimeout sem valor falso', () => {
   it('erro da consulta passa adiante', async () => {
     const { withTimeout } = await import('../utils');
     await expect(withTimeout(Promise.reject(new Error('recusado')), 50)).rejects.toThrow('recusado');
+  });
+});
+
+describe('mascararCPF', () => {
+  it('mostra só os seis dígitos do meio', () => {
+    expect(mascararCPF('12345678901')).toBe('***.456.789-**');
+    expect(mascararCPF('123.456.789-01')).toBe('***.456.789-**');
+  });
+
+  it('CPF incompleto ou ausente não vaza parcial', () => {
+    expect(mascararCPF('1234')).toBe('-');
+    expect(mascararCPF(undefined)).toBe('-');
   });
 });
