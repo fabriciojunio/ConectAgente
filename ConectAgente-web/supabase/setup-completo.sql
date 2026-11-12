@@ -2587,3 +2587,180 @@ BEGIN
     END IF;
   END LOOP;
 END $$;
+
+
+-- ===========================================================================
+-- Limite de tentativas no banco, igual para todas as instâncias do painel
+-- ===========================================================================
+--
+-- O limite de login, de cadastro e das ações de aprovação contava num Map em
+-- memória do processo. Na Vercel cada instância tem a própria memória, e uma
+-- instância nova começa do zero: com o tráfego espalhado, quem testa senhas
+-- ganha um limite por instância, e um deploy zera tudo. A contagem passa a
+-- morar aqui, num lugar só.
+--
+-- A chave chega do servidor já como hash SHA-256 (`login_cpf:<hash>`): CPF e
+-- IP são dado pessoal, e esta tabela não precisa saber de quem é a tentativa,
+-- só quantas foram.
+--
+-- Só o servidor do painel (service_role) chama a função. Nem `anon` nem
+-- `authenticated` leem a tabela ou executam a função: se executassem, qualquer
+-- um poderia gastar o limite de outra pessoa e trancá-la do lado de fora.
+--
+-- Idempotente.
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS public.limite_de_tentativas (
+  chave     TEXT PRIMARY KEY CHECK (length(chave) BETWEEN 1 AND 200),
+  contagem  INTEGER NOT NULL CHECK (contagem >= 1),
+  expira_em TIMESTAMPTZ NOT NULL
+);
+
+ALTER TABLE public.limite_de_tentativas ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.limite_de_tentativas FROM PUBLIC, anon, authenticated;
+
+-- A varredura de cobertura exige policy em toda tabela. Esta diz o que vale:
+-- ninguém de fora lê nem grava; o acesso é só pela função abaixo.
+DROP POLICY IF EXISTS "sem_acesso_direto" ON public.limite_de_tentativas;
+CREATE POLICY "sem_acesso_direto" ON public.limite_de_tentativas
+  FOR ALL TO authenticated USING (false) WITH CHECK (false);
+
+-- Conta mais uma tentativa e responde se ela pode seguir.
+--
+-- Um único INSERT ... ON CONFLICT faz a leitura e a escrita juntas, então
+-- duas requisições ao mesmo tempo não leem a mesma contagem antiga. A
+-- tentativa recusada também conta: insistir durante o bloqueio não ajuda.
+CREATE OR REPLACE FUNCTION public.registrar_tentativa(
+  p_chave TEXT,
+  p_maximo INTEGER,
+  p_janela_ms INTEGER
+)
+RETURNS TABLE (permitido BOOLEAN, espera_ms INTEGER)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_contagem INTEGER;
+  v_expira   TIMESTAMPTZ;
+BEGIN
+  IF p_chave IS NULL OR p_maximo IS NULL OR p_maximo < 1
+     OR p_janela_ms IS NULL OR p_janela_ms < 1 THEN
+    RAISE EXCEPTION 'parâmetros inválidos para o limite de tentativas';
+  END IF;
+
+  INSERT INTO limite_de_tentativas AS l (chave, contagem, expira_em)
+  VALUES (p_chave, 1, clock_timestamp() + make_interval(secs => p_janela_ms / 1000.0))
+  ON CONFLICT (chave) DO UPDATE SET
+    contagem  = CASE WHEN l.expira_em <= clock_timestamp() THEN 1 ELSE l.contagem + 1 END,
+    expira_em = CASE WHEN l.expira_em <= clock_timestamp() THEN EXCLUDED.expira_em ELSE l.expira_em END
+  RETURNING l.contagem, l.expira_em INTO v_contagem, v_expira;
+
+  -- Limpeza de vez em quando, para a tabela não crescer com chave que não volta.
+  IF random() < 0.01 THEN
+    DELETE FROM limite_de_tentativas WHERE expira_em < clock_timestamp();
+  END IF;
+
+  IF v_contagem <= p_maximo THEN
+    RETURN QUERY SELECT true, 0;
+  ELSE
+    RETURN QUERY SELECT false,
+      GREATEST(0, ceil(EXTRACT(EPOCH FROM (v_expira - clock_timestamp())) * 1000))::INTEGER;
+  END IF;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.registrar_tentativa(TEXT, INTEGER, INTEGER) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.registrar_tentativa(TEXT, INTEGER, INTEGER) TO service_role;
+
+
+-- ===========================================================================
+-- Medicamentos e dúvidas do morador
+-- ===========================================================================
+--
+-- A tela do aplicativo (versão 1.2.5) lista os remédios de cada morador, os
+-- problemas de uso que o agente observou na visita e as dúvidas que ele leva
+-- para a equipe da UBS, com a resposta que volta. É dado de saúde (LGPD,
+-- art. 5º, II) e segue o desenho das fichas de prontuário depois de
+-- migration_prontuario_fechado.sql:
+--
+--   * o aparelho é a fonte da tela; o servidor só recebe;
+--   * nenhuma coluna clínica sai pela API: o usuário logado lê só as chaves
+--     (id, morador_id, agente_id), que o UPDATE e o DELETE da sincronização
+--     usam no WHERE;
+--   * só o agente dono grava, e só para morador dele;
+--   * conta desativada não grava nada (policy restritiva conta_ativa);
+--   * visitante sem login não tem privilégio nenhum.
+--
+-- O aplicativo grava com INSERT e, na retentativa, UPDATE pelo id, sem
+-- upsert: o Postgres exige ler as colunas que um ON CONFLICT DO UPDATE
+-- atualiza, e elas estão fechadas.
+--
+-- Idempotente.
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS medicamentos (
+  id                UUID PRIMARY KEY,
+  morador_id        UUID NOT NULL REFERENCES public.moradores(id) ON DELETE CASCADE,
+  agente_id         UUID NOT NULL REFERENCES public.agentes(id) ON DELETE CASCADE,
+  nome              TEXT NOT NULL CHECK (length(nome) BETWEEN 2 AND 120),
+  dosagem           TEXT CHECK (length(dosagem) <= 80),
+  frequencia        TEXT CHECK (length(frequencia) <= 80),
+  problemas_uso     TEXT CHECK (length(problemas_uso) <= 200),
+  duvida            TEXT CHECK (length(duvida) <= 1000),
+  duvida_respondida BOOLEAN NOT NULL DEFAULT false,
+  resposta_medico   TEXT CHECK (length(resposta_medico) <= 2000),
+  respondido_por    TEXT CHECK (respondido_por IN ('enfermeiro', 'medico', 'farmaceutico')),
+  data_resposta     TIMESTAMPTZ,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_medicamentos_morador ON public.medicamentos(morador_id);
+CREATE INDEX IF NOT EXISTS idx_medicamentos_agente ON public.medicamentos(agente_id);
+
+-- Confere se o morador é do agente logado sem depender do que o agente pode
+-- ler em `moradores` (colunas fechadas desde migration_colunas_sensiveis.sql).
+CREATE OR REPLACE FUNCTION public.morador_do_agente(p_morador_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.moradores m
+    WHERE m.id = p_morador_id AND m.agente_id = auth.uid()
+  )
+$$;
+
+REVOKE ALL ON FUNCTION public.morador_do_agente(UUID) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.morador_do_agente(UUID) TO authenticated;
+
+ALTER TABLE public.medicamentos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.medicamentos FORCE ROW LEVEL SECURITY;
+
+REVOKE ALL ON public.medicamentos FROM PUBLIC, anon, authenticated;
+GRANT INSERT, UPDATE, DELETE ON public.medicamentos TO authenticated;
+GRANT SELECT (id, morador_id, agente_id) ON public.medicamentos TO authenticated;
+
+DROP POLICY IF EXISTS "medicamentos_select" ON public.medicamentos;
+CREATE POLICY "medicamentos_select" ON public.medicamentos FOR SELECT TO authenticated
+  USING (agente_id = auth.uid());
+
+DROP POLICY IF EXISTS "medicamentos_insert" ON public.medicamentos;
+CREATE POLICY "medicamentos_insert" ON public.medicamentos FOR INSERT TO authenticated
+  WITH CHECK (agente_id = auth.uid() AND public.morador_do_agente(morador_id));
+
+DROP POLICY IF EXISTS "medicamentos_update" ON public.medicamentos;
+CREATE POLICY "medicamentos_update" ON public.medicamentos FOR UPDATE TO authenticated
+  USING (agente_id = auth.uid())
+  WITH CHECK (agente_id = auth.uid() AND public.morador_do_agente(morador_id));
+
+DROP POLICY IF EXISTS "medicamentos_delete" ON public.medicamentos;
+CREATE POLICY "medicamentos_delete" ON public.medicamentos FOR DELETE TO authenticated
+  USING (agente_id = auth.uid());
+
+DROP POLICY IF EXISTS "conta_ativa" ON public.medicamentos;
+CREATE POLICY "conta_ativa" ON public.medicamentos AS RESTRICTIVE FOR ALL TO authenticated
+  USING (public.conta_ativa()) WITH CHECK (public.conta_ativa());
