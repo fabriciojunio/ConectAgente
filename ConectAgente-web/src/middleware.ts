@@ -4,6 +4,7 @@ import { validarOrigem } from '@/lib/csrf';
 import { decidirSegundoFator, ROTA_DO_SEGUNDO_FATOR } from '@/lib/segundoFator';
 
 import { papelPodeAbrir, rotaRestrita } from '@/lib/rotasPorPapel';
+import { ehCookieDeSessao, opcoesDoCookieDeSessao, sessaoPassouDoTurno, type MetodoDeEntrada } from '@/lib/sessao';
 
 /** Rotas abertas, que redirecionam para a raiz quando ja ha sessao. */
 const PUBLIC_ROUTES = ['/login', '/registro', '/demo'];
@@ -141,6 +142,7 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co',
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder-anon-key',
     {
+      cookieOptions: opcoesDoCookieDeSessao(),
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -195,6 +197,29 @@ export async function middleware(request: NextRequest) {
   // sem ida extra à rede.
   if (user) {
     const { data: nivel } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+    // Limite de um turno: 12 horas depois da senha, entra de novo. A sessão
+    // é encerrada no servidor (o refresh token deixa de valer) e os cookies
+    // saem do navegador.
+    const metodos = (nivel?.currentAuthenticationMethods ?? []) as MetodoDeEntrada[];
+    if (sessaoPassouDoTurno(metodos)) {
+      await supabase.auth.signOut({ scope: 'local' });
+      const saida = comCsp(NextResponse.redirect(new URL('/login?motivo=turno', request.url)));
+      for (const c of request.cookies.getAll()) {
+        if (ehCookieDeSessao(c.name)) saida.cookies.set(c.name, '', { ...opcoesDoCookieDeSessao(), maxAge: 0 });
+      }
+      return saida;
+    }
+
+    // Inatividade: cada navegação regrava o cookie com mais 30 minutos.
+    // Quem para de usar perde a sessão quando o cookie vence.
+    const jaRegravados = new Set(response.cookies.getAll().map((c) => c.name));
+    for (const c of request.cookies.getAll()) {
+      if (ehCookieDeSessao(c.name) && !jaRegravados.has(c.name)) {
+        response.cookies.set(c.name, c.value, opcoesDoCookieDeSessao());
+      }
+    }
+
     const liberado = decidirSegundoFator(nivel) === 'liberado';
     const naTelaDoCodigo = pathname === ROTA_DO_SEGUNDO_FATOR;
 

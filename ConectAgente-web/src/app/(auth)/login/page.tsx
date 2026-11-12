@@ -38,6 +38,11 @@ export default function LoginPage() {
   // Quem chega ao login não deve encontrar no navegador o dado de quem saiu.
   useEffect(() => {
     limparDadosLocais();
+    // O middleware manda para cá com ?motivo=turno quando a sessão passou de
+    // 12 horas. Sem explicar, parecia que o sistema tinha caído.
+    if (new URLSearchParams(window.location.search).get('motivo') === 'turno') {
+      setError('Sua sessão completou 12 horas e foi encerrada por segurança. Entre de novo.');
+    }
   }, []);
 
   async function handleLogin(e: React.FormEvent) {
@@ -197,6 +202,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Esconder a senha' : 'Mostrar a senha'}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--marcador)] hover:text-[var(--texto-claro)] transition-colors p-1"
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -204,14 +210,11 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Remember me checkbox */}
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 rounded border-[var(--borda)] text-[var(--primaria)]"
-                />
-                <span className="text-sm text-[var(--texto-claro)]">Permanecer conectado</span>
-              </label>
+              {/* Sem "permanecer conectado": o painel tem dado de saúde e roda em
+                  computador compartilhado. A política está em lib/sessao.ts. */}
+              <p className="text-xs text-[var(--texto-claro)]">
+                Por segurança, a sessão encerra depois de 30 minutos sem uso e a cada 12 horas.
+              </p>
 
               {/* Error message */}
               {error && (

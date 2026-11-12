@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { opcoesDoCookieDeSessao } from '@/lib/sessao';
 
 /**
  * Creates a Supabase client for use in Server Components, Route Handlers,
@@ -14,6 +15,7 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co',
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder-anon-key',
     {
+      cookieOptions: opcoesDoCookieDeSessao(),
       cookies: {
         getAll() {
           return cookieStore.getAll();
