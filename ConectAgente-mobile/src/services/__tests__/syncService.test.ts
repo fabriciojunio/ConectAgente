@@ -378,3 +378,23 @@ describe('syncService.sincronizar - nome de coluna corrigido na saída', () => {
     expect(Object.keys(enviado).join(' ')).not.toMatch(/ç|ã/);
   });
 });
+
+describe('syncService.sincronizar - item do administrador do aparelho', () => {
+  it('sai da fila sem ser enviado, porque nunca seria aceito', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const database = require('../../database/database');
+    const espiao = jest.spyOn(database, 'getDatabase').mockResolvedValue({
+      getAllAsync: jest.fn().mockResolvedValue([{ id: 'admin-local' }]),
+    });
+    mockedQueue.listarPendentes.mockResolvedValue([
+      { ...itemSyncBase, id: 'sync-adm', tabela: 'audit_log', registro_id: 'a-1', payload: JSON.stringify({ agente_id: 'admin-local', acao: 'LOGIN' }) },
+    ]);
+
+    await syncService.sincronizar();
+
+    expect(mockSupabaseInsert).not.toHaveBeenCalled();
+    expect(mockSupabaseUpsert).not.toHaveBeenCalled();
+    expect(mockedQueue.marcarSucesso).toHaveBeenCalledWith('sync-adm');
+    espiao.mockRestore();
+  });
+});

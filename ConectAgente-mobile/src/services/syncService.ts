@@ -42,6 +42,7 @@ import { medicamentoRepository } from '../database/repositories/medicamentoRepos
 import { supabase, SupabaseTable } from '../lib/supabase';
 import { authService } from './authService';
 import * as SecureStore from 'expo-secure-store';
+import { getDatabase } from '../database/database';
 import { SECURE_KEYS, SYNC_BATCH_SIZE } from '../utils/constants';
 
 export interface SyncStatus {
@@ -150,12 +151,22 @@ export const syncService = {
     }
 
     const dono = await donoDosRegistros();
+    const administradores = await idsDoAdministradorDoAparelho();
 
     const batch = itens.slice(0, SYNC_BATCH_SIZE);
     let processados = 0;
 
     for (const item of batch) {
       try {
+        // Item do administrador do aparelho, de antes de a trilha dele deixar
+        // de entrar na fila: não tem conta no servidor e nunca seria aceito.
+        // Sai da fila; o registro continua no audit_log do aparelho.
+        const original = JSON.parse(item.payload) as { agente_id?: string } | null;
+        if (original?.agente_id && administradores.has(original.agente_id)) {
+          await syncQueueRepository.marcarSucesso(item.id);
+          continue;
+        }
+
         // Prepara de novo na saída: item que entrou na fila antes de uma
         // correção de nome de coluna precisa subir com o nome certo.
         const payload = prepararPayloadParaServidor(
@@ -265,6 +276,17 @@ async function syncParaSupabase(
  * então, com os dois diferentes, nenhuma residência, morador ou visita subia
  * mesmo com a sessão aberta. Achado no aparelho.
  */
+/** Ids das contas de administrador deste aparelho, que só existem aqui. */
+async function idsDoAdministradorDoAparelho(): Promise<Set<string>> {
+  try {
+    const db = await getDatabase();
+    const linhas = await db.getAllAsync<{ id: string }>(`SELECT id FROM agentes WHERE is_admin = 1`);
+    return new Set(linhas.map((l) => l.id));
+  } catch {
+    return new Set();
+  }
+}
+
 async function donoDosRegistros(): Promise<{ local: string | null; servidor: string | null }> {
   // Sem conseguir ler um dos dois, sobe como está: o pior caso é o RLS
   // recusar, que é o que já acontecia, e não derrubar a fila inteira.

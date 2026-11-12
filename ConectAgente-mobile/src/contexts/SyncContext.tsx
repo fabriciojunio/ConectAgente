@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
+import { AppState } from 'react-native';
 import { syncService, SyncStatus } from '../services/syncService';
 import { syncQueueRepository } from '../database/repositories/syncQueueRepository';
 import { useNetwork } from './NetworkContext';
@@ -64,6 +65,16 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       return { ok: false, erro: mensagem, pendentes };
     }
   }, [isOnline, status.sincronizando, status.pendentes]);
+
+  // Sincronizar quando o agente volta para o aplicativo. Com o celular em
+  // segundo plano o Android adia a tarefa periódica; quem abre o app depois
+  // de uma visita sem sinal não deveria esperar o próximo ciclo.
+  useEffect(() => {
+    const assinatura = AppState.addEventListener('change', (estado) => {
+      if (estado === 'active' && isOnline) void sincronizarAgora();
+    });
+    return () => assinatura.remove();
+  }, [isOnline, sincronizarAgora]);
 
   // Sincronizar quando volta para online
   useEffect(() => {

@@ -224,3 +224,22 @@ describe('os eventos que precisam de registro estão ligados', () => {
     }
   });
 });
+
+describe('trilha do administrador do aparelho', () => {
+  const vaiParaAFila = () => runAsync.mock.calls.some(([sql]) => /INSERT INTO sync_queue/.test(sql as string));
+
+  it('fica só no aparelho: o administrador não tem conta no servidor', async () => {
+    getFirstAsync.mockResolvedValueOnce({ is_admin: 1 });
+    await auditRepository.registrar({ agenteId: 'admin-local', acao: ACOES_AUDITORIA.LOGIN, tabela: 'agentes', registroId: 'admin-local' });
+
+    expect(runAsync.mock.calls[0][0]).toMatch(/INSERT INTO audit_log/);
+    expect(vaiParaAFila()).toBe(false);
+  });
+
+  it('a do agente continua subindo', async () => {
+    getFirstAsync.mockResolvedValueOnce({ is_admin: 0 });
+    await auditRepository.registrar({ agenteId: 'ag-1', acao: ACOES_AUDITORIA.LOGIN, tabela: 'agentes', registroId: 'ag-1' });
+
+    expect(vaiParaAFila()).toBe(true);
+  });
+});
