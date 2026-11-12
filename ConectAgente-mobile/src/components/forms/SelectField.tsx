@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { Control, Controller, FieldValues, Path } from 'react-hook-form';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FONT_SIZE, SPACING, RADIUS } from '../../utils/constants';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -26,6 +27,9 @@ export function SelectField<T extends FieldValues>({
 }: SelectFieldProps<T>) {
   const [modalVisible, setModalVisible] = useState(false);
   const { colors } = useTheme();
+  // A folha abre por cima de tudo e vai até a borda da tela. Sem descontar a
+  // faixa dos botões do Android, a última opção ficava cortada atrás deles.
+  const { bottom: faixaInferior } = useSafeAreaInsets();
 
   return (
     <Controller
@@ -58,7 +62,7 @@ export function SelectField<T extends FieldValues>({
                 style={[styles.overlay, { backgroundColor: colors.overlay }]}
                 onPress={() => setModalVisible(false)}
               />
-              <View style={[styles.modal, { backgroundColor: colors.surface }]}>
+              <View style={[styles.modal, { backgroundColor: colors.surface, paddingBottom: faixaInferior + SPACING.md }]}>
                 <View style={[styles.modalHeader, { borderBottomColor: colors.borderLight }]}>
                   <Text style={[styles.modalTitle, { color: colors.text }]}>{label}</Text>
                   <TouchableOpacity onPress={() => setModalVisible(false)}>
@@ -116,7 +120,6 @@ const styles = StyleSheet.create({
   modal: {
     borderTopLeftRadius: RADIUS.xl,
     borderTopRightRadius: RADIUS.xl, maxHeight: '60%',
-    paddingBottom: SPACING.xl,
   },
   modalHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

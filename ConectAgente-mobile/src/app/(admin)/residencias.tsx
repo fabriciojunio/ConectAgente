@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   TextInput, RefreshControl, Platform, Modal, ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
@@ -19,6 +19,9 @@ type ResidenciaExt = Residencia & { agente_nome?: string };
 
 export default function AdminResidencias() {
   const { colors } = useTheme();
+  // As folhas de detalhe vão até a borda da tela; sem descontar a faixa dos
+  // botões do Android, o fim delas ficava atrás desses botões.
+  const { bottom: faixaInferior } = useSafeAreaInsets();
   const styles = useMemo(() => criarStyles(colors), [colors]);
   const [todas, setTodas] = useState<ResidenciaExt[]>([]);
   const [filtradas, setFiltradas] = useState<ResidenciaExt[]>([]);
@@ -140,7 +143,7 @@ export default function AdminResidencias() {
       {/* Detalhes Modal */}
       <Modal visible={!!selecionada} transparent animationType="slide" onRequestClose={() => setSelecionada(null)}>
         <View style={styles.overlay}>
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: SPACING.md + faixaInferior }]}>
             <ScrollView showsVerticalScrollIndicator={false}>
               {selecionada && (
                 <>

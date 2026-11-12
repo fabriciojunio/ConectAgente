@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  View, Text, Image, StyleSheet, Alert, KeyboardAvoidingView, Platform,
+  View, Text, Image, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useForm } from 'react-hook-form';
@@ -97,6 +97,14 @@ export default function Login() {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
+        {/* Rolagem porque, com o aviso do administrador, o conteúdo passa da
+            altura da tela: sem ela o botão "Configurar administrador" e o
+            rodapé da LGPD ficavam embaixo dos botões do Android, sem alcance. */}
+        <ScrollView
+          contentContainerStyle={styles.rolagem}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+        >
         {/* LOGO */}
         <LinearGradient
           colors={colors.primaryGradient}
@@ -190,6 +198,7 @@ export default function Login() {
             Os dados coletados são utilizados exclusivamente para fins de saúde pública.
           </Text>
         </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -200,6 +209,11 @@ const criarStyles = (colors: ThemeColors) =>
   container: {
     flex: 1,
     backgroundColor: colors.surface,
+  },
+  // flexGrow, e não flex: ocupa a tela quando sobra espaço (o rodapé da LGPD
+  // continua no fundo) e cresce além dela quando falta, para rolar.
+  rolagem: {
+    flexGrow: 1,
   },
   logoArea: {
     alignItems: 'center',
