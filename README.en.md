@@ -86,7 +86,7 @@ State measured on 12/11/2026, version 1.2.5:
 
 | What | Result |
 |---|---|
-| App tests | 967 in 59 suites, including theme contrast, navigation and layout guards; 86.0% statement coverage |
+| App tests | 989 in 61 suites, including theme contrast, navigation, layout guards and sync contract; 86.3% statement coverage |
 | Panel tests | 432 in 36 suites, including the second factor |
 | Checks against a real database | 149 in 6 suites, all passing, including the repeated-install one |
 | Type errors | 0 in both projects |

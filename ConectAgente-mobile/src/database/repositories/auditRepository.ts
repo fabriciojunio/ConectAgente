@@ -89,6 +89,15 @@ export const auditRepository = {
         ]
       );
 
+      // O administrador do aparelho não tem conta no servidor: a trilha dele
+      // fica só aqui (Sistema → audit log). Na fila, ela nunca seria aceita e
+      // deixaria o selo de pendências preso para sempre. Achado no aparelho.
+      const autor = await db.getFirstAsync<{ is_admin: number }>(
+        `SELECT is_admin FROM agentes WHERE id = ?`,
+        [registro.agenteId]
+      );
+      if (autor?.is_admin === 1) return true;
+
       // A trilha do aparelho sobe para o servidor. A policy de la exige
       // `agente_id = auth.uid()`, entao o aparelho so consegue gravar evento
       // em nome de quem esta de fato autenticado: trilha vinda do cliente nao

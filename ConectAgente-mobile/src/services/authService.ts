@@ -93,7 +93,11 @@ export const authService = {
     // não tiver usuário no Supabase Auth, o acesso ao aplicativo funciona
     // normalmente e a fila espera. O que muda é que a falha passa a ser
     // visível em vez de silenciosa.
-    const servidor = await this.abrirSessaoNoServidor(emailNoServidor(agente.cpf), senha);
+    // O administrador do aparelho não tem conta no servidor: tentar abrir
+    // sessão para ele só produzia o aviso de "conta não reconhecida".
+    const servidor = agente.is_admin
+      ? { ok: true as const, motivo: undefined }
+      : await this.abrirSessaoNoServidor(emailNoServidor(agente.cpf), senha);
 
     // Senha trocada pela recuperação: enquanto o servidor tiver a antiga, a
     // sincronização fica parada, e o agente precisa saber disso agora, e não
@@ -113,7 +117,7 @@ export const authService = {
     }
 
     // Com a sessão aberta, o que desistiu por falta dela volta para a fila.
-    if (servidor.ok) {
+    if (servidor.ok && !agente.is_admin) {
       await syncQueueRepository.reabrirComErro().catch(() => 0);
     }
 
