@@ -5,6 +5,7 @@
  */
 import * as SecureStore from 'expo-secure-store';
 import { agenteRepository } from '../database/repositories/agenteRepository';
+import { syncQueueRepository } from '../database/repositories/syncQueueRepository';
 import { Agente } from '../types';
 import { SECURE_KEYS, SESSION_TIMEOUT_MS } from '../utils/constants';
 import { isoNow } from '../utils/formatters';
@@ -109,6 +110,11 @@ export const authService = {
       // Sem este aviso o agente entrava, trabalhava o dia inteiro e nada
       // subia: o único sinal era o número de pendências crescendo.
       aviso = MENSAGEM_CONTA_NAO_LIBERADA;
+    }
+
+    // Com a sessão aberta, o que desistiu por falta dela volta para a fila.
+    if (servidor.ok) {
+      await syncQueueRepository.reabrirComErro().catch(() => 0);
     }
 
     // Entrada no sistema. Junto com a leitura de prontuario, e o que permite

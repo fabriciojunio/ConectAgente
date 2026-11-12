@@ -13,7 +13,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { formatDate } from '../../utils/formatters';
-import { SPACING, FONT_SIZE, RADIUS } from '../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS, MOTIVOS_VISITA_LABEL } from '../../utils/constants';
 import { useTheme, type ThemeColors } from '../../contexts/ThemeContext';
 
 type Aba = 'realizadas' | 'agendadas' | 'metas';
@@ -136,16 +136,12 @@ export default function Visitas() {
   );
 }
 
-const MOTIVOS_LABEL: Record<string, string> = {
-  rotina: 'Rotina', busca_ativa: 'Busca ativa',
-  urgencia: 'Urgência', retorno: 'Retorno', solicitacao: 'Por solicitação',
-};
 
 function VisitaCard({ visita }: { visita: Visita }) {
   const { colors } = useTheme();
   const styles = useMemo(() => criarStyles(colors), [colors]);
   const subtitulo = visita.motivo_visita
-    ? MOTIVOS_LABEL[visita.motivo_visita] ?? visita.motivo_visita
+    ? MOTIVOS_VISITA_LABEL[visita.motivo_visita] ?? visita.motivo_visita
     : visita.observacoes;
 
   return (

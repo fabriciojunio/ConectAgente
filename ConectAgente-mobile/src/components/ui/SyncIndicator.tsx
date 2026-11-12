@@ -18,7 +18,7 @@ export function SyncIndicator() {
   if (!status.pendentes && isOnline) return null;
 
   async function sincronizarEContar() {
-    const r = await sincronizarAgora();
+    const r = await sincronizarAgora({ reabrirErros: true });
     if (r.ok && r.pendentes === 0) {
       Alert.alert('Tudo enviado', 'Os registros deste celular chegaram ao servidor.');
     } else if (r.ok) {

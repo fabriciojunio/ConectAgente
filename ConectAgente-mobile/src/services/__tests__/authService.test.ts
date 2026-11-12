@@ -319,3 +319,28 @@ describe('authService - senha trocada pela recuperação', () => {
     expect((await authService.login('52998224725', 'senha123')).aviso).toBeUndefined();
   });
 });
+
+describe('authService - fila depois do login', () => {
+  it('com a sessão aberta, o que desistiu volta para a fila', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { syncQueueRepository } = require('../../database/repositories/syncQueueRepository');
+    const reabrir = jest.spyOn(syncQueueRepository, 'reabrirComErro').mockResolvedValue(3);
+    mockedAgenteRepo.autenticar.mockResolvedValue(agenteBase);
+
+    await authService.login('52998224725', 'senha123');
+
+    expect(reabrir).toHaveBeenCalled();
+  });
+
+  it('sem sessão, não mexe na fila', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { syncQueueRepository } = require('../../database/repositories/syncQueueRepository');
+    const reabrir = jest.spyOn(syncQueueRepository, 'reabrirComErro').mockResolvedValue(0);
+    mockSignIn.mockResolvedValueOnce({ data: {}, error: { message: 'Invalid login credentials' } });
+    mockedAgenteRepo.autenticar.mockResolvedValue(agenteBase);
+
+    await authService.login('52998224725', 'senha123');
+
+    expect(reabrir).not.toHaveBeenCalled();
+  });
+});

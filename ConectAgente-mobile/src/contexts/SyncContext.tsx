@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { syncService, SyncStatus } from '../services/syncService';
+import { syncQueueRepository } from '../database/repositories/syncQueueRepository';
 import { useNetwork } from './NetworkContext';
 import { SYNC_INTERVAL_MS } from '../utils/constants';
 
@@ -12,7 +13,8 @@ export interface ResultadoDaSincronizacao {
 
 interface SyncContextData {
   status: SyncStatus;
-  sincronizarAgora: () => Promise<ResultadoDaSincronizacao>;
+  /** `reabrirErros`: o agente pediu para tentar de novo o que já tinha desistido. */
+  sincronizarAgora: (opcoes?: { reabrirErros?: boolean }) => Promise<ResultadoDaSincronizacao>;
 }
 
 const SyncContext = createContext<SyncContextData>({
@@ -30,12 +32,13 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   });
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const sincronizarAgora = useCallback(async (): Promise<ResultadoDaSincronizacao> => {
+  const sincronizarAgora = useCallback(async (opcoes?: { reabrirErros?: boolean }): Promise<ResultadoDaSincronizacao> => {
     if (status.sincronizando || !isOnline) {
       return { ok: false, erro: isOnline ? null : 'sem rede', pendentes: status.pendentes };
     }
 
     setStatus((s) => ({ ...s, sincronizando: true, erro: null }));
+    if (opcoes?.reabrirErros) await syncQueueRepository.reabrirComErro().catch(() => 0);
 
     try {
       await syncService.sincronizar((progress, total) => {

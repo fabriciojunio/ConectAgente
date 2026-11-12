@@ -8,16 +8,9 @@ import { Card } from '../../../components/ui/Card';
 import { visitaRepository } from '../../../database/repositories/visitaRepository';
 import { Visita } from '../../../types';
 import { formatDate, formatDateTime } from '../../../utils/formatters';
-import { SPACING, FONT_SIZE, RADIUS } from '../../../utils/constants';
+import { SPACING, FONT_SIZE, RADIUS, MOTIVOS_VISITA_LABEL } from '../../../utils/constants';
 import { useTheme, type ThemeColors } from '../../../contexts/ThemeContext';
 
-const MOTIVOS_LABEL: Record<string, string> = {
-  rotina: 'Rotina',
-  busca_ativa: 'Busca ativa',
-  urgencia: 'Urgência',
-  retorno: 'Retorno',
-  solicitacao: 'Por solicitação',
-};
 
 const STATUS_LABEL: Record<string, string> = {
   realizada: 'Realizada',
@@ -91,7 +84,7 @@ export default function DetalheVisita() {
             {visita.motivo_visita && (
               <View style={styles.motivoBadge}>
                 <Text style={styles.motivoBadgeText}>
-                  {MOTIVOS_LABEL[visita.motivo_visita] ?? visita.motivo_visita}
+                  {MOTIVOS_VISITA_LABEL[visita.motivo_visita] ?? visita.motivo_visita}
                 </Text>
               </View>
             )}
