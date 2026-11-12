@@ -82,13 +82,15 @@ npm run build
 bash ConectAgente-web/supabase/testes/rodar-todos.sh
 ```
 
-State measured on 12/11/2026, version 1.2.5:
+State measured on 12/11/2026, version 1.3.0:
 
 | What | Result |
 |---|---|
 | App tests | 989 in 61 suites, including theme contrast, navigation, layout guards and sync contract; 86.3% statement coverage |
-| Panel tests | 432 in 36 suites, including the second factor |
-| Checks against a real database | 149 in 6 suites, all passing, including the repeated-install one |
+| Panel tests | 519 in 43 suites, including the second factor, session policy, cache wiped on sign-out and role-based route gate |
+| Checks against a real database | 181 in 6 suites, all passing, including role escalation, writing to another agent's family and repeated install |
+| Gray-box pentest | 11 findings, all fixed and retested in production ([report, in Portuguese](docs/pentest-2026-11.md)) |
+| Real use in production | 12 panel pages in light and dark themes with no errors, 15 reports generated and audited |
 | Type errors | 0 in both projects |
 | ESLint warnings | 0 |
 | Vulnerabilities (OSV-Scanner) | 0 unaccepted; build-tool ones have a reason and deadline in `osv-scanner.toml` |
