@@ -37,7 +37,8 @@ jest.mock('expo-sharing', () => ({
 }));
 
 import { read, utils } from 'xlsx';
-import { exportService } from '../exportService';
+import type { WorkBook } from 'xlsx';
+import { AVISO_CONFIDENCIAL, exportService } from '../exportService';
 import { VisitaListada, StatusVisita, StatusSync } from '../../types';
 
 const visita: VisitaListada = {
@@ -75,19 +76,20 @@ const visitaVazia: VisitaListada = {
 
 async function exportar(visitas: VisitaListada[]) {
   await exportService.exportarVisitas(
-    { visitas, periodo: 'mes', data_referencia: '2026-10-31' },
+    { visitas, periodo: 'mes', data_referencia: '2026-10-31', agente_id: 'abcd1234-0000-0000-0000-000000000000' },
     'xlsx'
   );
   // `cellNF` e `cellStyles` fazem a leitura devolver o formato de número e a
   // largura das colunas, que por padrão o leitor descarta.
   const livro = read(escritas[0].conteudo as Uint8Array, {
-    type: 'array', cellNF: true, cellStyles: true,
+    type: 'array', cellNF: true, cellStyles: true, bookFiles: true,
   });
   const aba = livro.Sheets[livro.SheetNames[0]];
   return {
     livro,
     aba,
-    linhas: utils.sheet_to_json<Record<string, string>>(aba, { raw: false }),
+    // A tabela começa na linha 3: a 1 é o aviso de confidencialidade.
+    linhas: utils.sheet_to_json<Record<string, string>>(aba, { raw: false, range: 2 }),
   };
 }
 
@@ -117,9 +119,9 @@ describe('planilha de visitas exportada', () => {
   it('grava as datas como data, para o Excel ordenar pelo calendário', async () => {
     const { aba } = await exportar([visita]);
 
-    expect(aba['A2'].t).toBe('n');
-    expect(aba['A2'].z).toBe('dd/mm/yyyy');
-    expect(aba['B2'].t).toBe('n');
+    expect(aba['A4'].t).toBe('n');
+    expect(aba['A4'].z).toBe('dd/mm/yyyy');
+    expect(aba['B4'].t).toBe('n');
   });
 
   it('a hora vem do registro, e não de um 21:00 inventado pelo fuso', async () => {
@@ -148,7 +150,7 @@ describe('planilha de visitas exportada', () => {
 
   it('texto que parece fórmula entra como texto, sem virar fórmula', async () => {
     const { aba, linhas } = await exportar([visita]);
-    const queixas = aba['H2'];
+    const queixas = aba['H4'];
 
     expect(queixas.t).toBe('s');
     expect(queixas.f).toBeUndefined();
@@ -172,7 +174,7 @@ describe('planilha de visitas exportada', () => {
   it('tem filtro no cabeçalho e largura em todas as colunas', async () => {
     const { aba } = await exportar([visita, visitaVazia]);
 
-    expect(aba['!autofilter']?.ref).toBe('A1:K3');
+    expect(aba['!autofilter']?.ref).toBe('A3:K5');
     const colunas = aba['!cols'] ?? [];
     expect(colunas).toHaveLength(11);
     for (const c of colunas) expect(c.wch).toBeGreaterThanOrEqual(10);
@@ -208,5 +210,56 @@ describe('CSV exportado', () => {
     expect(linha).toContain('"Rua das Flores, 120"');
     expect(linha).not.toContain(visita.residencia_id);
     expect(linha).not.toContain("'");
+  });
+
+  it('o aviso de confidencialidade abre as duas abas e as propriedades do arquivo', async () => {
+    const { livro, aba } = await exportar([visita]);
+
+    expect(aba['A1'].v).toBe(AVISO_CONFIDENCIAL);
+    expect(livro.Sheets['Resumo']['A1'].v).toBe(AVISO_CONFIDENCIAL);
+    expect(livro.Props?.Category).toBe('Confidencial');
+    expect(livro.Props?.Comments).toBe(AVISO_CONFIDENCIAL);
+    expect(livro.Props?.Subject).toBe('Dado pessoal de saúde');
+  });
+
+  /** Atributos de <sheetProtection> como o Excel vai ler; a leitura da biblioteca não devolve a proteção. */
+  function protecaoGravada(livro: WorkBook, indice: number): Record<string, string> | null {
+    const arquivos = (livro as WorkBook & { files: Record<string, { content: Uint8Array }> }).files;
+    const xml = new TextDecoder().decode(arquivos[`xl/worksheets/sheet${indice + 1}.xml`].content);
+    const tag = xml.match(/<sheetProtection([^>]*)\/>/);
+    if (!tag) return null;
+    return Object.fromEntries([...tag[1].matchAll(/(\w+)="([^"]*)"/g)].map((m) => [m[1], m[2]]));
+  }
+
+  it('as duas abas saem protegidas contra edição, mas deixam filtrar e ordenar', async () => {
+    const { livro } = await exportar([visita]);
+
+    livro.SheetNames.forEach((_, i) => {
+      const p = protecaoGravada(livro, i);
+      expect(p).not.toBeNull();
+      expect(p?.sheet).toBe('1');
+      expect(p?.password).toMatch(/^[0-9A-F]{4}$/);
+      expect(p?.sort).toBe('0');
+      expect(p?.autoFilter).toBe('0');
+      // Selecionar continua liberado: travar a seleção impediria até copiar.
+      expect(p?.selectLockedCells).toBeUndefined();
+    });
+  });
+
+  it('cada arquivo tem uma senha de proteção diferente, que não fica guardada', async () => {
+    const senhas = new Set<string | undefined>();
+    for (let i = 0; i < 4; i++) {
+      escritas.length = 0;
+      senhas.add(protecaoGravada((await exportar([visita])).livro, 0)?.password);
+    }
+    expect(senhas.size).toBeGreaterThan(1);
+  });
+
+  it('o resumo traz o código de quem gerou, e não o nome', async () => {
+    const { livro } = await exportar([visita]);
+    const resumo = utils.sheet_to_json<string[]>(livro.Sheets['Resumo'], { header: 1, raw: false });
+    const linha = resumo.find((l) => l[0] === 'Gerado pelo agente (código)');
+
+    expect(linha?.[1]).toBe('abcd1234');
   });
 });

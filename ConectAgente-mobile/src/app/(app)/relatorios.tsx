@@ -73,7 +73,7 @@ export default function Relatorios() {
       });
 
       await exportService.exportarVisitas(
-        { visitas, periodo, data_referencia: apenasData(hoje) },
+        { visitas, periodo, data_referencia: apenasData(hoje), agente_id: agente.id },
         formato
       );
     } catch (error) {
