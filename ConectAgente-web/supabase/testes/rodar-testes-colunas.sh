@@ -121,7 +121,9 @@ saida=$( { "$PSQL" $H -d conectagente_colunas -t -A -v ON_ERROR_STOP=1 \
           "$PSQL" $H -d conectagente_colunas -t -A -v ON_ERROR_STOP=1 \
             -f "$AQUI/09-prontuario-fechado.sql" 2>&1
           "$PSQL" $H -d conectagente_colunas -t -A -v ON_ERROR_STOP=1 \
-            -f "$AQUI/10-medicamentos.sql" 2>&1; } | tr -d '\r')
+            -f "$AQUI/10-medicamentos.sql" 2>&1
+          "$PSQL" $H -d conectagente_colunas -t -A -v ON_ERROR_STOP=1 \
+            -f "$AQUI/11-unidades.sql" 2>&1; } | tr -d '\r')
 
 if echo "$saida" | grep -qiE "^ERRO|^ERROR|psql:.*ERROR"; then
   echo "  FALHA  o arquivo de casos nao rodou:"
@@ -143,7 +145,7 @@ if [ "$ok" -eq 0 ]; then
   echo "Nenhuma verificacao rodou. Saida crua:"; echo "$saida" | tail -10; exit 1
 fi
 if [ "$falhou" -eq 0 ]; then
-  echo "TUDO CERTO: $ok verificacoes de colunas sensiveis, conta ativa, acesso anonimo, fichas fechadas e medicamentos passaram."
+  echo "TUDO CERTO: $ok verificacoes de colunas sensiveis, conta ativa, acesso anonimo, fichas fechadas, medicamentos e unidades passaram."
   exit 0
 fi
 echo "$falhou de $((ok + falhou)) verificacoes falharam."
