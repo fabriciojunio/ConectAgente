@@ -12,7 +12,9 @@ VALUES
   ('a11a11a1-0000-0000-0000-000000000001', 'Coordenadora Nova',   '42000000001', 'coord11@x.test',  'h', 'A', '',           'coordenador', true),
   ('a11a11a1-0000-0000-0000-000000000002', 'Coordenadora Antiga', '42000000002', 'coord11b@x.test', 'h', 'B', 'UBS Antiga', 'coordenador', true),
   ('a11a11a1-0000-0000-0000-000000000003', 'Gerente Onze',        '42000000003', 'ger11@x.test',    'h', 'C', 'UBS Sede',   'gerente',     true),
-  ('a11a11a1-0000-0000-0000-000000000004', 'Agente Onze',         '42000000004', 'ag11@x.test',     'h', 'D', '',           'agente',      true)
+  ('a11a11a1-0000-0000-0000-000000000004', 'Agente Onze',         '42000000004', 'ag11@x.test',     'h', 'D', '',           'agente',      true),
+  ('a11a11a1-0000-0000-0000-000000000005', 'Coordenadora Vazia',  '42000000005', 'coord11c@x.test', 'h', 'E', '',           'coordenador', true),
+  ('a11a11a1-0000-0000-0000-000000000006', 'Agente Sem Area',     '42000000006', 'ag11b@x.test',    'h', 'F', '',           'agente',      true)
 ON CONFLICT (id) DO NOTHING;
 
 CREATE OR REPLACE FUNCTION pg_temp.como(p_papel TEXT, p_sub TEXT, p_sql TEXT)
@@ -90,6 +92,14 @@ INSERT INTO resultado SELECT 'unid_visitante_nao_le',
 INSERT INTO resultado SELECT 'unid_nome_curto_recusado',
   CASE WHEN pg_temp.como('authenticated', 'a11a11a1-0000-0000-0000-000000000003',
     'SELECT public.fn_designar_unidade(''a11a11a1-0000-0000-0000-000000000004'', ''X'')') = 'invalido'
+  THEN 'OK' ELSE 'FALHOU' END;
+
+-- Sem unidade, a coordenação não enxerga quem também está sem unidade.
+INSERT INTO chamada SELECT 'vazia', pg_temp.como('authenticated', 'a11a11a1-0000-0000-0000-000000000005',
+  'CREATE TEMP TABLE IF NOT EXISTS visto AS SELECT count(*) AS n FROM agentes WHERE id = ''a11a11a1-0000-0000-0000-000000000006''');
+INSERT INTO resultado SELECT 'unid_vazia_nao_casa_com_vazia',
+  CASE WHEN (SELECT retorno FROM chamada WHERE nome = 'vazia') = 'ok'
+   AND (SELECT n FROM visto) = 0
   THEN 'OK' ELSE 'FALHOU' END;
 
 SELECT nome || '|' || status FROM resultado ORDER BY nome;
