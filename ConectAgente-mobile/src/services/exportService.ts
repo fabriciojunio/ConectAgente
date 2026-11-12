@@ -12,7 +12,7 @@ import * as Sharing from 'expo-sharing';
 import { utils, write } from 'xlsx';
 import type { CellObject, WorkSheet } from 'xlsx';
 import { VisitaListada } from '../types';
-import { formatDate, formatDateTime } from '../utils/formatters';
+import { formatDate, formatDateTime, generateUUID } from '../utils/formatters';
 
 export type PeriodoRelatorio = 'dia' | 'semana' | 'mes';
 export type FormatoRelatorio = 'csv' | 'xlsx';
@@ -21,7 +21,24 @@ export interface DadosRelatorio {
   visitas: VisitaListada[];
   periodo: PeriodoRelatorio;
   data_referencia: string;
+  /** Quem exportou: vai para a planilha como código, sem nome. */
+  agente_id?: string;
 }
+
+/**
+ * Faixa no topo da planilha e nas propriedades do arquivo.
+ *
+ * O relatório é o único caminho pelo qual o dado de saúde sai do aparelho
+ * em arquivo, e depois de sair ele vai para onde a pessoa mandar. O aviso
+ * diz, dentro do próprio arquivo, o que ele é e como deve ser tratado.
+ */
+export const AVISO_CONFIDENCIAL =
+  'CONFIDENCIAL: dado pessoal de saúde (LGPD, art. 11). Uso restrito à equipe da unidade de saúde. ' +
+  'Não encaminhe por aplicativo de mensagem pessoal nem guarde em computador compartilhado; ' +
+  'apague a cópia depois de usar.';
+
+/** Linha onde começa a tabela de visitas: a 1 é o aviso, a 2 fica em branco. */
+const LINHA_DO_CABECALHO = 3;
 
 /**
  * Uma coluna do relatório.
@@ -68,12 +85,11 @@ export const exportService = {
   ): Promise<void> {
     if (dados.visitas.length === 0) throw new Error('Sem dados para exportar');
 
-    const visitas = ordenarCronologicamente(dados.visitas);
     const nome = `visitas_${dados.periodo}_${dados.data_referencia}`;
     if (formato === 'csv') {
-      await exportarCSV(visitas, nome);
+      await exportarCSV(ordenarCronologicamente(dados.visitas), nome);
     } else {
-      await exportarExcel(visitas, dados, nome);
+      await exportarExcel(dados.visitas, dados, nome);
     }
   },
 };
@@ -212,16 +228,20 @@ function larguras(visitas: VisitaListada[]): { wch: number }[] {
 
 function abaDeVisitas(visitas: VisitaListada[]): WorkSheet {
   const linhas = [
+    [AVISO_CONFIDENCIAL],
+    [],
     COLUNAS.map((c) => c.titulo),
     ...visitas.map((v) => COLUNAS.map((c) => celula(c, v))),
   ];
   const aba = utils.aoa_to_sheet(linhas);
   aba['!cols'] = larguras(visitas);
-  aba['!autofilter'] = { ref: `A1:${letra(COLUNAS.length - 1)}${visitas.length + 1}` };
+  aba['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: COLUNAS.length - 1 } }];
+  const ultima = LINHA_DO_CABECALHO + visitas.length;
+  aba['!autofilter'] = { ref: `A${LINHA_DO_CABECALHO}:${letra(COLUNAS.length - 1)}${ultima}` };
   return aba;
 }
 
-function abaDeResumo(visitas: VisitaListada[], dados: DadosRelatorio): WorkSheet {
+function abaDeResumo(visitas: VisitaListada[], dados: DadosRelatorio, agora: Date): WorkSheet {
   const porStatus = new Map<string, number>();
   for (const v of visitas) {
     const status = traduzirStatus(v.status);
@@ -232,19 +252,25 @@ function abaDeResumo(visitas: VisitaListada[], dados: DadosRelatorio): WorkSheet
   const ultimo = visitas[visitas.length - 1].data_visita;
 
   const linhas: (string | number | CellObject)[][] = [
+    [AVISO_CONFIDENCIAL],
+    [],
     ['Relatório de visitas'],
     [],
     ['Período', traduzirPeriodo(dados.periodo)],
     ['Primeira visita', celulaDeDia(primeiro)],
     ['Última visita', celulaDeDia(ultimo)],
-    ['Gerado em', { t: 'n', v: serialDoInstante(new Date().toISOString()) ?? 0, z: FORMATO_INSTANTE }],
+    ['Gerado em', { t: 'n', v: serialDoInstante(agora.toISOString()) ?? 0, z: FORMATO_INSTANTE }],
+    // Código, e não nome: liga o arquivo à trilha de auditoria da exportação
+    // sem pôr mais um dado pessoal na planilha.
+    ['Gerado pelo agente (código)', dados.agente_id ? dados.agente_id.slice(0, 8) : 'não informado'],
     [],
     ['Total de visitas', visitas.length],
     ...[...porStatus.entries()].map(([status, total]) => [status, total]),
     ['Precisam de agendamento', agendar],
   ];
   const aba = utils.aoa_to_sheet(linhas);
-  aba['!cols'] = [{ wch: 26 }, { wch: 18 }];
+  aba['!cols'] = [{ wch: 30 }, { wch: 18 }];
+  aba['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }];
   return aba;
 }
 
@@ -253,21 +279,65 @@ function celulaDeDia(iso: string): CellObject {
   return serial === null ? { t: 's', v: iso } : { t: 'n', v: serial, z: FORMATO_DIA };
 }
 
+/**
+ * Trava a edição da aba, deixando ler, selecionar, filtrar e ordenar.
+ *
+ * Serve para a integridade do registro: quem recebe o relatório não altera
+ * uma visita sem perceber. A senha é sorteada a cada arquivo e não fica
+ * guardada em lugar nenhum; não há o que destravar. Não é sigilo: a proteção
+ * de planilha do Excel impede edição, não leitura, e senha para abrir exige
+ * criptografia que a biblioteca usada não oferece.
+ */
+function protegerContraEdicao(aba: WorkSheet, senha: string): void {
+  // Os nomes seguem o atributo do Excel ao pé da letra: `sort: false` grava
+  // sort="0", que quer dizer "ordenar não fica travado". Conferido no XML
+  // gerado e abrindo o arquivo no Excel. Seleção fica no padrão, liberada.
+  aba['!protect'] = { password: senha, sort: false, autoFilter: false };
+}
+
+/**
+ * Monta o .xlsx inteiro em memória. Separado da gravação para o teste e a
+ * conferência no Excel usarem exatamente o mesmo arquivo que o celular gera.
+ */
+export function montarPlanilha(
+  visitasEmQualquerOrdem: VisitaListada[],
+  dados: DadosRelatorio,
+  agora: Date = new Date()
+): Uint8Array {
+  const visitas = ordenarCronologicamente(visitasEmQualquerOrdem);
+  const senha = generateUUID();
+  const wb = utils.book_new();
+
+  const abaVisitas = abaDeVisitas(visitas);
+  const abaResumo = abaDeResumo(visitas, dados, agora);
+  protegerContraEdicao(abaVisitas, senha);
+  protegerContraEdicao(abaResumo, senha);
+  utils.book_append_sheet(wb, abaVisitas, `Visitas - ${traduzirPeriodo(dados.periodo)}`);
+  utils.book_append_sheet(wb, abaResumo, 'Resumo');
+
+  wb.Props = {
+    Title: `Relatório de visitas (${traduzirPeriodo(dados.periodo).toLowerCase()})`,
+    Subject: 'Dado pessoal de saúde',
+    Category: 'Confidencial',
+    Keywords: 'confidencial; LGPD; dado de saúde',
+    Comments: AVISO_CONFIDENCIAL,
+    Author: 'ConectAgente',
+    Company: 'ConectAgente',
+    CreatedDate: agora,
+  };
+
+  // `type: 'array'` devolve ArrayBuffer, que é o que a API nova grava como
+  // binário. O caminho antigo passava por base64 e dependia de EncodingType,
+  // que não existe mais.
+  return new Uint8Array(write(wb, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer);
+}
+
 async function exportarExcel(
   visitas: VisitaListada[],
   dados: DadosRelatorio,
   nomeArquivo: string
 ): Promise<void> {
-  const wb = utils.book_new();
-  utils.book_append_sheet(wb, abaDeVisitas(visitas), `Visitas - ${traduzirPeriodo(dados.periodo)}`);
-  utils.book_append_sheet(wb, abaDeResumo(visitas, dados), 'Resumo');
-
-  // `type: 'array'` devolve ArrayBuffer, que é o que a API nova grava como
-  // binário. O caminho antigo passava por base64 e dependia de EncodingType,
-  // que não existe mais.
-  const buffer = write(wb, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer;
-
-  const uri = gravar(`${nomeArquivo}.xlsx`, new Uint8Array(buffer));
+  const uri = gravar(`${nomeArquivo}.xlsx`, montarPlanilha(visitas, dados));
   await compartilharArquivo(
     uri,
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

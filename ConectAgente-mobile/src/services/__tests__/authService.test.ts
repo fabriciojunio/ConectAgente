@@ -164,15 +164,27 @@ describe('authService - sessao no servidor', () => {
   // aparelho. Mas nao pode bloquear o login, senao o aplicativo deixa de
   // funcionar offline, que e a razao de ele existir.
 
-  it('abre sessao no servidor usando o email do agente', async () => {
+  it('abre sessao no servidor com o e-mail que a aprovação criou, e não com o do cadastro local', async () => {
+    // A conta do servidor nasce na aprovação do painel como <cpf>@conectagente.local.
+    // Entrar com o e-mail do cadastro do celular (joao@ubs.gov.br) dava
+    // "Invalid login credentials" mesmo com a senha certa.
     mockedAgenteRepo.autenticar.mockResolvedValue(agenteBase);
 
     await authService.login('52998224725', 'senha123');
 
     expect(mockSignIn).toHaveBeenCalledWith({
-      email: agenteBase.email,
+      email: '52998224725@conectagente.local',
       password: 'senha123',
     });
+  });
+
+  it('servidor recusando a conta devolve aviso para o agente', async () => {
+    mockSignIn.mockResolvedValueOnce({ data: {}, error: { message: 'Invalid login credentials' } });
+    mockedAgenteRepo.autenticar.mockResolvedValue(agenteBase);
+
+    const sessao = await authService.login('52998224725', 'senha123');
+
+    expect(sessao.aviso).toMatch(/O servidor não reconheceu sua conta/);
   });
 
   it('login funciona mesmo quando o servidor recusa', async () => {
@@ -232,7 +244,7 @@ describe('authService - senha trocada pela recuperação', () => {
 
   it('troca a senha no servidor quando a sessão aberta é da mesma pessoa', async () => {
     mockGetSession.mockResolvedValueOnce({
-      data: { session: { user: { email: 'JOAO@ubs.gov.br' } } },
+      data: { session: { user: { email: '52998224725@conectagente.local' } } },
     });
 
     const r = await authService.recuperarSenha('52998224725', 'ABCD-EFGH-JKLM', 'Nova@1234');

@@ -26,6 +26,18 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ### Corrigido
 
+- **A sincronização nunca funcionava para quem se cadastrou pelo aplicativo.**
+  Achado no aparelho, com 19 registros presos na fila. Eram dois defeitos
+  juntos: o aplicativo abria a sessão do servidor com o e-mail digitado no
+  cadastro do celular, e a conta do servidor usa `<cpf>@conectagente.local`;
+  e o registro subia com o id do agente sorteado no aparelho, que nunca é o
+  id da conta do servidor exigido pelo RLS. Agora a sessão usa o e-mail da
+  conta e o dono do registro é trocado pelo da conta logada ao enviar.
+- **A falha de sincronização era invisível.** O selo só mostrava "pendentes"
+  e o botão Sincronizar não respondia. Agora o selo fica vermelho
+  ("Parada"), o botão sempre diz o resultado, e o login avisa quando o
+  servidor não reconhece a conta, explicando o que a coordenação precisa
+  fazer.
 - **O prontuário apagava dado ao ser salvo de novo.** A tela carregava só parte
   da aba de saúde: pressão, glicemia, datas e as abas de gestante, criança,
   mulher e social abriam em branco, e salvar gravava o branco por cima (a
@@ -55,6 +67,12 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
   conseguia chamá-lo direto e gastar o limite de outra pessoa.
 - Trilha de auditoria ao incluir, responder e remover medicamento, sem o nome
   do remédio nem a dúvida.
+- **Relatório em Excel com segurança dentro do arquivo:** faixa de
+  confidencialidade (LGPD, art. 11) no topo das duas abas e nas propriedades
+  do arquivo, abas protegidas contra edição (filtrar e ordenar continuam
+  liberados) com senha sorteada que não fica guardada, e o código de quem
+  gerou no resumo. Conferido abrindo o arquivo no Excel. Senha para abrir
+  exige criptografia que a biblioteca usada não oferece.
 
 ### Testes
 

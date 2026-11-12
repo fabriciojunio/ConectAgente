@@ -377,6 +377,18 @@ mostrava o valor do morador anterior, que podia ser gravado no prontuário
 errado. Agora as cinco abas partem do padrão inteiro e recebem o que está
 gravado (`preencherFormulario`), com teste de guarda.
 
+### A sincronização não funcionava para cadastro feito no aplicativo (1.2.5)
+
+Achado no aparelho. A sessão do servidor era aberta com o e-mail que o
+agente digitou no cadastro do celular, e a conta criada na aprovação do
+painel usa `<cpf>@conectagente.local`: o Supabase respondia "Invalid login
+credentials" mesmo com a senha certa. E mesmo com sessão, o registro subia
+com o id do agente sorteado no aparelho, diferente do `auth.uid()` exigido
+pelas policies. O aplicativo passou a usar o e-mail da conta e a trocar o
+dono do registro pelo da conta logada no envio (`trocarDonoParaOServidor`),
+só quando o dono é o agente daquele aparelho. A falha, que antes ficava num
+`console.warn`, agora aparece no selo e no login.
+
 ### Segundo fator, limite compartilhado e captura de tela (1.2.5)
 
 O painel passou a exigir o código de um app autenticador: o middleware lê o

@@ -35,7 +35,7 @@ O código declara isso em `ConectAgente-mobile/src/utils/lgpd.ts`, na constante
 | Controle de acesso por papel | policies do banco, espelhadas nos guardas de tela | `contratoPapeis.test.ts` |
 | Trilha imutável | `audit_log` append-only, `REVOKE UPDATE, DELETE`, leitura só para gerente e admin | `rodar-testes-rls.sh` |
 | Exclusão lógica | `deleted_at` em `residencias`, `moradores` e `visitas` | schema |
-| Minimização na exportação | relatório não leva `senha_hash` nem `assinatura_base64` | `relatorioService` |
+| Minimização na exportação | relatório não leva `senha_hash` nem `assinatura_base64`; o Excel sai com aviso de confidencialidade, abas protegidas contra edição e o código (não o nome) de quem gerou | `relatorioService`, `exportService.montarPlanilha` e testes da planilha |
 | Transparência | aviso na entrada e no cadastro, texto da base legal na tela "Mais" | telas |
 
 ---
