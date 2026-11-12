@@ -344,3 +344,14 @@ describe('authService - fila depois do login', () => {
     expect(reabrir).not.toHaveBeenCalled();
   });
 });
+
+describe('authService - administrador do aparelho', () => {
+  it('não tenta abrir sessão no servidor nem avisa conta não reconhecida', async () => {
+    mockedAgenteRepo.autenticar.mockResolvedValue({ ...agenteBase, is_admin: true });
+
+    const sessao = await authService.login('11144477735', 'SenhaDoAdmin1');
+
+    expect(mockSignIn).not.toHaveBeenCalled();
+    expect(sessao.aviso).toBeUndefined();
+  });
+});
