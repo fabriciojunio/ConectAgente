@@ -20,6 +20,15 @@ export interface AgentesBarChartProps {
   loading: boolean;
 }
 
+/**
+ * Nome no eixo cabe numa linha: sem o complemento entre parênteses e com
+ * reticências depois de 18 letras. O nome inteiro aparece ao passar o mouse.
+ */
+export function nomeCurto(nome: string): string {
+  const semComplemento = nome.replace(/\s*\(.*?\)\s*/g, ' ').trim();
+  return semComplemento.length > 18 ? `${semComplemento.slice(0, 17)}…` : semComplemento;
+}
+
 export default function AgentesBarChart({ data, loading }: AgentesBarChartProps) {
   const top10 = [...data]
     .sort((a, b) => b.total - a.total)
@@ -43,7 +52,7 @@ export default function AgentesBarChart({ data, loading }: AgentesBarChartProps)
               <BarChart
                 data={top10}
                 layout="vertical"
-                margin={{ top: 5, right: 20, left: 80, bottom: 5 }}
+                margin={{ top: 5, right: 20, left: 8, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--borda)" />
                 <XAxis type="number" tick={{ fontSize: 12, fill: 'var(--texto-claro)' }} />
@@ -51,7 +60,9 @@ export default function AgentesBarChart({ data, loading }: AgentesBarChartProps)
                   type="category"
                   dataKey="nome"
                   tick={{ fontSize: 12, fill: 'var(--texto-claro)' }}
-                  width={75}
+                  width={130}
+                  interval={0}
+                  tickFormatter={nomeCurto}
                 />
                 <Tooltip
                   contentStyle={{

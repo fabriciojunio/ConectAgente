@@ -315,7 +315,7 @@ export default function MoradoresPage() {
                   <p className="font-medium">{formatCPF(selectedMorador.cpf)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-[var(--texto-claro)]">Cartao SUS</p>
+                  <p className="text-xs text-[var(--texto-claro)]">Cartão SUS</p>
                   <p className="font-medium">{selectedMorador.cartao_sus || '-'}</p>
                 </div>
                 <div>
@@ -343,9 +343,9 @@ export default function MoradoresPage() {
                 </div>
               </div>
 
-              {/* Endereco */}
+              {/* Endereço */}
               <div>
-                <p className="text-xs text-[var(--texto-claro)]">Endereco</p>
+                <p className="text-xs text-[var(--texto-claro)]">Endereço</p>
                 <p className="font-medium">
                   {selectedMorador.residencia
                     ? `${selectedMorador.residencia.logradouro}, ${selectedMorador.residencia.numero} - ${selectedMorador.residencia.bairro}`
@@ -355,7 +355,7 @@ export default function MoradoresPage() {
 
               {/* Agente */}
               <div>
-                <p className="text-xs text-[var(--texto-claro)]">Agente Responsavel</p>
+                <p className="text-xs text-[var(--texto-claro)]">Agente responsável</p>
                 <p className="font-medium">{selectedMorador.agente?.nome ?? '-'}</p>
               </div>
 

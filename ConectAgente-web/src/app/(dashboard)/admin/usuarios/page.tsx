@@ -175,10 +175,10 @@ export default function UsuariosPage() {
                 <tr className="border-b bg-[var(--superficie-alt)]">
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Nome</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden md:table-cell">CPF</th>
-                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden lg:table-cell">Email</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden lg:table-cell">E-mail</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden lg:table-cell">Unidade</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Perfil</th>
-                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Status</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Situação</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Ações</th>
                 </tr>
               </thead>

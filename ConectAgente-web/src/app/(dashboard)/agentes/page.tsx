@@ -156,7 +156,7 @@ export default function AgentesPage() {
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Visitas Mês</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden md:table-cell">Realizadas</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)] hidden lg:table-cell">Taxa</th>
-                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Status</th>
+                  <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]">Situação</th>
                   <th className="text-left px-4 py-3 font-medium text-[var(--texto-claro)]"></th>
                 </tr>
               </thead>

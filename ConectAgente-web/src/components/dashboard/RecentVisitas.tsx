@@ -75,10 +75,10 @@ export default function RecentVisitas({ visitas, loading }: RecentVisitasProps) 
               <TableRow>
                 <TableHead>Data</TableHead>
                 <TableHead>Agente</TableHead>
-                <TableHead>Endereco</TableHead>
+                <TableHead>Endereço</TableHead>
                 <TableHead>Bairro</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Acoes</TableHead>
+                <TableHead>Situação</TableHead>
+                <TableHead><span className="sr-only">Ações</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
