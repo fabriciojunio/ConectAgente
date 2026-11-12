@@ -46,7 +46,13 @@ export default function SegundoFatorPage() {
       await supabase.auth.mfa.unenroll({ factorId: fator.id });
     }
 
-    const novo = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'ConectAgente' });
+    // `issuer` é o nome que o app autenticador mostra na lista. Sem ele o
+    // Supabase usa o endereço do site, e a conta aparecia como "localhost".
+    const novo = await supabase.auth.mfa.enroll({
+      factorType: 'totp',
+      friendlyName: 'ConectAgente',
+      issuer: 'ConectAgente',
+    });
     if (novo.error || !novo.data) {
       setEtapa({ tipo: 'falha', mensagem: 'Não foi possível iniciar o cadastro do autenticador. Tente de novo em instantes.' });
       return;

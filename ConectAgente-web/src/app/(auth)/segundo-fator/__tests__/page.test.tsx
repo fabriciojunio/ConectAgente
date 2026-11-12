@@ -43,7 +43,8 @@ describe('tela do segundo fator', () => {
     render(<SegundoFatorPage />);
     expect(await screen.findByAltText('QR code para cadastrar o autenticador')).toBeInTheDocument();
     expect(screen.getByText('SEGREDO123')).toBeInTheDocument();
-    expect(mockMfa.enroll).toHaveBeenCalledWith({ factorType: 'totp', friendlyName: 'ConectAgente' });
+    // O nome que aparece no app autenticador: era "localhost".
+    expect(mockMfa.enroll).toHaveBeenCalledWith({ factorType: 'totp', friendlyName: 'ConectAgente', issuer: 'ConectAgente' });
   });
 
   it('cadastro que ficou pela metade é desfeito antes de começar outro', async () => {
