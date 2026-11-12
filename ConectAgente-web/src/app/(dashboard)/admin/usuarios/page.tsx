@@ -37,7 +37,7 @@ interface Usuario {
   nome: string;
   cpf: string;
   email?: string;
-  unidade_saude?: string;
+  unidade_saude?: string | null;
   role: UserRole;
   ativo: boolean;
 }

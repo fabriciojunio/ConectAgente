@@ -125,7 +125,9 @@ saida=$( { "$PSQL" $H -d conectagente_colunas -t -A -v ON_ERROR_STOP=1 \
           "$PSQL" $H -d conectagente_colunas -t -A -v ON_ERROR_STOP=1 \
             -f "$AQUI/11-unidades.sql" 2>&1
           "$PSQL" $H -d conectagente_colunas -t -A -v ON_ERROR_STOP=1 \
-            -f "$AQUI/12-papel-protegido.sql" 2>&1; } | tr -d '\r')
+            -f "$AQUI/12-papel-protegido.sql" 2>&1
+          "$PSQL" $H -d conectagente_colunas -t -A -v ON_ERROR_STOP=1 \
+            -f "$AQUI/13-visita-propria.sql" 2>&1; } | tr -d '\r')
 
 if echo "$saida" | grep -qiE "^ERRO|^ERROR|psql:.*ERROR"; then
   echo "  FALHA  o arquivo de casos nao rodou:"

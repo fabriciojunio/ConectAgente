@@ -74,7 +74,8 @@ export interface Agente {
   email: string;
   telefone?: string;
   area_atuacao: string;
-  unidade_saude: string;
+  /** Nula enquanto a conta não tem unidade (o banco nunca guarda texto vazio). */
+  unidade_saude: string | null;
   microarea?: string;
   ativo: boolean;
   role: UserRole;
@@ -256,7 +257,8 @@ export interface AuthUser {
   nome: string;
   email: string;
   role: UserRole;
-  unidade_saude: string;
+  /** Nula enquanto a conta não tem unidade. */
+  unidade_saude: string | null;
   area_atuacao: string;
 }
 

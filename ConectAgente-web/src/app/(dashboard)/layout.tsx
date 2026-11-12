@@ -87,7 +87,7 @@ export default function DashboardLayout({
         // era 'supervisor', papel que o banco nem aceita.
         userRole={user?.role ?? 'agente'}
         userName={user?.nome ?? ''}
-        userUnidade={user?.unidade_saude}
+        userUnidade={user?.unidade_saude ?? undefined}
         onLogout={sair}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -97,7 +97,7 @@ export default function DashboardLayout({
         <Header
           userName={user?.nome}
           userRole={user?.role}
-          userUnidade={user?.unidade_saude}
+          userUnidade={user?.unidade_saude ?? undefined}
           userArea={user?.area_atuacao}
           avisos={avisos}
           onMenuClick={() => setSidebarOpen(true)}

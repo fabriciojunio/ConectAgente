@@ -25,7 +25,7 @@ import {
 interface AgenteDetail {
   id: string;
   nome: string;
-  unidade_saude?: string;
+  unidade_saude?: string | null;
   area_atuacao?: string;
   microarea?: string;
   ativo?: boolean;
