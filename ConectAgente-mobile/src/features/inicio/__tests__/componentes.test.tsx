@@ -3,6 +3,7 @@ import { fireEvent, render } from '@testing-library/react-native';
 import { PALETAS } from '../../../contexts/ThemeContext';
 import { criarEstilosDoInicio } from '../estilos';
 import { CabecalhoDoInicio, LinhaDoResumo, ResidenciaRecente } from '../componentes';
+import { dataPorExtenso } from '../regrasDoInicio';
 import type { Residencia } from '../../../types';
 
 // O indicador de sincronização depende dos contextos de rede e de fila; aqui só interessa o cabeçalho.
@@ -73,5 +74,23 @@ describe('ResidenciaRecente', () => {
     expect(getByText('Centro • Bauru/SP')).toBeTruthy();
     fireEvent.press(getByText('Centro • Bauru/SP'));
     expect(onPress).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('data do cabeçalho', () => {
+  it('sai inteira, sem limite de linha que a corte', () => {
+    const { getByText } = render(
+      <CabecalhoDoInicio
+        styles={styles}
+        nome="Ana"
+        unidade={null}
+        fotoUri={null}
+        meta={{ temMeta: false, percentual: 0, texto: '' }}
+        onFoto={jest.fn()}
+        onSair={jest.fn()}
+      />
+    );
+    const data = getByText(dataPorExtenso(new Date()));
+    expect(data.props.numberOfLines).toBeUndefined();
   });
 });

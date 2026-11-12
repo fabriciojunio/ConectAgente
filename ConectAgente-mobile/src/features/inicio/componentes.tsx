@@ -28,8 +28,7 @@ export function CabecalhoDoInicio({ styles, nome, unidade, fotoUri, meta, onFoto
       <View style={styles.headerTop}>
         <View style={styles.headerLeft}>
           <Text style={styles.saudacao}>{saudacao(agora.getHours())},</Text>
-          <Text style={styles.nomeAgente}>{nome.split(' ')[0]}</Text>
-          <Text style={styles.dateText} numberOfLines={1}>{dataPorExtenso(agora)}</Text>
+          <Text style={styles.nomeAgente} numberOfLines={1}>{nome.split(' ')[0]}</Text>
         </View>
 
         <View style={styles.headerActions}>
@@ -51,6 +50,10 @@ export function CabecalhoDoInicio({ styles, nome, unidade, fotoUri, meta, onFoto
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Fora da linha do nome: ali o selo de pendências e o avatar dividiam a
+          largura com a data, e ela saía cortada ("Quarta-feira, 11 de nove..."). */}
+      <Text style={styles.dateText}>{dataPorExtenso(agora)}</Text>
 
       {unidade ? (
         <View style={styles.unidadeChip}>

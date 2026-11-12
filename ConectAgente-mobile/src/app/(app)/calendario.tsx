@@ -28,7 +28,7 @@ LocaleConfig.locales['pt-BR'] = {
 LocaleConfig.defaultLocale = 'pt-BR';
 
 export default function Calendario() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => criarStyles(colors), [colors]);
   const { datasComAgendamento, agendamentosPorData } = useVisitas();
   const [selectedDate, setSelectedDate] = useState(apenasData(new Date()));
@@ -63,7 +63,7 @@ export default function Calendario() {
     }
 
     setMarkedDates(marked);
-  }, [selectedDate]);
+  }, [selectedDate, colors, datasComAgendamento]);
 
   const carregarAgendamentosDodia = useCallback(async (data: string) => {
     const agend = await agendamentosPorData(data);
@@ -72,8 +72,11 @@ export default function Calendario() {
 
   useEffect(() => {
     carregarDatas();
+  }, [carregarDatas]);
+
+  useEffect(() => {
     carregarAgendamentosDodia(selectedDate);
-  }, [selectedDate]);
+  }, [carregarAgendamentosDodia, selectedDate]);
 
   function onDayPress(day: { dateString: string }) {
     setSelectedDate(day.dateString);
@@ -89,7 +92,11 @@ export default function Calendario() {
         }}
       />
 
+      {/* O calendário monta a folha de estilo uma vez e ignora tema novo; a
+          chave força montar de novo quando o tema muda. Sem ela, o calendário
+          ficava branco no tema escuro. */}
       <Calendar
+        key={isDark ? 'escuro' : 'claro'}
         current={selectedDate}
         onDayPress={onDayPress}
         markedDates={markedDates}
@@ -101,6 +108,7 @@ export default function Calendario() {
           todayTextColor: colors.primary,
           dayTextColor: colors.text,
           textDisabledColor: colors.placeholder,
+          textSectionTitleColor: colors.textLight,
           monthTextColor: colors.primary,
           arrowColor: colors.primary,
           dotColor: colors.warning,
