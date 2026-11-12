@@ -266,4 +266,26 @@ describe('contrato de sincronizacao entre aparelho e servidor', () => {
       }
     }
   });
+
+  it.each([
+    ['SAUDE', 'prontuario_saude'],
+    ['GESTANTE', 'prontuario_gestante'],
+    ['PUERICULTURA', 'prontuario_puericultura'],
+    ['MULHER', 'prontuario_mulher'],
+    ['SOCIAL', 'prontuario_social'],
+  ])('todo campo que a aba %s do prontuário envia tem coluna no servidor', (aba, tabela) => {
+    // O que a tela manda é o objeto do formulário, e não o SQL do repositório:
+    // "hgt_ultima_aferição" passava pelo contrato antigo e era recusado no
+    // servidor, onde a coluna é sem acento. Achado no banco de produção.
+    const tela = readFileSync(join(RAIZ_MOBILE, 'src', 'app', '(app)', 'prontuario', '[moradorId].tsx'), 'utf8');
+    const corpo = tela.match(new RegExp(String.raw`const PADRAO_${aba} = \{([\s\S]*?)\n\};`))?.[1] ?? '';
+    const campos = [...corpo.matchAll(/([\wçãé]+):/g)].map((m) => m[1]);
+    expect(campos.length).toBeGreaterThan(5);
+
+    const doServidor = new Set(colunasServidor(tabela));
+    const semDestino = campos
+      .map((c) => RENOMEAR_PARA_SERVIDOR[c] ?? c)
+      .filter((c) => !doServidor.has(c));
+    expect(semDestino).toEqual([]);
+  });
 });

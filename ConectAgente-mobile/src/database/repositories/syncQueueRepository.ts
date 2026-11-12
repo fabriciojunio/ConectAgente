@@ -35,6 +35,12 @@ export const CAMPOS_SO_LOCAIS = ['status_sync'] as const;
  */
 export const RENOMEAR_PARA_SERVIDOR: Record<string, string> = {
   meta_total: 'meta',
+  // O formulário e o tipo da ficha de saúde usam "aferição" com acento; a
+  // coluna do servidor é sem acento. O servidor recusava a ficha inteira por
+  // coluna inexistente, e nenhuma ficha de saúde chegou. Achado conferindo o
+  // banco de produção depois do teste no aparelho.
+  'hgt_ultima_aferição': 'hgt_ultima_afericao',
+  'pa_ultima_aferição': 'pa_ultima_afericao',
 };
 
 /**

@@ -2,6 +2,9 @@
  * Testes para syncService (com Supabase)
  */
 jest.mock('../../database/repositories/syncQueueRepository', () => ({
+  // A preparação do payload é pura e roda de verdade: o envio a aplica de novo.
+  prepararPayloadParaServidor: jest.requireActual('../../database/repositories/syncQueueRepository')
+    .prepararPayloadParaServidor,
   syncQueueRepository: {
     listarPendentes: jest.fn(),
     marcarSucesso: jest.fn(),
@@ -316,5 +319,62 @@ describe('dono do registro na sincronização', () => {
     const p = { id: 'x' };
     expect(trocarDonoParaOServidor(p, dono)).toBe(p);
     expect(trocarDonoParaOServidor(null, dono)).toBeNull();
+  });
+});
+
+describe('syncService.sincronizar - tabelas só de inclusão', () => {
+  // Trilha e consentimento não dão UPDATE no servidor; o upsert era recusado
+  // e nada deles chegou. Conferido no banco de produção.
+  it.each(['audit_log', 'consentimentos'])('%s sobe com INSERT simples, nunca upsert', async (tabela) => {
+    mockedQueue.listarPendentes.mockResolvedValue([
+      { ...itemSyncBase, id: `sync-${tabela}`, tabela, registro_id: 'r-1', payload: JSON.stringify({ acao: 'LOGIN' }) },
+    ]);
+
+    await syncService.sincronizar();
+
+    expect(mockSupabaseUpsert).not.toHaveBeenCalled();
+    expect(mockSupabaseInsert).toHaveBeenCalledWith({ acao: 'LOGIN', id: 'r-1' });
+    expect(mockSupabaseUpdateComEq).not.toHaveBeenCalled();
+    expect(mockedQueue.marcarSucesso).toHaveBeenCalledWith(`sync-${tabela}`);
+  });
+
+  it('reenvio de algo que já chegou conta como enviado, sem tentar alterar', async () => {
+    mockedQueue.listarPendentes.mockResolvedValue([
+      { ...itemSyncBase, id: 'sync-a', tabela: 'audit_log', registro_id: 'r-1', payload: '{}' },
+    ]);
+    mockSupabaseInsert.mockResolvedValueOnce({ error: { code: '23505', message: 'duplicate key' } });
+
+    await syncService.sincronizar();
+
+    expect(mockSupabaseUpdateComEq).not.toHaveBeenCalled();
+    expect(mockedQueue.marcarSucesso).toHaveBeenCalledWith('sync-a');
+  });
+
+  it('outra recusa marca erro', async () => {
+    mockedQueue.listarPendentes.mockResolvedValue([
+      { ...itemSyncBase, id: 'sync-a', tabela: 'audit_log', registro_id: 'r-1', payload: '{}' },
+    ]);
+    mockSupabaseInsert.mockResolvedValueOnce({ error: { code: '42501', message: 'permission denied' } });
+
+    await syncService.sincronizar();
+
+    expect(mockedQueue.marcarErro).toHaveBeenCalledWith('sync-a', 'permission denied');
+  });
+});
+
+describe('syncService.sincronizar - nome de coluna corrigido na saída', () => {
+  it('ficha de saúde que entrou na fila com "aferição" acentuado sobe com o nome da coluna', async () => {
+    mockedQueue.listarPendentes.mockResolvedValue([
+      {
+        ...itemSyncBase, id: 'sync-s', tabela: 'prontuario_saude', operacao: 'update', registro_id: 'pront-1',
+        payload: JSON.stringify({ 'pa_ultima_aferição': '11/11/2026', pa_valor: '140/90', 'hgt_ultima_aferição': '11/11/2026' }),
+      },
+    ]);
+
+    await syncService.sincronizar();
+
+    const enviado = mockSupabaseInsert.mock.calls[0][0];
+    expect(enviado).toMatchObject({ pa_ultima_afericao: '11/11/2026', hgt_ultima_afericao: '11/11/2026', pa_valor: '140/90' });
+    expect(Object.keys(enviado).join(' ')).not.toMatch(/ç|ã/);
   });
 });

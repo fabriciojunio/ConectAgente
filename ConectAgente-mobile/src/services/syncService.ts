@@ -34,7 +34,7 @@
  * casos de uma vez e não depende do que cada repositório lembrou de incluir
  * no payload.
  */
-import { syncQueueRepository } from '../database/repositories/syncQueueRepository';
+import { prepararPayloadParaServidor, syncQueueRepository } from '../database/repositories/syncQueueRepository';
 import { residenciaRepository } from '../database/repositories/residenciaRepository';
 import { moradorRepository } from '../database/repositories/moradorRepository';
 import { visitaRepository } from '../database/repositories/visitaRepository';
@@ -116,6 +116,14 @@ const FICHAS_DE_PRONTUARIO = new Set<SupabaseTable>([
  */
 const GRAVADAS_SEM_UPSERT = new Set<SupabaseTable>(['moradores', 'medicamentos', ...FICHAS_DE_PRONTUARIO]);
 
+/**
+ * Tabelas que só aceitam inclusão: a trilha de auditoria (imutável) e a prova
+ * de consentimento. O upsert pede permissão de UPDATE, que elas não dão, e o
+ * servidor recusava tudo: nenhuma linha da trilha nem nenhum consentimento
+ * vindo do aparelho chegou. Conferido no banco de produção.
+ */
+const SO_INCLUSAO = new Set<SupabaseTable>(['audit_log', 'consentimentos']);
+
 /** Código do Postgres para chave primária repetida. */
 const CHAVE_REPETIDA = '23505';
 
@@ -148,7 +156,11 @@ export const syncService = {
 
     for (const item of batch) {
       try {
-        const payload = trocarDonoParaOServidor(JSON.parse(item.payload), dono) as Record<string, unknown>;
+        // Prepara de novo na saída: item que entrou na fila antes de uma
+        // correção de nome de coluna precisa subir com o nome certo.
+        const payload = prepararPayloadParaServidor(
+          trocarDonoParaOServidor(JSON.parse(item.payload), dono)
+        ) as Record<string, unknown>;
         await syncParaSupabase(
           item.tabela as SupabaseTable,
           item.operacao,
@@ -206,6 +218,12 @@ async function syncParaSupabase(
       // o registro no servidor tenha o mesmo id do local e para que a
       // retentativa atualize em vez de duplicar.
       const comChave = { ...payload, [chave]: registroId };
+      if (SO_INCLUSAO.has(tabela)) {
+        const { error } = await supabase.from(tabela).insert(comChave);
+        // Já está lá: é o reenvio de algo que chegou e cuja resposta se perdeu.
+        if (error && error.code !== CHAVE_REPETIDA) throw new Error(error.message);
+        break;
+      }
       if (GRAVADAS_SEM_UPSERT.has(tabela)) {
         await inserirOuAtualizar(tabela, chave, registroId, comChave);
         break;
