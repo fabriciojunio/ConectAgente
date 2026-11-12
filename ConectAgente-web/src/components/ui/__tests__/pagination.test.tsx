@@ -5,26 +5,26 @@ import { Pagination } from '../pagination';
 describe('Pagination', () => {
   it('renders page numbers correctly', () => {
     render(<Pagination currentPage={1} totalPages={5} onPageChange={jest.fn()} />);
-    expect(screen.getByLabelText('Pagina 1')).toBeInTheDocument();
-    expect(screen.getByLabelText('Pagina 5')).toBeInTheDocument();
+    expect(screen.getByLabelText('Página 1')).toBeInTheDocument();
+    expect(screen.getByLabelText('Página 5')).toBeInTheDocument();
   });
 
   it('calls onPageChange when clicking a page number', () => {
     const handleChange = jest.fn();
     render(<Pagination currentPage={1} totalPages={5} onPageChange={handleChange} />);
-    fireEvent.click(screen.getByLabelText('Pagina 3'));
+    fireEvent.click(screen.getByLabelText('Página 3'));
     expect(handleChange).toHaveBeenCalledWith(3);
   });
 
   it('disables previous button on first page', () => {
     render(<Pagination currentPage={1} totalPages={5} onPageChange={jest.fn()} />);
-    const prevButton = screen.getByLabelText('Pagina anterior');
+    const prevButton = screen.getByLabelText('Página anterior');
     expect(prevButton).toBeDisabled();
   });
 
   it('disables next button on last page', () => {
     render(<Pagination currentPage={5} totalPages={5} onPageChange={jest.fn()} />);
-    const nextButton = screen.getByLabelText('Proxima pagina');
+    const nextButton = screen.getByLabelText('Próxima página');
     expect(nextButton).toBeDisabled();
   });
 
@@ -36,20 +36,20 @@ describe('Pagination', () => {
 
   it('shows correct "Pagina X de Y" text', () => {
     render(<Pagination currentPage={3} totalPages={7} onPageChange={jest.fn()} />);
-    expect(screen.getByText('Pagina 3 de 7')).toBeInTheDocument();
+    expect(screen.getByText('Página 3 de 7')).toBeInTheDocument();
   });
 
   it('calls onPageChange with previous page when clicking previous', () => {
     const handleChange = jest.fn();
     render(<Pagination currentPage={3} totalPages={5} onPageChange={handleChange} />);
-    fireEvent.click(screen.getByLabelText('Pagina anterior'));
+    fireEvent.click(screen.getByLabelText('Página anterior'));
     expect(handleChange).toHaveBeenCalledWith(2);
   });
 
   it('calls onPageChange with next page when clicking next', () => {
     const handleChange = jest.fn();
     render(<Pagination currentPage={3} totalPages={5} onPageChange={handleChange} />);
-    fireEvent.click(screen.getByLabelText('Proxima pagina'));
+    fireEvent.click(screen.getByLabelText('Próxima página'));
     expect(handleChange).toHaveBeenCalledWith(4);
   });
 
@@ -60,7 +60,7 @@ describe('Pagination', () => {
 
   it('marks current page with aria-current', () => {
     render(<Pagination currentPage={2} totalPages={5} onPageChange={jest.fn()} />);
-    const currentButton = screen.getByLabelText('Pagina 2');
+    const currentButton = screen.getByLabelText('Página 2');
     expect(currentButton).toHaveAttribute('aria-current', 'page');
   });
 });

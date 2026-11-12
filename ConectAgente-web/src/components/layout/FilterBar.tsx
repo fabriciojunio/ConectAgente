@@ -1,7 +1,10 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { useFilters } from '@/hooks/useFilters';
+import { useAuth } from '@/hooks/useAuth';
+import { listarUnidades, type UnidadeSaude } from '@/services/unidadeService';
 
 type FilterVariant =
   | 'dashboard'
@@ -39,7 +42,25 @@ const STATUS_OPTIONS = [
 
 export function FilterBar({ variant = 'dashboard', className }: FilterBarProps) {
   const { filters, setFilter, resetFilters } = useFilters();
-  const fields = VARIANT_FIELDS[variant];
+  const { user } = useAuth();
+  const [unidades, setUnidades] = useState<UnidadeSaude[]>([]);
+  const gestao = user?.role === 'gerente' || user?.role === 'admin';
+  // Coordenação e agente só enxergam a própria unidade (RLS): um seletor de
+  // unidade para eles prometeria um dado que o banco não entrega.
+  const fields = VARIANT_FIELDS[variant].filter((f) => f !== 'unidade_saude' || gestao);
+
+  useEffect(() => {
+    if (!gestao) return;
+    let ativo = true;
+    listarUnidades()
+      .then((l) => { if (ativo) setUnidades(l); })
+      .catch(() => { if (ativo) setUnidades([]); });
+    return () => { ativo = false; };
+  }, [gestao]);
+
+  // Sem campo para mostrar (coordenação numa tela que só filtra unidade), a
+  // barra some em vez de exibir "Filtros" sem nada.
+  if (fields.length === 0) return null;
 
   const hasActiveFilters = Object.values(filters).some(
     (v) => v !== undefined && v !== '',
@@ -56,50 +77,57 @@ export function FilterBar({ variant = 'dashboard', className }: FilterBarProps) 
 
       {fields.includes('periodo_inicio') && (
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium text-[var(--texto-claro)]">De</label>
+          <label htmlFor="filtro-de" className="text-[11px] font-medium text-[var(--texto-claro)]">De</label>
           <input
+            id="filtro-de"
             type="date"
             value={filters.periodo_inicio ?? ''}
             onChange={(e) => setFilter('periodo_inicio', e.target.value || undefined)}
-            className="h-8 px-2 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/20 focus:border-[var(--primaria)]"
+            className="h-8 px-2 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] focus:outline-none focus:border-[var(--primaria)]"
           />
         </div>
       )}
 
       {fields.includes('periodo_fim') && (
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium text-[var(--texto-claro)]">Até</label>
+          <label htmlFor="filtro-ate" className="text-[11px] font-medium text-[var(--texto-claro)]">Até</label>
           <input
+            id="filtro-ate"
             type="date"
             value={filters.periodo_fim ?? ''}
             onChange={(e) => setFilter('periodo_fim', e.target.value || undefined)}
-            className="h-8 px-2 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/20 focus:border-[var(--primaria)]"
+            className="h-8 px-2 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] focus:outline-none focus:border-[var(--primaria)]"
           />
         </div>
       )}
 
       {fields.includes('unidade_saude') && (
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium text-[var(--texto-claro)]">Unidade</label>
-          <input
-            type="text"
-            placeholder="Todas"
+          <label htmlFor="filtro-unidade" className="text-[11px] font-medium text-[var(--texto-claro)]">Unidade</label>
+          <select
+            id="filtro-unidade"
             value={filters.unidade_saude ?? ''}
             onChange={(e) => setFilter('unidade_saude', e.target.value || undefined)}
-            className="h-8 px-2 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/20 focus:border-[var(--primaria)] w-40"
-          />
+            className="h-8 px-2 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] focus:outline-none focus:border-[var(--primaria)] bg-[var(--superficie)] min-w-[11rem]"
+          >
+            <option value="">Todas as unidades</option>
+            {unidades.map((u) => (
+              <option key={u.id} value={u.nome}>{u.nome}</option>
+            ))}
+          </select>
         </div>
       )}
 
       {fields.includes('status') && (
         <div className="flex flex-col gap-1">
-          <label className="text-[11px] font-medium text-[var(--texto-claro)]">Status</label>
+          <label htmlFor="filtro-status" className="text-[11px] font-medium text-[var(--texto-claro)]">Situação</label>
           <select
+            id="filtro-status"
             value={filters.status ?? ''}
             onChange={(e) => setFilter('status', (e.target.value as never) || undefined)}
-            className="h-8 px-2 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/20 focus:border-[var(--primaria)] bg-[var(--superficie)]"
+            className="h-8 px-2 text-sm border border-[var(--borda)] rounded-md text-[var(--texto-medio)] focus:outline-none focus:border-[var(--primaria)] bg-[var(--superficie)]"
           >
-            <option value="">Todos</option>
+            <option value="">Todas</option>
             {STATUS_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}

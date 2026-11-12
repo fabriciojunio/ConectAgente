@@ -2764,3 +2764,286 @@ CREATE POLICY "medicamentos_delete" ON public.medicamentos FOR DELETE TO authent
 DROP POLICY IF EXISTS "conta_ativa" ON public.medicamentos;
 CREATE POLICY "conta_ativa" ON public.medicamentos AS RESTRICTIVE FOR ALL TO authenticated
   USING (public.conta_ativa()) WITH CHECK (public.conta_ativa());
+
+
+-- ===========================================================================
+-- Unidades de saúde: cada coordenação cuida da sua área
+-- ===========================================================================
+--
+-- A unidade era um texto livre em `agentes.unidade_saude`, digitado em cada
+-- cadastro. O RLS já limita o coordenador à unidade dele pela igualdade desse
+-- texto, então "UBS Centro" e "UBS centro" viravam duas áreas, e o filtro do
+-- painel era um campo de digitar. Agora existe um catálogo, e o texto continua
+-- sendo a chave que as policies usam (nada nelas muda).
+--
+-- Regras:
+--   * Qualquer usuário logado lê o catálogo (é só o nome da unidade).
+--   * Ninguém grava direto: só pelas duas funções abaixo.
+--   * Coordenador SEM unidade escolhe uma existente ou cria a dele. Depois de
+--     escolhida, só gerente ou admin troca: se o coordenador trocasse sozinho,
+--     bastaria escolher outra unidade para ler os pacientes de lá.
+--   * Gerente e admin criam unidades e designam a unidade de qualquer agente.
+--   * Toda escolha e designação vai para a trilha de auditoria.
+--
+-- Idempotente.
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS unidades_saude (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nome       TEXT NOT NULL UNIQUE CHECK (length(btrim(nome)) BETWEEN 3 AND 120),
+  criada_por UUID REFERENCES public.agentes(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- O que já existe vira catálogo, sem perder nada.
+INSERT INTO public.unidades_saude (nome)
+SELECT DISTINCT btrim(unidade_saude) FROM public.agentes
+WHERE unidade_saude IS NOT NULL AND length(btrim(unidade_saude)) >= 3
+ON CONFLICT (nome) DO NOTHING;
+
+ALTER TABLE public.unidades_saude ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.unidades_saude FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON public.unidades_saude FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON public.unidades_saude TO authenticated;
+
+DROP POLICY IF EXISTS "unidades_select" ON public.unidades_saude;
+CREATE POLICY "unidades_select" ON public.unidades_saude FOR SELECT TO authenticated
+  USING (public.conta_ativa());
+
+-- ---------------------------------------------------------------------------
+-- Coordenador (ou gestor) escolhe ou cria a própria unidade
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.fn_escolher_minha_unidade(p_nome TEXT)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_nome  TEXT := btrim(coalesce(p_nome, ''));
+  v_papel TEXT;
+  v_atual TEXT;
+BEGIN
+  IF auth.uid() IS NULL OR NOT public.conta_ativa() THEN
+    RAISE EXCEPTION 'sem permissão' USING ERRCODE = '42501';
+  END IF;
+  SELECT role, nullif(btrim(unidade_saude), '') INTO v_papel, v_atual
+  FROM agentes WHERE id = auth.uid();
+  IF v_papel NOT IN ('coordenador', 'gerente', 'admin') THEN
+    RAISE EXCEPTION 'só a coordenação escolhe a unidade' USING ERRCODE = '42501';
+  END IF;
+  IF v_papel = 'coordenador' AND v_atual IS NOT NULL THEN
+    RAISE EXCEPTION 'a unidade já foi escolhida; a troca é feita pela gerência' USING ERRCODE = '42501';
+  END IF;
+  IF length(v_nome) < 3 OR length(v_nome) > 120 THEN
+    RAISE EXCEPTION 'nome de unidade inválido' USING ERRCODE = '22023';
+  END IF;
+
+  INSERT INTO unidades_saude (nome, criada_por) VALUES (v_nome, auth.uid())
+  ON CONFLICT (nome) DO NOTHING;
+  UPDATE agentes SET unidade_saude = v_nome, updated_at = now() WHERE id = auth.uid();
+  INSERT INTO audit_log (agente_id, acao, tabela, registro_id, dados_novos)
+  VALUES (auth.uid(), 'UPDATE', 'agentes', auth.uid(), jsonb_build_object('unidade_escolhida', v_nome));
+  RETURN v_nome;
+END;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- Gerente ou admin designa a unidade de um agente da equipe
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.fn_designar_unidade(p_agente_id UUID, p_nome TEXT)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_nome TEXT := btrim(coalesce(p_nome, ''));
+BEGIN
+  IF auth.uid() IS NULL OR NOT public.conta_ativa()
+     OR coalesce(public.agente_papel(), '') NOT IN ('gerente', 'admin') THEN
+    RAISE EXCEPTION 'só a gerência designa unidade' USING ERRCODE = '42501';
+  END IF;
+  IF length(v_nome) < 3 OR length(v_nome) > 120 THEN
+    RAISE EXCEPTION 'nome de unidade inválido' USING ERRCODE = '22023';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM agentes WHERE id = p_agente_id) THEN
+    RAISE EXCEPTION 'agente não encontrado' USING ERRCODE = 'P0002';
+  END IF;
+  -- Mesma regra do trigger de agentes: linha de admin, só admin mexe.
+  IF (SELECT role FROM agentes WHERE id = p_agente_id) = 'admin'
+     AND public.agente_papel() <> 'admin' THEN
+    RAISE EXCEPTION 'só a administração altera o cadastro de um administrador' USING ERRCODE = '42501';
+  END IF;
+
+  INSERT INTO unidades_saude (nome, criada_por) VALUES (v_nome, auth.uid())
+  ON CONFLICT (nome) DO NOTHING;
+  UPDATE agentes SET unidade_saude = v_nome, updated_at = now() WHERE id = p_agente_id;
+  INSERT INTO audit_log (agente_id, acao, tabela, registro_id, dados_novos)
+  VALUES (auth.uid(), 'UPDATE', 'agentes', p_agente_id, jsonb_build_object('unidade_designada', v_nome));
+  RETURN v_nome;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.fn_escolher_minha_unidade(TEXT) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.fn_designar_unidade(UUID, TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.fn_escolher_minha_unidade(TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.fn_designar_unidade(UUID, TEXT) TO authenticated;
+
+-- ===========================================================================
+-- Papel, unidade e situação da conta só mudam por quem tem autoridade
+-- ===========================================================================
+--
+-- Achado em 12/11/2026, confirmado em produção só por leitura do catálogo.
+--
+-- A policy `agentes_update` libera a própria linha (`id = auth.uid()`), para
+-- a pessoa poder corrigir telefone e e-mail. O GRANT de UPDATE, porém, inclui
+-- `role`, `unidade_saude` e `ativo`. RLS filtra linha, não coluna: juntos, os
+-- dois deixavam qualquer conta logada mandar, pela API pública,
+--
+--   PATCH /rest/v1/agentes?id=eq.<o próprio id>   {"role": "admin"}
+--
+-- e virar administrador (escalada vertical de privilégio, OWASP A01 e
+-- API5:2023). Do mesmo jeito, a coordenação trocava de unidade sem passar pela
+-- regra de `fn_escolher_minha_unidade` (e passava a ler os pacientes de
+-- outra), e uma conta desativada se reativava sozinha.
+--
+-- Por que trigger e não só tirar as colunas do GRANT: a tela de usuários do
+-- administrador muda papel e situação por UPDATE, e gerente designa unidade.
+-- A regra depende de QUEM pede e de QUAL linha, coisa que GRANT não expressa.
+--
+-- Regras, para chamadas que vêm da API (papel `authenticated` ou `anon`):
+--   role           só admin muda, e nunca o próprio
+--   ativo          só gerente ou admin muda, e nunca o próprio
+--   unidade_saude  só gerente ou admin muda direto; a coordenação usa
+--                  fn_escolher_minha_unidade (que roda como dona da tabela e
+--                  por isso não passa por aqui)
+--   linha de admin só outro admin altera
+-- Quem pede precisa estar com a conta ativa.
+--
+-- A service role e as funções SECURITY DEFINER rodam como dona da tabela e
+-- não entram nas regras: são caminhos do servidor, já controlados.
+--
+-- Idempotente.
+-- ===========================================================================
+
+CREATE OR REPLACE FUNCTION public.fn_proteger_campos_de_agente()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+-- SECURITY INVOKER de propósito: `current_user` precisa ser quem fez o
+-- UPDATE. Vindo da API ele é `authenticated`; vindo de uma função SECURITY
+-- DEFINER (fn_escolher_minha_unidade) ele é a dona da tabela, e a regra
+-- daquela função já foi aplicada lá dentro.
+SECURITY INVOKER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_papel TEXT;
+  v_eu    UUID := auth.uid();
+BEGIN
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.role IS NOT DISTINCT FROM OLD.role
+     AND NEW.ativo IS NOT DISTINCT FROM OLD.ativo
+     AND NEW.unidade_saude IS NOT DISTINCT FROM OLD.unidade_saude
+     AND OLD.role <> 'admin' THEN
+    RETURN NEW;
+  END IF;
+
+  IF v_eu IS NULL OR NOT public.conta_ativa() THEN
+    RAISE EXCEPTION 'sem permissão para alterar este cadastro' USING ERRCODE = '42501';
+  END IF;
+  v_papel := public.agente_papel();
+
+  IF OLD.role = 'admin' AND OLD.id <> v_eu AND v_papel <> 'admin' THEN
+    RAISE EXCEPTION 'só a administração altera o cadastro de um administrador' USING ERRCODE = '42501';
+  END IF;
+
+  IF NEW.role IS DISTINCT FROM OLD.role THEN
+    IF v_papel <> 'admin' THEN
+      RAISE EXCEPTION 'só a administração muda o papel de uma conta' USING ERRCODE = '42501';
+    END IF;
+    IF OLD.id = v_eu THEN
+      RAISE EXCEPTION 'ninguém muda o próprio papel' USING ERRCODE = '42501';
+    END IF;
+  END IF;
+
+  IF NEW.ativo IS DISTINCT FROM OLD.ativo THEN
+    IF v_papel NOT IN ('gerente', 'admin') THEN
+      RAISE EXCEPTION 'só a gerência ativa ou desativa contas' USING ERRCODE = '42501';
+    END IF;
+    IF OLD.id = v_eu THEN
+      RAISE EXCEPTION 'ninguém ativa ou desativa a própria conta' USING ERRCODE = '42501';
+    END IF;
+  END IF;
+
+  IF NEW.unidade_saude IS DISTINCT FROM OLD.unidade_saude
+     AND v_papel NOT IN ('gerente', 'admin') THEN
+    RAISE EXCEPTION 'a unidade é definida pela gerência' USING ERRCODE = '42501';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.fn_proteger_campos_de_agente() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS trg_agentes_proteger_campos ON public.agentes;
+CREATE TRIGGER trg_agentes_proteger_campos
+  BEFORE UPDATE ON public.agentes
+  FOR EACH ROW EXECUTE FUNCTION public.fn_proteger_campos_de_agente();
+
+-- Toda mudança de papel e de situação vai para a trilha, venha de onde vier.
+CREATE OR REPLACE FUNCTION public.fn_auditar_papel_de_agente()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF NEW.role IS DISTINCT FROM OLD.role OR NEW.ativo IS DISTINCT FROM OLD.ativo THEN
+    INSERT INTO audit_log (agente_id, acao, tabela, registro_id, dados_anteriores, dados_novos)
+    VALUES (
+      auth.uid(), 'UPDATE', 'agentes', NEW.id,
+      jsonb_build_object('role', OLD.role, 'ativo', OLD.ativo),
+      jsonb_build_object('role', NEW.role, 'ativo', NEW.ativo)
+    );
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.fn_auditar_papel_de_agente() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS trg_agentes_auditar_papel ON public.agentes;
+CREATE TRIGGER trg_agentes_auditar_papel
+  AFTER UPDATE ON public.agentes
+  FOR EACH ROW EXECUTE FUNCTION public.fn_auditar_papel_de_agente();
+
+-- ===========================================================================
+-- Unidade vazia não casa com nada
+-- ===========================================================================
+--
+-- As policies da coordenação comparam `unidade_saude = agente_unidade()`.
+-- Coordenação recém-criada tem a unidade vazia (''), e '' = '' é verdadeiro:
+-- ela via toda conta, e os pacientes de toda conta, que também estivessem sem
+-- unidade. Com NULL no lugar do vazio, a comparação dá nulo e a policy nega,
+-- que é o comportamento certo até a área ser escolhida.
+--
+-- Idempotente.
+-- ===========================================================================
+
+CREATE OR REPLACE FUNCTION public.agente_unidade()
+RETURNS TEXT
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT nullif(btrim(unidade_saude), '') FROM public.agentes WHERE id = auth.uid()
+$$;
+
+COMMENT ON FUNCTION public.agente_unidade() IS
+  'Unidade de saude do usuario autenticado; NULL quando ainda nao definida, para nenhuma policy casar com vazio.';

@@ -29,17 +29,17 @@ export default function StatusPieChart({ data, loading }: StatusPieChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Distribuicao por Status</CardTitle>
+        <CardTitle>Visitas por situação</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
           <Skeleton className="mx-auto h-64 w-64 rounded-full" />
         ) : data.length === 0 || total === 0 ? (
           <p className="py-12 text-center text-sm text-[var(--texto-claro)]">
-            Nenhum dado disponivel.
+            Nenhuma visita no período.
           </p>
         ) : (
-          <div className="h-72 w-full" role="img" aria-label="Grafico de distribuicao por status">
+          <div className="h-72 w-full" role="img" aria-label="Gráfico de visitas por situação">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie

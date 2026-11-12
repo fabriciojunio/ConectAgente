@@ -30,17 +30,17 @@ export default function CoberturaChart({ data, loading }: CoberturaChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Cobertura por Microarea</CardTitle>
+        <CardTitle>Cobertura por microárea</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
           <Skeleton className="h-72 w-full" />
         ) : data.length === 0 ? (
           <p className="py-12 text-center text-sm text-[var(--texto-claro)]">
-            Nenhum dado disponivel.
+            Nenhuma microárea com família cadastrada.
           </p>
         ) : (
-          <div className="h-72 w-full" role="img" aria-label="Grafico de cobertura por microarea">
+          <div className="h-72 w-full" role="img" aria-label="Gráfico de cobertura por microárea">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--borda)" />

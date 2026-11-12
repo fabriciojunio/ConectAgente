@@ -1,5 +1,6 @@
 'use client';
 
+import { StatCard } from '@/components/ui/stat-card';
 import { useState, useEffect, useCallback } from 'react';
 import { useFilters } from '@/hooks/useFilters';
 import { usePagination } from '@/hooks/usePagination';
@@ -71,14 +72,11 @@ export default function VisitasPage() {
     setError('');
     try {
       // Progressive: each updates independently
-      withTimeout(getEstatisticasVisitas(filters), { total: 0, realizadas: 0, agendadas: 0, canceladas: 0, nao_encontrado: 0, taxa_conclusao: 0 })
+      withTimeout(getEstatisticasVisitas(filters))
         .then(setEstatisticas)
         .catch((err) => setError(err instanceof Error ? err.message : 'Erro ao contar visitas'));
 
-      const visitasResult = await withTimeout(
-        getVisitas(filters, { page, per_page: perPage }),
-        { data: [], total: 0, page, per_page: perPage, total_pages: 0 }
-      );
+      const visitasResult = await withTimeout(getVisitas(filters, { page, per_page: perPage }));
       setVisitas(visitasResult.data);
       setTotalPages(visitasResult.total_pages);
     } catch (err) {
@@ -103,10 +101,10 @@ export default function VisitasPage() {
     : visitas;
 
   const statCards = [
-    { label: 'Total', value: estatisticas.total, icon: ClipboardList, color: 'text-[var(--texto-medio)]' },
-    { label: 'Realizadas', value: estatisticas.realizadas, icon: CheckCircle, color: 'text-green-600' },
-    { label: 'Pendentes', value: estatisticas.agendadas, icon: Clock, color: 'text-yellow-600' },
-    { label: 'Taxa de Conclusão', value: `${estatisticas.taxa_conclusao}%`, icon: TrendingUp, color: 'text-primary-600' },
+    { label: 'Total', value: estatisticas.total, icon: ClipboardList, color: 'neutral' as const },
+    { label: 'Realizadas', value: estatisticas.realizadas, icon: CheckCircle, color: 'success' as const },
+    { label: 'Pendentes', value: estatisticas.agendadas, icon: Clock, color: 'attention' as const },
+    { label: 'Taxa de Conclusão', value: `${estatisticas.taxa_conclusao}%`, icon: TrendingUp, color: 'primary' as const },
   ];
 
   return (
@@ -121,17 +119,7 @@ export default function VisitasPage() {
       {/* Stats Cards */}
       <div className="card-grid">
         {statCards.map((stat) => (
-          <div key={stat.label} className="bg-[var(--superficie)] rounded-xl border p-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg bg-[var(--superficie-alt)] ${stat.color}`}>
-                <stat.icon className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-sm text-[var(--texto-claro)]">{stat.label}</p>
-                <p className="text-xl font-bold text-[var(--texto)]">{stat.value}</p>
-              </div>
-            </div>
-          </div>
+          <StatCard key={stat.label} title={stat.label} value={stat.value} icon={stat.icon} color={stat.color} />
         ))}
       </div>
 

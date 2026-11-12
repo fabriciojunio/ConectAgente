@@ -55,8 +55,8 @@ export default function FamiliaDetailPage() {
       setError('');
       try {
         const [familiaData, visitasData] = await Promise.all([
-          withTimeout(getFamiliaById(id), null),
-          withTimeout(getHistoricoVisitas(id), []),
+          withTimeout(getFamiliaById(id)),
+          withTimeout(getHistoricoVisitas(id)),
         ]);
 
         if (!familiaData) {

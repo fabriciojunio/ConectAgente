@@ -48,7 +48,10 @@ comprometida e atacante na mesma rede Wi-Fi.
 | I5 | Captura de tela ou app em segundo plano mostra prontuário | [1] | `FLAG_SECURE` no aplicativo inteiro: print e gravação saem pretos, a miniatura dos recentes não mostra conteúdo | `app/_layout.tsx` (`usePreventScreenCapture`), teste de guarda `protecaoDeTela` | atende |
 | D1 | Força bruta no login do painel | [5] | limite por endereço e por CPF contado no Postgres (`registrar_tentativa`), igual para todas as instâncias; chave em SHA-256, sem CPF nem IP em claro; reserva em memória se o banco não responder | `lib/rateLimit.ts`, `migration_limite_de_tentativas.sql`, suíte de permissão | atende |
 | D2 | Fila de sincronização travada por falha de sessão | [1] | sincronização para sem sessão em vez de gastar as tentativas; 5 tentativas antes de erro visível | `services/syncService.ts` e testes | atende |
-| E1 | Agente se promove a gerente | [4] | papel em CHECK e policy; cadastro público só cria agente pendente | suíte `04-cadastro-aprovacao.sql` | atende |
+| E1 | Agente se promove a gerente ou admin | [4] | papel em CHECK; cadastro público só cria agente pendente; trigger `trg_agentes_proteger_campos`: só administração muda papel, nunca o próprio, e a mudança vai para a trilha. Até 12/11/2026 a própria linha aceitava `role` por PATCH (ver seguranca.md, "Qualquer conta virava administradora") | suítes `04-cadastro-aprovacao.sql` e `12-papel-protegido.sql`; prova em produção numa transação desfeita | atende desde a 1.3.0 |
+| E3 | Coordenação muda de unidade para ler pacientes de outra | [4][5] | troca de unidade só pela gerência; a coordenação escolhe uma vez, por função que grava na trilha; unidade vazia não casa com nada | suítes `11-unidades.sql` e `12-papel-protegido.sql` | atende |
+| E4 | Conta desativada se reativa | [4] | `ativo` só muda por gerência ou administração, nunca na própria conta | suíte `12-papel-protegido.sql` | atende |
+| I7 | Próxima pessoa no computador da UBS lê o cache do painel | [5] | cache no `sessionStorage`, apagado no login, no sair e na troca de conta | `lib/cache.ts`, `cache.test.ts`, `useAuth.test.ts` | atende |
 | I6 | Medicamento e dúvida de um morador gravados por outro agente | [4] | INSERT só para morador do próprio agente (`morador_do_agente`), UPDATE e DELETE só do dono; trilha sem o nome do remédio | suíte `10-medicamentos.sql`, teste de `medicamentoRepository` | atende |
 | E2 | Tela de biblioteca exposta a outros apps | [1] | atividades com `exported="false"` | `plugins/endurecer-manifesto.js`, MobSF | atende |
 
@@ -75,7 +78,9 @@ comprometida e atacante na mesma rede Wi-Fi.
    Dependem da secretaria de saúde.
 
 Fechados na 1.2.5: segundo fator no painel, `FLAG_SECURE` e limite de
-tentativas compartilhado.
+tentativas compartilhado. Fechados na 1.3.0: escalada de papel pela própria
+linha (E1), troca de unidade e reativação pela própria conta (E3, E4) e cache
+de dado de saúde no navegador (I7).
 
 Ver também [seguranca.md](seguranca.md), [masvs.md](masvs.md) e
 [auditoria-lgpd.md](auditoria-lgpd.md).

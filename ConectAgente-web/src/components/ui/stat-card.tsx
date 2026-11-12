@@ -1,9 +1,17 @@
-'use client';
-
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+
+export type TomIndicador =
+  | 'primary'
+  | 'success'
+  | 'warning'
+  | 'attention'
+  | 'danger'
+  | 'info'
+  | 'pink'
+  | 'neutral';
 
 export interface StatCardProps {
   title: string;
@@ -14,31 +22,26 @@ export interface StatCardProps {
     value: number;
     positive: boolean;
   };
-  color?: 'primary' | 'success' | 'warning' | 'danger' | 'info';
+  color?: TomIndicador;
+  /** Mostra o esqueleto no lugar do número enquanto o dado chega. */
+  loading?: boolean;
   className?: string;
 }
 
-const colorMap = {
-  primary: {
-    bg: 'bg-primary-50',
-    text: 'text-primary-500',
-  },
-  success: {
-    bg: 'bg-success-50',
-    text: 'text-success-500',
-  },
-  warning: {
-    bg: 'bg-warning-50',
-    text: 'text-warning-500',
-  },
-  danger: {
-    bg: 'bg-danger-50',
-    text: 'text-danger-500',
-  },
-  info: {
-    bg: 'bg-info-50',
-    text: 'text-info-500',
-  },
+/*
+ * Mesmo desenho do StatCard do aplicativo: filete de 3px no topo na cor do
+ * indicador, ícone e número na mesma cor, rótulo neutro. A cor diz o tipo de
+ * informação (alerta, sucesso...) sem pintar o cartão inteiro.
+ */
+const tons: Record<TomIndicador, { filete: string; destaque: string }> = {
+  primary: { filete: 'border-t-primary-500', destaque: 'text-primary-600' },
+  success: { filete: 'border-t-success-500', destaque: 'text-success-600' },
+  warning: { filete: 'border-t-warning-500', destaque: 'text-warning-600' },
+  attention: { filete: 'border-t-amber-500', destaque: 'text-amber-600' },
+  danger: { filete: 'border-t-danger-500', destaque: 'text-danger-600' },
+  info: { filete: 'border-t-info-500', destaque: 'text-info-600' },
+  pink: { filete: 'border-t-pink-500', destaque: 'text-pink-600' },
+  neutral: { filete: 'border-t-[var(--marcador)]', destaque: 'text-[var(--texto-medio)]' },
 };
 
 export function StatCard({
@@ -48,53 +51,49 @@ export function StatCard({
   icon: Icon,
   trend,
   color = 'primary',
+  loading = false,
   className,
 }: StatCardProps) {
-  const colors = colorMap[color];
+  const tom = tons[color];
+  const valor = typeof value === 'number' ? value.toLocaleString('pt-BR') : value;
 
   return (
     <div
       className={cn(
-        'rounded-lg border border-[var(--borda-clara)] bg-[var(--superficie)] p-6 shadow-card transition-shadow hover:shadow-card-hover',
+        'rounded-[var(--radius)] border border-[var(--borda-clara)] border-t-[3px] bg-[var(--superficie)] px-4 py-3.5 shadow-card',
+        tom.filete,
         className
       )}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <p className="text-sm font-medium text-[var(--texto-claro)]">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-[var(--texto)]">{value}</p>
-          {(subtitle || trend) && (
-            <div className="mt-2 flex items-center gap-2">
-              {trend && (
-                <span
-                  className={cn(
-                    'inline-flex items-center text-xs font-medium',
-                    trend.positive ? 'text-success-500' : 'text-danger-500'
-                  )}
-                >
-                  {trend.positive ? (
-                    <TrendingUp className="mr-0.5 h-3 w-3" aria-hidden="true" />
-                  ) : (
-                    <TrendingDown className="mr-0.5 h-3 w-3" aria-hidden="true" />
-                  )}
-                  {trend.value}%
-                </span>
-              )}
-              {subtitle && (
-                <span className="text-xs text-[var(--texto-claro)]">{subtitle}</span>
-              )}
-            </div>
-          )}
-        </div>
-        {Icon && (
-          <div
-            className={cn('flex h-12 w-12 items-center justify-center rounded-full', colors.bg)}
-            aria-hidden="true"
-          >
-            <Icon className={cn('h-6 w-6', colors.text)} />
-          </div>
-        )}
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[13px] font-medium text-[var(--texto-claro)] leading-tight">{title}</p>
+        {Icon && <Icon className={cn('h-[18px] w-[18px] flex-shrink-0', tom.destaque)} aria-hidden="true" />}
       </div>
+      {loading ? (
+        <div className="mt-2 h-8 w-16 animate-pulse rounded bg-[var(--superficie-alt)]" aria-label="Carregando" />
+      ) : (
+        <p className={cn('mt-1.5 text-[28px] font-bold leading-none tabular', tom.destaque)}>{valor}</p>
+      )}
+      {(subtitle || trend) && (
+        <div className="mt-2 flex items-center gap-2">
+          {trend && (
+            <span
+              className={cn(
+                'inline-flex items-center text-xs font-medium',
+                trend.positive ? 'text-success-700' : 'text-danger-700'
+              )}
+            >
+              {trend.positive ? (
+                <TrendingUp className="mr-0.5 h-3 w-3" aria-hidden="true" />
+              ) : (
+                <TrendingDown className="mr-0.5 h-3 w-3" aria-hidden="true" />
+              )}
+              {trend.value}%
+            </span>
+          )}
+          {subtitle && <span className="text-xs text-[var(--texto-claro)]">{subtitle}</span>}
+        </div>
+      )}
     </div>
   );
 }

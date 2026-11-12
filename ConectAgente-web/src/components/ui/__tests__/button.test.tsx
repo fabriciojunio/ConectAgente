@@ -7,7 +7,9 @@ describe('Button', () => {
     render(<Button>Click me</Button>);
     const button = screen.getByRole('button', { name: 'Click me' });
     expect(button).toBeInTheDocument();
-    expect(button.className).toContain('bg-primary-500');
+    expect(button.className).toContain('bg-[var(--primaria)]');
+    // No escuro a primária é clara: o texto do botão troca junto para manter contraste.
+    expect(button.className).toContain('text-[var(--sobre-primaria)]');
   });
 
   it('renders with secondary variant', () => {

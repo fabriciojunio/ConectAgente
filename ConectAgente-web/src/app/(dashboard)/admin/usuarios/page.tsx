@@ -7,7 +7,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { getUsuarios, atualizarRole, toggleAtivoUsuario } from '@/services/adminService';
 import { cacheGetStale } from '@/lib/cache';
-import { formatCPF, withTimeout } from '@/lib/utils';
+import { mascararCPF, withTimeout } from '@/lib/utils';
 import type { PaginatedResult, Agente } from '@/types';
 import type { UserRole } from '@/types';
 import {
@@ -70,7 +70,7 @@ export default function UsuariosPage() {
     if (usuarios.length === 0) setLoading(true);
     setError('');
     try {
-      const result = await withTimeout(getUsuarios({ page, per_page: perPage }), { data: [], total: 0, page, per_page: perPage, total_pages: 0 });
+      const result = await withTimeout(getUsuarios({ page, per_page: perPage }));
       setUsuarios(result.data);
       setTotalPages(result.total_pages);
     } catch (err) {
@@ -184,10 +184,13 @@ export default function UsuariosPage() {
               </thead>
               <tbody>
                 {filteredUsuarios.map((usuario) => {
+                  // A própria linha fica travada: o banco recusa mudar o
+                  // próprio papel ou desativar a própria conta.
+                  const propria = usuario.id === user?.id;
                   return (
                     <tr key={usuario.id} className="border-b last:border-0 hover:bg-[var(--superficie-alt)]">
                       <td className="px-4 py-3 font-medium">{usuario.nome}</td>
-                      <td className="px-4 py-3 hidden md:table-cell">{formatCPF(usuario.cpf)}</td>
+                      <td className="px-4 py-3 hidden md:table-cell tabular">{mascararCPF(usuario.cpf)}</td>
                       <td className="px-4 py-3 hidden lg:table-cell text-[var(--texto-claro)]">
                         {usuario.email || '-'}
                       </td>
@@ -195,6 +198,9 @@ export default function UsuariosPage() {
                       <td className="px-4 py-3">
                         <select
                           value={usuario.role}
+                          disabled={propria}
+                          aria-label={`Papel de ${usuario.nome}`}
+                          title={propria ? 'Ninguém muda o próprio papel' : undefined}
                           onChange={(e) => handleRoleChange(usuario, e.target.value as UserRole)}
                           className="text-xs rounded-lg border border-[var(--borda-clara)] px-2 py-1 focus:border-primary-500 outline-none bg-[var(--superficie)]"
                         >
@@ -221,6 +227,7 @@ export default function UsuariosPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleToggleAtivo(usuario)}
+                          disabled={propria}
                           className="text-xs"
                         >
                           {usuario.ativo ? 'Desativar' : 'Ativar'}

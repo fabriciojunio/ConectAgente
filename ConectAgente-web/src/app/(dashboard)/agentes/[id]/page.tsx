@@ -1,5 +1,6 @@
 'use client';
 
+import { StatCard } from '@/components/ui/stat-card';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -60,9 +61,9 @@ export default function AgenteDetailPage() {
       setError('');
       try {
         const [agenteData, visitasData, familiasData] = await Promise.all([
-          withTimeout(getAgenteById(id), null),
-          withTimeout(getVisitasByAgente(id), []),
-          withTimeout(getAgenteFamilias(id), []),
+          withTimeout(getAgenteById(id)),
+          withTimeout(getVisitasByAgente(id)),
+          withTimeout(getAgenteFamilias(id)),
         ]);
 
         if (!agenteData) {
@@ -145,10 +146,10 @@ export default function AgenteDetailPage() {
   }
 
   const performanceCards = [
-    { label: 'Visitas Hoje', value: performance?.visitas_hoje ?? 0, icon: Calendar, color: 'text-primary-600 bg-primary-50' },
-    { label: 'Visitas Semana', value: performance?.visitas_semana ?? 0, icon: TrendingUp, color: 'text-blue-600 bg-blue-50' },
-    { label: 'Visitas Mês', value: performance?.visitas_mes ?? 0, icon: CheckCircle, color: 'text-green-600 bg-green-50' },
-    { label: 'Taxa de Conclusão', value: `${performance?.taxa_conclusao ?? 0}%`, icon: TrendingUp, color: 'text-purple-600 bg-purple-50' },
+    { label: 'Visitas Hoje', value: performance?.visitas_hoje ?? 0, icon: Calendar, color: 'primary' as const },
+    { label: 'Visitas Semana', value: performance?.visitas_semana ?? 0, icon: TrendingUp, color: 'info' as const },
+    { label: 'Visitas Mês', value: performance?.visitas_mes ?? 0, icon: CheckCircle, color: 'success' as const },
+    { label: 'Taxa de Conclusão', value: `${performance?.taxa_conclusao ?? 0}%`, icon: TrendingUp, color: 'primary' as const },
   ];
 
   return (
@@ -198,17 +199,7 @@ export default function AgenteDetailPage() {
       {/* Performance Stats */}
       <div className="card-grid">
         {performanceCards.map((card) => (
-          <div key={card.label} className="bg-[var(--superficie)] rounded-xl border p-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${card.color}`}>
-                <card.icon className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-sm text-[var(--texto-claro)]">{card.label}</p>
-                <p className="text-xl font-bold text-[var(--texto)]">{card.value}</p>
-              </div>
-            </div>
-          </div>
+          <StatCard key={card.label} title={card.label} value={card.value} icon={card.icon} color={card.color} />
         ))}
       </div>
 

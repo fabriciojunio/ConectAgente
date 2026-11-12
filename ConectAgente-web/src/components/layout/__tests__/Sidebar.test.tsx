@@ -27,7 +27,7 @@ describe('Sidebar', () => {
 
   it('renders navigation items for admin', () => {
     render(<Sidebar {...defaultProps} userRole="admin" />);
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Visão geral')).toBeInTheDocument();
     expect(screen.getByText('Visitas')).toBeInTheDocument();
     expect(screen.getByText('Agentes')).toBeInTheDocument();
     expect(screen.getByText('Monitoramento')).toBeInTheDocument();
@@ -42,7 +42,7 @@ describe('Sidebar', () => {
 
   it('gerente ve administracao, mas nao as telas so de admin', () => {
     render(<Sidebar {...defaultProps} userRole="gerente" />);
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Visão geral')).toBeInTheDocument();
     expect(screen.getByText('Visitas')).toBeInTheDocument();
     expect(screen.getByText('Administração')).toBeInTheDocument();
     expect(screen.queryByText('Usuários')).not.toBeInTheDocument();
@@ -54,7 +54,7 @@ describe('Sidebar', () => {
     // propria unidade de saude. Esconder o menu de quem tem permissao no
     // banco era so confusao: antes nenhum papel real via item nenhum.
     render(<Sidebar {...defaultProps} userRole="coordenador" />);
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Visão geral')).toBeInTheDocument();
     expect(screen.getByText('Visitas')).toBeInTheDocument();
     expect(screen.getByText('Monitoramento')).toBeInTheDocument();
     expect(screen.queryByText('Administração')).not.toBeInTheDocument();
@@ -63,7 +63,7 @@ describe('Sidebar', () => {
 
   it('agente ve as telas de dado, e o RLS limita o que aparece nelas', () => {
     render(<Sidebar {...defaultProps} userRole="agente" />);
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Visão geral')).toBeInTheDocument();
     expect(screen.getByText('Visitas')).toBeInTheDocument();
     expect(screen.queryByText('Administração')).not.toBeInTheDocument();
     expect(screen.queryByText('Usuários')).not.toBeInTheDocument();

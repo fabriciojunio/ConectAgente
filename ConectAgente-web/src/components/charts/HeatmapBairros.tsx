@@ -25,7 +25,7 @@ export default function HeatmapBairros({ data, loading }: HeatmapBairrosProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Mapa de Calor por Bairro</CardTitle>
+        <CardTitle>Visitas por bairro</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -36,7 +36,7 @@ export default function HeatmapBairros({ data, loading }: HeatmapBairrosProps) {
           </div>
         ) : sorted.length === 0 ? (
           <p className="py-12 text-center text-sm text-[var(--texto-claro)]">
-            Nenhum dado disponivel.
+            Nenhuma visita por bairro no período.
           </p>
         ) : (
           <div

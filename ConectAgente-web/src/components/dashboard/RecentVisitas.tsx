@@ -26,7 +26,7 @@ const statusLabelMap: Record<StatusVisita, string> = {
   [StatusVisita.REALIZADA]: 'Realizada',
   [StatusVisita.AGENDADA]: 'Agendada',
   [StatusVisita.CANCELADA]: 'Cancelada',
-  [StatusVisita.NAO_ENCONTRADO]: 'Nao encontrado',
+  [StatusVisita.NAO_ENCONTRADO]: 'Não encontrado',
 };
 
 function getStatusBadgeVariant(
@@ -53,7 +53,7 @@ export default function RecentVisitas({ visitas, loading }: RecentVisitasProps) 
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Visitas Recentes</CardTitle>
+          <CardTitle>Últimas visitas</CardTitle>
           <Link
             href="/visitas"
             className="text-sm font-medium text-primary-500 hover:text-primary-700 hover:underline"

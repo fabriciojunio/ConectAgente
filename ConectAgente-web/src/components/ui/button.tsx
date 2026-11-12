@@ -5,12 +5,12 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primaria)] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
-        default: 'bg-primary-500 text-white hover:bg-primary-600 active:bg-primary-700',
-        secondary: 'bg-[var(--superficie-alt)] text-[var(--texto)] hover:bg-[var(--borda-clara)] active:bg-gray-300',
+        default: 'bg-[var(--primaria)] text-[var(--sobre-primaria)] hover:bg-[var(--primaria-escura)]',
+        secondary: 'bg-[var(--superficie-alt)] text-[var(--texto)] hover:bg-[var(--borda-clara)] active:bg-[var(--borda)]',
         outline: 'border border-[var(--borda)] bg-transparent text-[var(--texto-medio)] hover:bg-[var(--superficie-alt)] active:bg-[var(--superficie-alt)]',
         ghost: 'bg-transparent text-[var(--texto-medio)] hover:bg-[var(--superficie-alt)] active:bg-[var(--borda-clara)]',
         danger: 'bg-danger-500 text-white hover:bg-danger-700 active:bg-danger-700',

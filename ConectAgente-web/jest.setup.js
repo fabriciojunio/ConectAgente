@@ -6,6 +6,8 @@ jest.mock('@/lib/cache', () => ({
   cacheSet: jest.fn(),
   cacheGetStale: jest.fn(() => null),
   cacheInvalidate: jest.fn(),
+  cacheClear: jest.fn(),
+  cacheBindUser: jest.fn(),
   markHydrated: jest.fn(),
 }));
 

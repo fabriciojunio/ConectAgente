@@ -1,5 +1,31 @@
 import type { Config } from 'tailwindcss';
 
+type Familia = 'primaria' | 'erro' | 'sucesso' | 'alerta' | 'atencao' | 'info' | 'rosa';
+
+/**
+ * Liga uma escala do Tailwind (50 a 900) a uma família semântica de
+ * `globals.css`. Os tons claros viram fundo, os do meio viram borda e cor
+ * forte, os escuros viram texto. Assim `bg-red-50 text-red-700` continua
+ * legível no tema escuro, porque o valor de cada papel muda com o `.dark`.
+ */
+function familia(nome: Familia) {
+  const tom = (papel: 'fundo' | 'borda' | 'forte' | 'texto') =>
+    `rgb(var(--tom-${nome}-${papel}) / <alpha-value>)`;
+  return {
+    DEFAULT: tom('forte'),
+    50: tom('fundo'),
+    100: tom('fundo'),
+    200: tom('borda'),
+    300: tom('borda'),
+    400: tom('forte'),
+    500: tom('forte'),
+    600: tom('forte'),
+    700: tom('texto'),
+    800: tom('texto'),
+    900: tom('texto'),
+  };
+}
+
 const config: Config = {
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
@@ -10,42 +36,28 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: {
-          50:  '#f0fdfa',
-          100: '#ccfbf1',
-          200: '#99f6e4',
-          300: '#5eead4',
-          400: '#2dd4bf',
-          500: '#0d9488',
-          600: '#0f766e',
-          700: '#115e59',
-          800: '#134e4a',
-          900: '#042f2e',
-        },
-        success: { 50: '#E8F5E9', 500: '#4CAF50', 700: '#388E3C' },
-        warning: { 50: '#FFF3E0', 500: '#f59e0b', 700: '#d97706' },
-        danger:  { 50: '#FFEBEE', 500: '#ef4444', 700: '#b91c1c' },
-        info:    { 50: '#eff6ff', 500: '#3b82f6', 700: '#1d4ed8' },
-        gray: {
-          50: '#FAFAFA',
-          100: '#F5F5F5',
-          200: '#EEEEEE',
-          300: '#E0E0E0',
-          400: '#BDBDBD',
-          500: '#9E9E9E',
-          600: '#757575',
-          700: '#616161',
-          800: '#424242',
-          900: '#212121',
-        },
+        primary: familia('primaria'),
+        purple: familia('primaria'),
+        red: familia('erro'),
+        danger: familia('erro'),
+        green: familia('sucesso'),
+        emerald: familia('sucesso'),
+        success: familia('sucesso'),
+        orange: familia('alerta'),
+        warning: familia('alerta'),
+        yellow: familia('atencao'),
+        amber: familia('atencao'),
+        blue: familia('info'),
+        sky: familia('info'),
+        info: familia('info'),
+        pink: familia('rosa'),
       },
       fontFamily: {
-        sans: ['DM Sans', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        card: '0 1px 3px rgba(13, 148, 136, 0.08), 0 1px 2px rgba(13, 148, 136, 0.06)',
-        'card-hover': '0 4px 6px rgba(13, 148, 136, 0.12), 0 2px 4px rgba(13, 148, 136, 0.06)',
-        sidebar: '2px 0 12px rgba(13, 148, 136, 0.1)',
+        card: '0 1px 2px rgba(22, 18, 29, 0.06)',
+        'card-hover': '0 4px 12px rgba(22, 18, 29, 0.08)',
       },
     },
   },

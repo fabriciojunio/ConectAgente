@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'reac
 // useLayoutEffect on client (runs before paint), useEffect on server (avoids SSR warning)
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 import { createClient } from '@/lib/supabase/client';
+import { cacheBindUser, cacheClear } from '@/lib/cache';
 import type { Session } from '@supabase/supabase-js';
 import type { AuthUser, UserRole } from '@/types';
 
@@ -40,6 +41,22 @@ interface UseAuthReturn {
  * and provides role-checking helpers.
  */
 const SESSION_KEY = 'ca_user_profile';
+
+/**
+ * Evento que avisa que o perfil da conta mudou no banco (por exemplo, a
+ * coordenação escolheu a área). Cada tela que usa `useAuth` relê o perfil.
+ */
+export const PERFIL_MUDOU = 'conectagente:perfil-mudou';
+
+export function avisarPerfilMudou(): void {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(PERFIL_MUDOU));
+}
+
+/** Apaga do navegador tudo o que é da conta: perfil e cache de dados. */
+export function limparDadosLocais(): void {
+  cacheClear();
+  try { sessionStorage.removeItem(SESSION_KEY); } catch { /* indisponível */ }
+}
 
 function readCachedUser(): AuthUser | null {
   if (typeof window === 'undefined') return null;
@@ -108,6 +125,8 @@ export function useAuth(): UseAuthReturn {
           unidade_saude: data.unidade_saude,
           area_atuacao: data.area_atuacao,
         };
+        // Cache de outra conta neste navegador sai antes de alguma tela ler.
+        cacheBindUser(profile.id);
         try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(profile)); } catch { /* ignore */ }
         setUser(profile);
       } catch (err) {
@@ -156,22 +175,40 @@ export function useAuth(): UseAuthReturn {
     // Listen for auth state changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+    } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (!mounted) return;
       setSession(newSession);
 
       if (event === 'SIGNED_IN' && newSession?.user) {
-        await fetchProfile(newSession.user.id, newSession.user.email);
+        // Fora do aviso, de propósito. O Supabase segura uma trava enquanto
+        // este aviso roda, e consultar o banco aqui dentro (o perfil) espera
+        // a mesma trava: o cliente inteiro fica parado. No painel isso
+        // aparecia como tudo zerado e sem o nome do usuário no topo, logo
+        // depois do código do segundo fator. A documentação do Supabase
+        // manda não chamar o cliente dentro do aviso.
+        const { id, email } = newSession.user;
+        setTimeout(() => {
+          if (mounted) void fetchProfile(id, email);
+        }, 0);
       } else if (event === 'SIGNED_OUT') {
-        try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
+        limparDadosLocais();
         setUser(null);
       }
     });
+
+    const relePerfil = () => {
+      void supabase.auth.getSession().then(({ data }) => {
+        const u = data.session?.user;
+        if (mounted && u) void fetchProfile(u.id, u.email);
+      });
+    };
+    window.addEventListener(PERFIL_MUDOU, relePerfil);
 
     return () => {
       mounted = false;
       clearTimeout(timeout);
       subscription.unsubscribe();
+      window.removeEventListener(PERFIL_MUDOU, relePerfil);
     };
   }, [supabase, fetchProfile]);
 
@@ -199,6 +236,7 @@ export function useAuth(): UseAuthReturn {
   /** Sign out and clear state */
   const signOut = useCallback(async () => {
     // Clear state immediately so UI reacts at once
+    limparDadosLocais();
     setUser(null);
     setSession(null);
     // Fire signOut but don't wait more than 3s, redirect regardless

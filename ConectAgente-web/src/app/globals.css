@@ -3,72 +3,162 @@
 @tailwind utilities;
 
 /*
- * Paleta por variável, para o tema escuro existir.
+ * Identidade do painel
  *
- * Antes as cores estavam escritas direto no JSX, em 356 lugares, como
- * `bg-[#F4F6FA]`. Isso funciona enquanto há um tema só; com dois, significa
- * escrever cada cor duas vezes em cada lugar. Com variável, a troca acontece
- * em um bloco só, e o `.dark` no <html> decide qual vale.
+ * O painel é a área de gestão, então usa o roxo da área de administrador do
+ * aplicativo (`ADMIN_GRADIENT` em `(admin)/index.tsx`): #4A148C, #7B1FA2 e
+ * #AB47BC. Quem sai do celular e abre o painel reconhece o mesmo lugar.
  *
- * Os valores do tema escuro são os mesmos do aplicativo, que já tinha a
- * paleta pronta em `ThemeContext.tsx`. O painel e o app ficam com a mesma
- * identidade em vez de cada um inventar a sua.
+ * Duas camadas de variável:
+ *
+ *   1. Nomes em português com valor hexadecimal (`--primaria`, `--erro`...),
+ *      usados nas classes arbitrárias como `bg-[var(--superficie)]`.
+ *   2. Famílias semânticas em canais RGB (`--tom-erro-fundo: 255 235 238`).
+ *      O `tailwind.config.ts` aponta `red`, `green`, `yellow`... para elas,
+ *      então uma classe como `bg-red-50` segue o tema em vez de ficar um
+ *      bloco claro no modo escuro. Canal RGB, e não hexadecimal, para o
+ *      Tailwind conseguir aplicar opacidade (`bg-red-500/20`).
+ *
+ * Cada família tem quatro papéis:
+ *   fundo  faixa de fundo de aviso ou etiqueta
+ *   borda  contorno da mesma faixa
+ *   forte  ícone, barra, ponto, botão
+ *   texto  texto sobre o fundo da própria família, com contraste AA
+ *
+ * No escuro, fundo e borda são a cor forte misturada à superfície (15% e
+ * 30%), já calculadas: cor opaca, sem transparência empilhando.
  */
 :root {
-  --primaria:        #1565C0;
-  --primaria-escura: #0D47A1;
-  --primaria-clara:  #42A5F5;
+  --primaria:        #7B1FA2;
+  --primaria-escura: #4A148C;
+  --primaria-clara:  #AB47BC;
+  --sobre-primaria:  #FFFFFF;
+  --faixa:           #4A148C;
+  --sobre-faixa:     #FFFFFF;
 
-  --fundo:           #F4F6FA;
+  --fundo:           #F5F4F8;
   --superficie:      #FFFFFF;
-  --superficie-alt:  #EEF2FB;
+  --superficie-alt:  #F3EFF7;
 
-  --texto:           #0F1621;
-  --texto-medio:     #374151;
-  --texto-claro:     #6B7280;
-  --marcador:        #9CA3AF;
+  --texto:           #16121D;
+  --texto-medio:     #3B3546;
+  --texto-claro:     #625C6E;
+  --marcador:        #9A94A6;
 
-  --borda:           #D1D9E6;
-  --borda-clara:     #E5EAF2;
+  --borda:           #DAD4E3;
+  --borda-clara:     #EAE6F0;
 
   --erro:            #D32F2F;
   --erro-claro:      #FFEBEE;
   --sucesso:         #2E7D32;
   --sucesso-claro:   #E8F5E9;
-  --alerta:          #E65100;
+  --alerta:          #B9470B;
   --alerta-claro:    #FFF3E0;
   --info:            #0277BD;
   --info-claro:      #E1F5FE;
 
+  --tom-primaria-fundo: 243 229 245;
+  --tom-primaria-borda: 206 147 216;
+  --tom-primaria-forte: 123 31 162;
+  --tom-primaria-texto: 106 27 154;
+
+  --tom-erro-fundo: 255 235 238;
+  --tom-erro-borda: 255 205 210;
+  --tom-erro-forte: 211 47 47;
+  --tom-erro-texto: 183 28 28;
+
+  --tom-sucesso-fundo: 232 245 233;
+  --tom-sucesso-borda: 200 230 201;
+  --tom-sucesso-forte: 46 125 50;
+  --tom-sucesso-texto: 27 94 32;
+
+  --tom-alerta-fundo: 255 243 224;
+  --tom-alerta-borda: 255 224 178;
+  --tom-alerta-forte: 230 81 0;
+  --tom-alerta-texto: 185 71 11;
+
+  --tom-atencao-fundo: 255 248 225;
+  --tom-atencao-borda: 255 224 130;
+  --tom-atencao-forte: 178 135 4;
+  --tom-atencao-texto: 122 93 0;
+
+  --tom-info-fundo: 225 245 254;
+  --tom-info-borda: 179 229 252;
+  --tom-info-forte: 2 119 189;
+  --tom-info-texto: 1 87 155;
+
+  --tom-rosa-fundo: 252 228 236;
+  --tom-rosa-borda: 248 187 208;
+  --tom-rosa-forte: 173 20 87;
+  --tom-rosa-texto: 136 14 79;
+
   --radius:    10px;
-  --radius-lg: 16px;
+  --radius-lg: 14px;
 }
 
 .dark {
-  --primaria:        #4FC3F7;
-  --primaria-escura: #0288D1;
-  --primaria-clara:  #81D4FA;
+  --primaria:        #CE93D8;
+  --primaria-escura: #BA68C8;
+  --primaria-clara:  #E1BEE7;
+  --sobre-primaria:  #1A0B24;
+  --faixa:           #2A1240;
+  --sobre-faixa:     #FFFFFF;
 
   --fundo:           #0F1117;
   --superficie:      #1A1F2E;
-  --superficie-alt:  #222840;
+  --superficie-alt:  #232A3D;
 
   --texto:           #E8ECF4;
   --texto-medio:     #B8C2D8;
-  --texto-claro:     #8896B0;
+  --texto-claro:     #8E9AB3;
   --marcador:        #5A6880;
 
   --borda:           #2A3348;
   --borda-clara:     #232B3E;
 
   --erro:            #EF5350;
-  --erro-claro:      rgba(239, 83, 80, 0.15);
+  --erro-claro:      #3A2733;
   --sucesso:         #66BB6A;
-  --sucesso-claro:   rgba(102, 187, 106, 0.15);
+  --sucesso-claro:   #253637;
   --alerta:          #FFA726;
-  --alerta-claro:    rgba(255, 167, 38, 0.15);
+  --alerta-claro:    #3C332D;
   --info:            #29B6F6;
-  --info-claro:      rgba(41, 182, 246, 0.15);
+  --info-claro:      #1C364C;
+
+  --tom-primaria-fundo: 53 48 72;
+  --tom-primaria-borda: 80 66 97;
+  --tom-primaria-forte: 206 147 216;
+  --tom-primaria-texto: 225 190 231;
+
+  --tom-erro-fundo: 58 39 51;
+  --tom-erro-borda: 90 47 56;
+  --tom-erro-forte: 239 83 80;
+  --tom-erro-texto: 239 154 154;
+
+  --tom-sucesso-fundo: 37 54 55;
+  --tom-sucesso-borda: 49 78 64;
+  --tom-sucesso-forte: 102 187 106;
+  --tom-sucesso-texto: 165 214 167;
+
+  --tom-alerta-fundo: 60 51 45;
+  --tom-alerta-borda: 95 72 44;
+  --tom-alerta-forte: 255 167 38;
+  --tom-alerta-texto: 255 204 128;
+
+  --tom-atencao-fundo: 60 58 51;
+  --tom-atencao-borda: 95 86 56;
+  --tom-atencao-forte: 255 213 79;
+  --tom-atencao-texto: 255 224 130;
+
+  --tom-info-fundo: 28 54 76;
+  --tom-info-borda: 31 76 106;
+  --tom-info-forte: 41 182 246;
+  --tom-info-texto: 129 212 250;
+
+  --tom-rosa-fundo: 59 48 66;
+  --tom-rosa-borda: 91 65 85;
+  --tom-rosa-forte: 244 143 177;
+  --tom-rosa-texto: 248 187 208;
 }
 
 /* Evita o clarão branco antes do React assumir, em quem usa tema escuro. */
@@ -80,13 +170,17 @@ html { background-color: var(--fundo); }
     @apply bg-[var(--fundo)] text-[var(--texto)] font-sans antialiased;
     transition: background-color 150ms ease, color 150ms ease;
   }
+  /* Foco visível em tudo que recebe teclado, na cor da marca. */
+  :focus-visible { outline: 2px solid var(--primaria); outline-offset: 2px; }
+  /* Números de painel alinhados em coluna. */
+  .tabular { font-variant-numeric: tabular-nums; }
 }
 
 @layer components {
-  .page-container { @apply p-6 space-y-6 max-w-[1600px] mx-auto; }
+  .page-container { @apply p-4 sm:p-6 space-y-6 max-w-[1600px] mx-auto; }
   .page-title { @apply text-xl font-bold text-[var(--texto)]; }
   .page-subtitle { @apply text-sm text-[var(--texto-claro)]; }
-  .card-grid { @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4; }
+  .card-grid { @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4; }
   .section-title { @apply text-base font-bold text-[var(--texto)] mb-3; }
 }
 
@@ -98,4 +192,8 @@ html { background-color: var(--fundo); }
     background: var(--borda);
     border-radius: 3px;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; }
 }

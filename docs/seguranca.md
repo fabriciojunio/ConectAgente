@@ -398,6 +398,89 @@ porque são endpoints por si. O limite de tentativas passou para o Postgres
 (`registrar_tentativa`, só a chave de serviço executa), com a chave em
 SHA-256. O aplicativo liga `FLAG_SECURE` no layout raiz.
 
+### Qualquer conta virava administradora (1.3.0)
+
+**Crítico.** CVSS 3.1 8.8 (`AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H`), CWE-269,
+OWASP A01:2021 e API5:2023. Achado em 12/11/2026 revisando as policies para a
+escolha de área, e confirmado em produção só por leitura do catálogo
+(`has_column_privilege`), sem explorar.
+
+A policy `agentes_update` libera a própria linha (`id = auth.uid()`), para a
+pessoa corrigir telefone e e-mail. O GRANT de UPDATE, porém, incluía `role`,
+`unidade_saude` e `ativo`. RLS filtra linha, não coluna, então qualquer conta
+logada podia mandar pela API pública
+
+```
+PATCH /rest/v1/agentes?id=eq.<o próprio id>   {"role": "admin"}
+```
+
+e passar a ler e alterar o sistema inteiro. Pelo mesmo caminho a coordenação
+trocava de unidade (e lia os pacientes de outra) e uma conta desativada se
+reativava. O painel tinha um comentário dizendo "controlado por RLS": o RLS
+estava certo para a linha e não dizia nada sobre a coluna.
+
+A correção é o trigger `trg_agentes_proteger_campos`
+([migration_papel_protegido.sql](../ConectAgente-web/supabase/migration_papel_protegido.sql)):
+só administração muda papel, e nunca o próprio; só gerência e administração
+mudam situação e unidade, e nunca a própria conta; linha de administrador só
+outro administrador altera. Ele roda como quem fez o UPDATE (`SECURITY
+INVOKER`), então as funções do servidor que já aplicam regra própria passam
+direto. Um segundo trigger grava na trilha toda mudança de papel e de situação.
+
+Prova: [12-papel-protegido.sql](../ConectAgente-web/supabase/testes/12-papel-protegido.sql),
+dez casos, entre eles o ataque acima. Em produção, depois da migração, o mesmo
+PATCH foi tentado dentro de uma transação desfeita no fim: recusado com "só a
+administração muda o papel de uma conta", e salvar o próprio telefone continuou
+funcionando.
+
+**Lição:** RLS e GRANT de coluna são camadas diferentes, e cada coluna que o
+cliente pode escrever precisa de uma regra que diga quem.
+
+### Dado de saúde ficava no navegador depois do "Sair" (1.3.0)
+
+**Médio.** CVSS 3.1 6.2 (`AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N`), CWE-524
+(informação sensível em cache) e CWE-613. LGPD, art. 11 e art. 46.
+
+O painel guardava as listas de pacientes, famílias e visitas no `localStorage`
+por 24 horas, para abrir as telas na hora. O "Sair" apagava o cookie da sessão
+no servidor e deixava o cache no disco. Num computador compartilhado de UBS, a
+conta seguinte, ou qualquer pessoa com o navegador, abria as ferramentas de
+desenvolvedor e lia o dado da anterior.
+
+O cache foi para o `sessionStorage` (morre com a aba), é apagado no login, no
+"Sair" e no evento de saída do Supabase, e fica amarrado à conta: se entra
+outra, ele é descartado antes de qualquer tela ler. O que versões antigas
+deixaram no `localStorage` é removido na primeira carga. Prova:
+`src/lib/__tests__/cache.test.ts` e os casos novos de `useAuth.test.ts`.
+
+### Coordenação sem unidade via quem também não tinha (1.3.0)
+
+**Baixo.** CVSS 3.1 4.3 (`AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:N/A:N`), CWE-697
+(comparação incorreta).
+
+As policies da coordenação comparam `unidade_saude = agente_unidade()`. Conta
+nova de coordenação nasce com a unidade vazia, e vazio igual a vazio é
+verdadeiro: ela enxergava as contas, e os pacientes, de quem também estava sem
+unidade. `agente_unidade()` passou a devolver nulo quando a unidade está vazia;
+nulo não casa com nada e a policy nega até a área ser escolhida
+([migration_unidade_vazia.sql](../ConectAgente-web/supabase/migration_unidade_vazia.sql),
+caso `unid_vazia_nao_casa_com_vazia`).
+
+### Telas de administração abriam pela URL (1.3.0)
+
+**Informativo.** CWE-285. O menu mostrava "Usuários" e "Solicitações" só para
+administração, mas o portão do servidor liberava todo `/admin` para gerência.
+O dado continuava protegido pelo RLS; o que vazava era a tela. Menu e portão
+agora leem a mesma lista de papéis por rota (`src/lib/rotasPorPapel.ts`), com
+teste para cada combinação e para papel desconhecido.
+
+### Minimização na tela de usuários (1.3.0)
+
+A lista de usuários mostrava os onze dígitos do CPF de toda a equipe. Agora
+mostra `***.456.789-**`, o padrão do governo federal; a busca por CPF continua
+funcionando. A recusa do banco chega à tela como mensagem clara, sem texto
+técnico (OWASP ASVS V7.4.1).
+
 ## O que continua em aberto
 
 A lista completa, por ameaça e com a prova de cada controle, está em

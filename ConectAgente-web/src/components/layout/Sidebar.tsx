@@ -19,6 +19,7 @@ import {
   UserCog,
   Activity,
   Heart,
+  MapPinned,
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -41,6 +42,7 @@ const iconMap: Record<string, React.ElementType> = {
   Activity,
   FileBarChart,
   Heart,
+  MapPinned,
 };
 
 interface SidebarProps {
@@ -77,6 +79,7 @@ export default function Sidebar({
         <div
           className="fixed inset-0 bg-black/40 z-40 lg:hidden"
           onClick={onClose}
+          aria-hidden="true"
         />
       )}
 
@@ -94,6 +97,7 @@ export default function Sidebar({
             <button
               onClick={onClose}
               className="absolute top-3 right-3 text-[var(--texto-claro)] hover:text-[var(--texto)] lg:hidden p-1"
+              aria-label="Fechar menu"
             >
               <X size={18} />
             </button>
@@ -107,9 +111,9 @@ export default function Sidebar({
             className="object-contain rounded-lg flex-shrink-0"
           />
           <div>
-            <h1 className="text-sm font-extrabold text-[var(--primaria-escura)] leading-tight">
+            <p className="text-sm font-extrabold text-[var(--primaria-escura)] leading-tight">
               ConectAgente
-            </h1>
+            </p>
             {userUnidade && (
               <p className="text-[10px] text-[var(--texto-claro)] font-medium truncate max-w-[140px]">
                 {userUnidade}
@@ -119,7 +123,7 @@ export default function Sidebar({
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-2 px-2 scrollbar-thin">
+        <nav className="flex-1 overflow-y-auto py-2 px-2 scrollbar-thin" aria-label="Menu principal">
           <div className="space-y-0.5">
             {filteredItems.map((item) => {
               const Icon = iconMap[item.icon] || LayoutDashboard;
@@ -141,14 +145,14 @@ export default function Sidebar({
                   onClick={onClose}
                   onMouseEnter={() => handleMouseEnter(item.href)}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all',
+                    'relative flex items-center gap-3 px-3 py-2 rounded-md text-[13px] font-medium transition-colors',
                     isActive
-                      ? 'bg-[var(--primaria)] text-white'
-                      : 'text-[var(--texto-medio)] hover:bg-[var(--superficie-alt)] hover:text-[var(--primaria)]'
+                      ? 'bg-primary-50 text-primary-700 font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-[3px] before:rounded-full before:bg-[var(--primaria)]'
+                      : 'text-[var(--texto-medio)] hover:bg-[var(--superficie-alt)] hover:text-[var(--texto)]'
                   )}
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  <Icon size={18} className={isActive ? 'text-white' : 'text-[var(--texto-claro)]'} />
+                  <Icon size={18} className={isActive ? 'text-primary-600' : 'text-[var(--texto-claro)]'} aria-hidden="true" />
                   <span>{item.label}</span>
                 </Link>
               );

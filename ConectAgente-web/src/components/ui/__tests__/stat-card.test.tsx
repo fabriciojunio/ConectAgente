@@ -24,13 +24,13 @@ describe('StatCard', () => {
   it('shows positive trend with success color', () => {
     render(<StatCard title="Test" value={10} trend={{ value: 15, positive: true }} />);
     const trendEl = screen.getByText('15%');
-    expect(trendEl.className).toContain('text-success-500');
+    expect(trendEl.className).toContain('text-success-700');
   });
 
   it('shows negative trend with danger color', () => {
     render(<StatCard title="Test" value={10} trend={{ value: 5, positive: false }} />);
     const trendEl = screen.getByText('5%');
-    expect(trendEl.className).toContain('text-danger-500');
+    expect(trendEl.className).toContain('text-danger-700');
   });
 
   it('renders subtitle', () => {
@@ -38,28 +38,32 @@ describe('StatCard', () => {
     expect(screen.getByText('detalhes aqui')).toBeInTheDocument();
   });
 
-  it('applies correct color classes for success', () => {
-    const { container } = render(<StatCard title="Test" value={10} icon={Activity} color="success" />);
-    const iconBg = container.querySelector('.bg-success-50');
-    expect(iconBg).toBeInTheDocument();
-  });
-
-  it('applies correct color classes for warning', () => {
-    const { container } = render(<StatCard title="Test" value={10} icon={Activity} color="warning" />);
-    const iconBg = container.querySelector('.bg-warning-50');
-    expect(iconBg).toBeInTheDocument();
-  });
-
-  it('applies correct color classes for danger', () => {
-    const { container } = render(<StatCard title="Test" value={10} icon={Activity} color="danger" />);
-    const iconBg = container.querySelector('.bg-danger-50');
-    expect(iconBg).toBeInTheDocument();
+  it.each([
+    ['success', 'border-t-success-500'],
+    ['warning', 'border-t-warning-500'],
+    ['danger', 'border-t-danger-500'],
+    ['info', 'border-t-info-500'],
+  ] as const)('tom %s pinta o filete do topo, e não um fundo pastel', (color, filete) => {
+    const { container } = render(<StatCard title="Test" value={10} icon={Activity} color={color} />);
+    const card = container.firstChild as HTMLElement;
+    expect(card.className).toContain(filete);
+    expect(container.querySelector('.rounded-full')).toBeNull();
   });
 
   it('defaults to primary color', () => {
     const { container } = render(<StatCard title="Test" value={10} icon={Activity} />);
-    const iconBg = container.querySelector('.bg-primary-50');
-    expect(iconBg).toBeInTheDocument();
+    expect((container.firstChild as HTMLElement).className).toContain('border-t-primary-500');
+  });
+
+  it('formata número grande no padrão brasileiro', () => {
+    render(<StatCard title="Moradores" value={12345} />);
+    expect(screen.getByText('12.345')).toBeInTheDocument();
+  });
+
+  it('mostra o esqueleto, e não um zero, enquanto carrega', () => {
+    render(<StatCard title="Visitas" value={0} loading />);
+    expect(screen.queryByText('0')).toBeNull();
+    expect(screen.getByLabelText('Carregando')).toBeInTheDocument();
   });
 
   it('applies custom className', () => {

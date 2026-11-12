@@ -1,5 +1,6 @@
 'use client';
 
+import { StatCard } from '@/components/ui/stat-card';
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useFilters } from '@/hooks/useFilters';
@@ -66,10 +67,7 @@ export default function AgentesPage() {
     if (agentes.length === 0) setLoading(true);
     setError('');
     try {
-      const agentesResult = await withTimeout(
-        getAgentes(filters, { page, per_page: perPage }),
-        { data: [], total: 0, page, per_page: perPage, total_pages: 0 }
-      );
+      const agentesResult = await withTimeout(getAgentes(filters, { page, per_page: perPage }));
 
       setAgentes(agentesResult.data);
       setTotalPages(agentesResult.total_pages);
@@ -99,9 +97,9 @@ export default function AgentesPage() {
     : agentes;
 
   const statCards = [
-    { label: 'Total Agentes', value: stats.total, icon: Users, color: 'text-[var(--texto-medio)]' },
-    { label: 'Ativos', value: stats.ativos, icon: UserCheck, color: 'text-green-600' },
-    { label: 'Média Visitas/Dia', value: stats.media_visitas_dia.toFixed(1), icon: TrendingUp, color: 'text-primary-600' },
+    { label: 'Total Agentes', value: stats.total, icon: Users, color: 'neutral' as const },
+    { label: 'Ativos', value: stats.ativos, icon: UserCheck, color: 'success' as const },
+    { label: 'Média Visitas/Dia', value: stats.media_visitas_dia.toFixed(1), icon: TrendingUp, color: 'primary' as const },
   ];
 
   return (
@@ -116,17 +114,7 @@ export default function AgentesPage() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {statCards.map((stat) => (
-          <div key={stat.label} className="bg-[var(--superficie)] rounded-xl border p-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg bg-[var(--superficie-alt)] ${stat.color}`}>
-                <stat.icon className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-sm text-[var(--texto-claro)]">{stat.label}</p>
-                <p className="text-xl font-bold text-[var(--texto)]">{stat.value}</p>
-              </div>
-            </div>
-          </div>
+          <StatCard key={stat.label} title={stat.label} value={stat.value} icon={stat.icon} color={stat.color} />
         ))}
       </div>
 
