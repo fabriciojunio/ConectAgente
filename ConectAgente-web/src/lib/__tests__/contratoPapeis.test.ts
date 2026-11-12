@@ -32,6 +32,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { SIDEBAR_ITEMS, ROLES } from '../constants';
 import { userRoleSchema } from '../validation';
+import { papeisDaRota, papelPodeAbrir } from '../rotasPorPapel';
 
 const DIR_SQL = join(__dirname, '..', '..', '..', 'supabase');
 
@@ -97,40 +98,28 @@ describe('contrato de papeis entre o codigo e o banco', () => {
     expect(semNada).toEqual([]);
   });
 
-  it('o middleware libera a area administrativa para papel que existe', () => {
-    const marcador = "!['admin', ";
-    const inicio = middleware.indexOf(marcador);
-    expect(inicio).toBeGreaterThan(-1);
-
-    const fim = middleware.indexOf(']', inicio);
-    const lista = middleware
-      .slice(inicio + 2, fim)
-      .split(',')
-      .map((p) => p.trim().replace(/^'|'$/g, ''));
-
-    for (const papel of lista) {
-      expect({ papel, existeNoBanco: PAPEIS_DO_BANCO.includes(papel) }).toEqual({
-        papel,
-        existeNoBanco: true,
-      });
+  it('o portão do servidor só fala de papel que existe no banco', () => {
+    for (const item of SIDEBAR_ITEMS) {
+      for (const papel of papeisDaRota(item.href)) {
+        expect({ rota: item.href, papel, existeNoBanco: PAPEIS_DO_BANCO.includes(papel) }).toEqual({
+          rota: item.href,
+          papel,
+          existeNoBanco: true,
+        });
+      }
     }
+    expect(middleware).toContain('papelPodeAbrir(pathname');
   });
 
-  it('o middleware usa a mesma regra da policy de auditoria do banco', () => {
-    // Guarda de tela que não casa com a policy do banco produz o pior tipo de
-    // erro: a página abre e vem vazia, e quem usa conclui que não há dado em
-    // vez de que não tem permissão.
+  it('a área administrativa usa a mesma regra da policy de auditoria do banco', () => {
     const inicioPolicy = rls.indexOf('audit_log_select');
     expect(inicioPolicy).toBeGreaterThan(-1);
-
     const trecho = rls.slice(inicioPolicy, inicioPolicy + 400);
     expect(trecho).toContain("'gerente'");
     expect(trecho).toContain("'admin'");
 
-    const inicioMw = middleware.indexOf("!['admin', ");
-    const fimMw = middleware.indexOf(']', inicioMw);
-    const listaMw = middleware.slice(inicioMw + 2, fimMw);
-    expect(listaMw).toContain('gerente');
-    expect(listaMw).toContain('admin');
+    expect(papelPodeAbrir('/admin', 'gerente')).toBe(true);
+    expect(papelPodeAbrir('/admin', 'admin')).toBe(true);
+    expect(papelPodeAbrir('/admin', 'coordenador')).toBe(false);
   });
 });

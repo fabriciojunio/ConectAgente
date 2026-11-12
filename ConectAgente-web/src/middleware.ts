@@ -3,8 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { validarOrigem } from '@/lib/csrf';
 import { decidirSegundoFator, ROTA_DO_SEGUNDO_FATOR } from '@/lib/segundoFator';
 
-/** Rotas que exigem papel de gerente ou admin */
-const ADMIN_ROUTES = ['/admin', '/admin/usuarios'];
+import { papelPodeAbrir, rotaRestrita } from '@/lib/rotasPorPapel';
 
 /** Rotas abertas, que redirecionam para a raiz quando ja ha sessao. */
 const PUBLIC_ROUTES = ['/login', '/registro', '/demo'];
@@ -177,7 +176,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname === route);
-  const isAdminRoute = ADMIN_ROUTES.some((route) => pathname.startsWith(route));
+  const precisaDePapel = rotaRestrita(pathname);
 
   // Redirect unauthenticated users to login
   if (!user && !isPublicRoute) {
@@ -207,19 +206,20 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Role-based access control for admin routes
-  if (user && isAdminRoute) {
+  // Portão por papel. A lista de quem abre cada rota é a mesma do menu
+  // (`SIDEBAR_ITEMS`): /admin para gerente e admin, que é a regra da policy
+  // `audit_log_select`; usuários e solicitações só para admin; áreas e
+  // equipes para coordenação, gerência e admin. Antes /admin/usuarios e
+  // /admin/solicitacoes abriam para gerente digitando a URL, embora o menu
+  // não mostrasse. O dado continua protegido pelo RLS; o portão evita a tela.
+  if (user && precisaDePapel) {
     const { data: agente } = await supabase
       .from('agentes')
       .select('role')
       .eq('id', user.id)
       .maybeSingle();
 
-    // Mesma regra da policy de RLS `audit_log_select`, que libera para
-    // ('gerente', 'admin'). A lista anterior pedia 'supervisor', papel que o
-    // CHECK de agentes.role nao aceita: nenhum usuario real tinha esse papel,
-    // entao o portao redirecionava todo mundo, inclusive gerente.
-    if (!agente || !['admin', 'gerente'].includes(agente.role)) {
+    if (!papelPodeAbrir(pathname, agente?.role)) {
       return comCsp(NextResponse.redirect(new URL('/', request.url)));
     }
   }
