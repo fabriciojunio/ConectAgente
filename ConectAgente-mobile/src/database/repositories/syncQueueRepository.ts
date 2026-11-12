@@ -142,12 +142,35 @@ export const syncQueueRepository = {
     );
   },
 
+  /**
+   * Quanto ainda não chegou ao servidor, inclusive o que desistiu.
+   *
+   * Contava só `pendente`: o item que esgotava as tentativas virava `erro`,
+   * sumia da conta, e o selo de pendências desaparecia como se estivesse tudo
+   * enviado. Achado no aparelho.
+   */
   async contarPendentes(): Promise<number> {
     const db = await getDatabase();
     const row = await db.getFirstAsync<{ count: number }>(
-      `SELECT COUNT(*) as count FROM sync_queue WHERE status = 'pendente'`
+      `SELECT COUNT(*) as count FROM sync_queue WHERE status IN ('pendente', 'erro')`
     );
     return row?.count ?? 0;
+  },
+
+  /**
+   * Devolve à fila o que desistiu, com as tentativas zeradas.
+   *
+   * Chamado quando a sessão do servidor abre e quando o agente pede para
+   * tentar de novo. A causa mais comum de desistência era a falta de sessão
+   * ou de conta liberada, e resolvida a causa o item precisa voltar a subir.
+   * Devolve quantos voltaram.
+   */
+  async reabrirComErro(): Promise<number> {
+    const db = await getDatabase();
+    const r = await db.runAsync(
+      `UPDATE sync_queue SET status = 'pendente', tentativas = 0, erro = NULL WHERE status = 'erro'`
+    );
+    return r?.changes ?? 0;
   },
 
   async limparSincronizados(): Promise<void> {
