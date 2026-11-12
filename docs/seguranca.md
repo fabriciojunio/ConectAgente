@@ -474,6 +474,18 @@ O dado continuava protegido pelo RLS; o que vazava era a tela. Menu e portão
 agora leem a mesma lista de papéis por rota (`src/lib/rotasPorPapel.ts`), com
 teste para cada combinação e para papel desconhecido.
 
+### Pentest gray box de novembro de 2026 (1.3.0)
+
+O relatório completo, no formato de entrega de pentest (resumo executivo,
+escopo e autorização, metodologia, achados com CVSS, CWE, OWASP e MITRE
+ATT&CK, evidências e remediação), está em
+[pentest-2026-11.md](pentest-2026-11.md). Além das falhas acima, ele achou e
+fechou: visita, morador e agendamento gravados na família de outro agente
+(seis policies antigas `FOR ALL` passavam por cima das regras finas),
+coordenação sem unidade lendo ficha de paciente pelas comparações diretas de
+unidade, sessão de 400 dias sem `Secure`, mensagem técnica do banco na tela e
+exportação sem rastro.
+
 ### Minimização na tela de usuários (1.3.0)
 
 A lista de usuários mostrava os onze dígitos do CPF de toda a equipe. Agora

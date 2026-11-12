@@ -82,13 +82,15 @@ npm run build
 bash ConectAgente-web/supabase/testes/rodar-todos.sh
 ```
 
-Estado medido em 12/11/2026, versão 1.2.5:
+Estado medido em 12/11/2026, versão 1.3.0:
 
 | O que | Resultado |
 |---|---|
 | Testes do aplicativo | 989 em 61 suítes, incluindo contraste do tema, navegação, guardas de layout e contrato de sincronização; cobertura de 86,3% das instruções |
-| Testes do painel | 432 em 36 suítes, incluindo o segundo fator |
-| Verificações em banco de verdade | 149 em 6 suítes, todas aprovadas, incluindo a de instalação repetida |
+| Testes do painel | 519 em 43 suítes, incluindo segundo fator, política de sessão, cache apagado no sair e portão de rotas por papel |
+| Verificações em banco de verdade | 181 em 6 suítes, todas aprovadas, incluindo escalada de papel, família de outro agente e instalação repetida |
+| Pentest gray box | 11 achados, todos corrigidos e retestados em produção ([relatório](docs/pentest-2026-11.md)) |
+| Uso real em produção | 12 páginas do painel no tema claro e no escuro sem erro, 15 relatórios gerados e auditados, designação de unidade de ida e volta |
 | Erros de tipo | 0 nos dois projetos |
 | Avisos de ESLint | 0 |
 | Vulnerabilidade (OSV-Scanner) | 0 sem aceite; as de ferramenta de build têm motivo e prazo em `osv-scanner.toml` |
@@ -154,6 +156,11 @@ docs/
 ---
 
 ## Decisões que valem saber antes de mexer
+
+As decisões de arquitetura têm registro próprio em [docs/adr](docs/adr):
+monólito com o banco como fronteira (e por que não microsserviços), offline
+primeiro, segundo fator e sessão curta, unidade como escopo da coordenação,
+regra de quem grava em gatilho e identidade visual por tokens.
 
 **O aplicativo precisa de sessão no Supabase para sincronizar.** Ele autentica
 localmente, no SQLite, para funcionar sem rede. Mas o servidor decide o que
@@ -253,9 +260,6 @@ Honestidade sobre o estado, que vale mais que uma lista de recursos:
   mesma conta sem segundo fator, então o banco ainda aceita sessão só com
   senha, dentro do RLS de cada papel. Exigir `aal2` no banco depende de levar
   o segundo fator para o aplicativo.
-- **Duas migrações da 1.2.5 entram no banco à mão**
-  (`migration_limite_de_tentativas.sql` e `migration_medicamentos.sql`). Até
-  lá o painel conta tentativas em memória e os medicamentos ficam no aparelho.
 - **A classificação de risco do time já está aqui**, portada do commit do Luan
   em vez de fundida, porque a linha deles carrega junto 97 arquivos de
   relatório de cobertura, logs de erro e telas substituídas.
