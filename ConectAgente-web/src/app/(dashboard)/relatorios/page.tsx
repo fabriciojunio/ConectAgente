@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useFilters } from '@/hooks/useFilters';
+import { useAuth } from '@/hooks/useAuth';
 import { FilterBar } from '@/components/layout/FilterBar';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -43,6 +44,7 @@ const formatOptions: Array<{ format: ExportFormat; label: string; icon: typeof F
 
 export default function RelatoriosPage() {
   const { filters } = useFilters();
+  const { user } = useAuth();
   const [selectedType, setSelectedType] = useState<ReportType | null>(null);
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>('pdf');
   const [loading, setLoading] = useState(false);
@@ -56,7 +58,7 @@ export default function RelatoriosPage() {
     setLoading(true);
     setError('');
     try {
-      const result = await gerarRelatorio(selectedType, selectedFormat, filters);
+      const result = await gerarRelatorio(selectedType, selectedFormat, filters, user?.nome);
 
       if (result.preview) {
         setPreviewData(result.preview.data);
@@ -92,6 +94,7 @@ export default function RelatoriosPage() {
           {reportTypes.map((report) => (
             <button
               key={report.type}
+              aria-pressed={selectedType === report.type}
               onClick={() => {
                 setSelectedType(report.type);
                 setPreviewData(null);
@@ -124,6 +127,7 @@ export default function RelatoriosPage() {
               {formatOptions.map((option) => (
                 <button
                   key={option.format}
+                  aria-pressed={selectedFormat === option.format}
                   onClick={() => setSelectedFormat(option.format)}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
                     selectedFormat === option.format
