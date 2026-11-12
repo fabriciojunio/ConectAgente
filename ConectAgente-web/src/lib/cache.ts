@@ -1,44 +1,95 @@
 /**
- * Cache hibrido: memoria + localStorage
+ * Cache híbrido: memória + sessionStorage
  * Com suporte a "stale-while-revalidate":
  *
  * - cacheGet(key)       → dados frescos (< 10 min), usado pelos services
- * - cacheGetStale(key)  → dados antigos (< 24h), usado pelas paginas para exibir instantaneamente
- * - cacheSet(key, data) → salva em memoria + localStorage
+ * - cacheGetStale(key)  → dados antigos (< 24h), usado pelas páginas para exibir instantaneamente
+ * - cacheSet(key, data) → salva em memória + sessionStorage
+ * - cacheClear()        → apaga tudo; chamado no login e no "Sair"
+ * - cacheBindUser(id)   → apaga tudo se o cache for de outra conta
  *
- * Para evitar erro de hidratacao (SSR vs Client):
- * - cacheGetStale retorna null ate markHydrated() ser chamado
- * - O layout chama markHydrated() no useLayoutEffect e remonta as paginas
- * - Assim as paginas inicializam com dados do cache ANTES do browser pintar
+ * Por que sessionStorage, e não localStorage: o cache guarda lista de
+ * pacientes, famílias e visitas, que é dado de saúde (LGPD, art. 11). No
+ * localStorage ele ficava 24 horas no disco e sobrevivia ao "Sair": num
+ * computador compartilhado de UBS, a conta seguinte abria o navegador com o
+ * dado da anterior. O sessionStorage morre com a aba, e mesmo dentro dela o
+ * cache é apagado no login, no "Sair" e quando a conta muda.
+ *
+ * Para evitar erro de hidratação (SSR vs Client):
+ * - cacheGetStale retorna null até markHydrated() ser chamado
+ * - O layout chama markHydrated() no useLayoutEffect e remonta as páginas
+ * - Assim as páginas inicializam com dados do cache ANTES do browser pintar
  */
 
 const STORAGE_PREFIX = 'ca_cache_';
+const OWNER_KEY = 'ca_cache_dono';
 const FRESH_TTL = 600_000;      // 10 minutos
 const STALE_TTL = 86_400_000;   // 24 horas
 
 const store = new Map<string, { data: unknown; ts: number }>();
 
-// ── Restaurar cache do localStorage na inicializacao (client only) ──
+function armazenamento(): Storage | null {
+  if (typeof window === 'undefined') return null;
+  try { return window.sessionStorage; } catch { return null; }
+}
+
+function chavesDoCache(s: Storage): string[] {
+  return Object.keys(s).filter((k) => k.startsWith(STORAGE_PREFIX) && k !== OWNER_KEY);
+}
+
+// ── Restaurar cache na inicialização (client only) ──
 if (typeof window !== 'undefined') {
+  // Versões anteriores gravavam no localStorage: o que sobrou de lá sai agora.
   try {
-    const now = Date.now();
-    const keys = Object.keys(localStorage);
-    for (const key of keys) {
-      if (!key.startsWith(STORAGE_PREFIX)) continue;
-      try {
-        const raw = localStorage.getItem(key);
-        if (!raw) continue;
-        const parsed = JSON.parse(raw) as { data: unknown; ts: number };
-        if (now - parsed.ts <= STALE_TTL) {
-          store.set(key.slice(STORAGE_PREFIX.length), parsed);
-        } else {
-          localStorage.removeItem(key);
-        }
-      } catch {
-        localStorage.removeItem(key);
-      }
+    for (const k of Object.keys(window.localStorage)) {
+      if (k.startsWith(STORAGE_PREFIX)) window.localStorage.removeItem(k);
     }
-  } catch { /* localStorage indisponivel */ }
+  } catch { /* localStorage indisponível */ }
+
+  const s = armazenamento();
+  if (s) {
+    try {
+      const now = Date.now();
+      for (const key of chavesDoCache(s)) {
+        try {
+          const raw = s.getItem(key);
+          if (!raw) continue;
+          const parsed = JSON.parse(raw) as { data: unknown; ts: number };
+          if (now - parsed.ts <= STALE_TTL) {
+            store.set(key.slice(STORAGE_PREFIX.length), parsed);
+          } else {
+            s.removeItem(key);
+          }
+        } catch {
+          s.removeItem(key);
+        }
+      }
+    } catch { /* sessionStorage indisponível */ }
+  }
+}
+
+/** Apaga o cache inteiro, da memória e do navegador. */
+export function cacheClear(): void {
+  store.clear();
+  const s = armazenamento();
+  if (!s) return;
+  try {
+    for (const k of chavesDoCache(s)) s.removeItem(k);
+    s.removeItem(OWNER_KEY);
+  } catch { /* indisponível */ }
+}
+
+/**
+ * Amarra o cache à conta logada. Se o que está guardado é de outra conta,
+ * apaga antes de qualquer página ler.
+ */
+export function cacheBindUser(userId: string): void {
+  const s = armazenamento();
+  let dono: string | null = null;
+  try { dono = s?.getItem(OWNER_KEY) ?? null; } catch { /* indisponível */ }
+  if (dono === userId) return;
+  cacheClear();
+  try { s?.setItem(OWNER_KEY, userId); } catch { /* indisponível */ }
 }
 
 // ── Controle de hidratacao ──
@@ -79,31 +130,29 @@ export function cacheGetStale<T>(key: string): T | null {
 }
 
 /**
- * Salva dados no cache (memoria + localStorage).
+ * Salva dados no cache (memória + sessionStorage).
  */
 export function cacheSet<T>(key: string, data: T): void {
   const entry = { data, ts: Date.now() };
   store.set(key, entry);
 
-  if (typeof window !== 'undefined') {
+  const s = armazenamento();
+  if (!s) return;
+  try {
+    s.setItem(STORAGE_PREFIX + key, JSON.stringify(entry));
+  } catch {
+    // Cheio: tira as 10 entradas mais antigas e tenta de novo.
     try {
-      localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(entry));
-    } catch {
-      try {
-        const items = Object.keys(localStorage)
-          .filter((k) => k.startsWith(STORAGE_PREFIX))
-          .map((k) => {
-            try {
-              const raw = localStorage.getItem(k);
-              return { key: k, ts: raw ? (JSON.parse(raw) as { ts: number }).ts : 0 };
-            } catch { return { key: k, ts: 0 }; }
-          })
-          .sort((a, b) => a.ts - b.ts);
-        for (let i = 0; i < Math.min(10, items.length); i++) {
-          localStorage.removeItem(items[i].key);
-        }
-        localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(entry));
-      } catch { /* desistir */ }
-    }
+      const antigas = chavesDoCache(s)
+        .map((k) => {
+          try {
+            const raw = s.getItem(k);
+            return { key: k, ts: raw ? (JSON.parse(raw) as { ts: number }).ts : 0 };
+          } catch { return { key: k, ts: 0 }; }
+        })
+        .sort((a, b) => a.ts - b.ts);
+      for (const item of antigas.slice(0, 10)) s.removeItem(item.key);
+      s.setItem(STORAGE_PREFIX + key, JSON.stringify(entry));
+    } catch { /* desiste: fica só na memória */ }
   }
 }

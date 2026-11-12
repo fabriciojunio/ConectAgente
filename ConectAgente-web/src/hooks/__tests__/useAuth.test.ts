@@ -4,7 +4,7 @@ jest.mock('@/lib/supabase/client', () => ({
 
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { createClient } from '@/lib/supabase/client';
-import { useAuth } from '../useAuth';
+import { useAuth, avisarPerfilMudou } from '../useAuth';
 
 const mockCreateClient = createClient as jest.MockedFunction<typeof createClient>;
 
@@ -294,5 +294,58 @@ describe('useAuth - aviso de sessão sem travar o cliente', () => {
     expect(retorno).toBeUndefined();
     expect(mock.from).not.toHaveBeenCalled();
     await waitFor(() => expect(mock.from).toHaveBeenCalledWith('agentes'));
+  });
+});
+
+describe('useAuth - dado de saúde não fica no navegador', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const cache = require('@/lib/cache') as { cacheClear: jest.Mock; cacheBindUser: jest.Mock };
+  let sb: ReturnType<typeof buildMockSupabase>['mock'];
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    sb = buildMockSupabase().mock;
+    mockCreateClient.mockReturnValue(sb as unknown as ReturnType<typeof createClient>);
+    try { sessionStorage.clear(); } catch { /* ignore */ }
+  });
+
+  function comPerfil(id: string, nome: string) {
+    sb.auth.getSession.mockResolvedValue({ data: { session: { user: { id, email: `${id}@x.test` } } }, error: null });
+    sb.from.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: { id, nome, email: `${id}@x.test`, role: 'coordenador', unidade_saude: 'UBS A', area_atuacao: 'A' },
+        error: null,
+      }),
+    } as never);
+  }
+
+  it('amarra o cache à conta que entrou', async () => {
+    comPerfil('conta-a', 'Ana');
+    const { result } = renderHook(() => useAuth());
+    await waitFor(() => expect(result.current.user?.id).toBe('conta-a'));
+    expect(cache.cacheBindUser).toHaveBeenCalledWith('conta-a');
+  });
+
+  it('sair apaga o cache e o perfil guardado', async () => {
+    comPerfil('conta-a', 'Ana');
+    const { result } = renderHook(() => useAuth());
+    await waitFor(() => expect(result.current.user?.id).toBe('conta-a'));
+    expect(sessionStorage.getItem('ca_user_profile')).not.toBeNull();
+
+    await act(async () => { await result.current.signOut(); });
+    expect(cache.cacheClear).toHaveBeenCalled();
+    expect(sessionStorage.getItem('ca_user_profile')).toBeNull();
+  });
+
+  it('perfil alterado no banco é relido quando a tela avisa', async () => {
+    comPerfil('conta-a', 'Ana');
+    const { result } = renderHook(() => useAuth());
+    await waitFor(() => expect(result.current.user?.nome).toBe('Ana'));
+
+    comPerfil('conta-a', 'Ana Coordenadora');
+    act(() => { avisarPerfilMudou(); });
+    await waitFor(() => expect(result.current.user?.nome).toBe('Ana Coordenadora'));
   });
 });

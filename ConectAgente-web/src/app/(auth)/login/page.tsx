@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/client';
+import { limparDadosLocais } from '@/hooks/useAuth';
 import { checkLoginRateLimit } from '@/app/actions/login';
 import { Eye, EyeOff, Shield } from 'lucide-react';
 
@@ -33,6 +34,11 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Quem chega ao login não deve encontrar no navegador o dado de quem saiu.
+  useEffect(() => {
+    limparDadosLocais();
+  }, []);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -168,7 +174,7 @@ export default function LoginPage() {
                   value={cpf}
                   onChange={(e) => setCpf(formatCPF(e.target.value))}
                   placeholder="Digite seu CPF"
-                  className="w-full px-4 py-3 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all bg-[var(--superficie)]"
+                  className="w-full px-4 py-3 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:border-[var(--primaria)] transition-all bg-[var(--superficie)]"
                   inputMode="numeric"
                   autoComplete="off"
                 />
@@ -185,7 +191,7 @@ export default function LoginPage() {
                     value={senha}
                     onChange={(e) => setSenha(e.target.value)}
                     placeholder="Digite sua senha"
-                    className="w-full px-4 py-3 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all pr-12 bg-[var(--superficie)]"
+                    className="w-full px-4 py-3 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:border-[var(--primaria)] transition-all pr-12 bg-[var(--superficie)]"
                     autoComplete="current-password"
                   />
                   <button
@@ -202,7 +208,7 @@ export default function LoginPage() {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  className="w-4 h-4 rounded border-[var(--borda)] text-[var(--primaria)] focus:ring-[var(--primaria)]/30"
+                  className="w-4 h-4 rounded border-[var(--borda)] text-[var(--primaria)]"
                 />
                 <span className="text-sm text-[var(--texto-claro)]">Permanecer conectado</span>
               </label>
