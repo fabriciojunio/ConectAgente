@@ -82,13 +82,13 @@ npm run build
 bash ConectAgente-web/supabase/testes/rodar-todos.sh
 ```
 
-State measured on 11/11/2026, version 1.2.4:
+State measured on 12/11/2026, version 1.2.5:
 
 | What | Result |
 |---|---|
-| App tests | 884 in 48 suites, including theme contrast and navigation; 86.4% statement coverage |
-| Panel tests | 405 in 34 suites |
-| Checks against a real database | 6 suites, all passing, including the repeated-install one |
+| App tests | 950 in 57 suites, including theme contrast, navigation and layout guards; 85.7% statement coverage |
+| Panel tests | 432 in 36 suites, including the second factor |
+| Checks against a real database | 149 in 6 suites, all passing, including the repeated-install one |
 | Type errors | 0 in both projects |
 | ESLint warnings | 0 |
 | Vulnerabilities (OSV-Scanner) | 0 unaccepted; build-tool ones have a reason and deadline in `osv-scanner.toml` |
@@ -242,16 +242,16 @@ sense locally. Translation and removal of local fields live in one place,
 
 Honesty about the current state, which is worth more than a feature list:
 
-- **The app's local password is salted SHA-256, single pass.** Too fast for a
-  password. Switching to PBKDF2 in pure JavaScript was measured and discarded:
-  without JIT, as Hermes runs, 100,000 iterations took 41 s. The way forward is
-  native derivation (`react-native-quick-crypto`), validated on a real Android
-  device, with the hash migrated on the next login.
 - **Medical record forms only close with 1.2.2 installed.** From that version
   on no clinical column leaves through the API (`migration_prontuario_fechado.sql`),
   but the migration refuses earlier versions' upsert, so it goes into the
   database together with the 1.2.2 rollout.
-- **The panel has no second factor**, and it is where everyone's records are read.
+- **The second factor protects the panel, not the database API.** The app uses
+  the same account without a second factor, so the database still accepts
+  password-only sessions within each role's RLS.
+- **Two 1.2.5 migrations are applied by hand**
+  (`migration_limite_de_tentativas.sql` and `migration_medicamentos.sql`). Until
+  then the panel counts attempts in memory and medications stay on the device.
 
 ---
 

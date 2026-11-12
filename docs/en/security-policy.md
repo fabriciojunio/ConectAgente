@@ -94,16 +94,17 @@ Recorded because omitting a limitation in a public-sector system is worse than h
 - **Upgrading from an unencrypted version to 1.2.0 needs a reinstall.** The file format changes and
   the old database does not open with a key. In an offline-first system the data comes back from the
   server on sync, but anything still queued is lost: sync before upgrading.
-- **The app's local password uses salted SHA-256, single pass.** It serves offline login, but it is
-  too fast for a password: with a stolen device's database in hand, guessing passwords is cheap. The
-  right approach is slow derivation (PBKDF2 with many iterations, scrypt or Argon2), migrating each
-  agent's hash on their next login.
 - **Closing the medical record forms depends on 1.2.2 being installed.** Earlier versions write the
   forms with upsert, which `migration_prontuario_fechado.sql` refuses. The migration goes into the
   database together with the 1.2.2 rollout, and a device on an older version stops syncing forms
   until it is updated.
-- **The web panel has no second factor**, and it is where every patient's record is read.
-- **Rate limiting is in process memory.** With more than one panel instance, each counts separately.
+- **The second factor covers the panel, not the database API.** Since 1.2.5 every panel account
+  confirms an authenticator code, and actions using the service key check the session level again.
+  Someone with only the password can still talk to the database API, within their role's RLS,
+  because the app uses the same account without a second factor.
+- **Rate limiting and medications depend on migrations.** Without
+  `migration_limite_de_tentativas.sql` the panel falls back to per-instance memory counting; without
+  `migration_medicamentos.sql` medications stay on the device and their sync stays pending.
 - **Build dependencies with known flaws** (`uuid` 7, `image-size` 1, `deepmerge`, `glob` and
   `minimatch`) come from the Expo CLI, Metro, config-plugins and Jest. Either they have no fixed version, or the fixed one breaks
   bundling (measured). They run on the packager's machine, not on the device. Each is accepted with a

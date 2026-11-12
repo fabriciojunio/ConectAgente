@@ -2,7 +2,7 @@
   "expo": {
     "name": "ConectAgente",
     "slug": "ConectAgente",
-    "version": "1.2.4",
+    "version": "1.2.5",
     "orientation": "portrait",
     "icon": "./assets/images/LOGO-remove.png",
     "scheme": "conectagente",
@@ -28,7 +28,7 @@
         "POST_NOTIFICATIONS",
         "ACCESS_NETWORK_STATE"
       ],
-      "versionCode": 7,
+      "versionCode": 8,
       "allowBackup": false,
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO",

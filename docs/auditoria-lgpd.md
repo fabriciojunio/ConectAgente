@@ -3,7 +3,7 @@
 Avaliação do ConectAgente pelos oito grupos de teste de um programa de
 auditoria interna da LGPD: tratamento e consentimento, direitos fundamentais,
 princípios, medidas técnicas, direitos do titular, governança, relatório de
-impacto e encarregado. Cada resposta aponta a prova. Base: versão 1.2.4, em
+impacto e encarregado. Cada resposta aponta a prova. Base: versão 1.2.5, em
 11/11/2026.
 
 O controlador é a secretaria municipal de saúde que implantar o sistema. Por
@@ -31,8 +31,8 @@ para quem acompanha o morador. Não há decisão automatizada sobre o titular.
 
 | Princípio | Como o sistema atende |
 |---|---|
-| Finalidade e adequação | campos das cinco fichas do acompanhamento da atenção básica, e nada além |
-| Necessidade | exportação sem senha e sem assinatura; trilha sem conteúdo clínico |
+| Finalidade e adequação | campos das cinco fichas do acompanhamento da atenção básica e a lista de medicamentos com as dúvidas levadas à equipe, que apoia a orientação sobre uso correto prevista nas atribuições do ACS (PNAB 2017); nada além |
+| Necessidade | exportação sem senha e sem assinatura; trilha sem conteúdo clínico (nem o nome do remédio); chave do limite de tentativas em hash, sem CPF nem IP |
 | Livre acesso e transparência | texto da base legal na tela "Mais"; aviso no cadastro |
 | Qualidade | validação na entrada (CPF, Cartão SUS com dígito verificador, datas) |
 | Segurança e prevenção | grupo 4 abaixo |
@@ -43,10 +43,10 @@ para quem acompanha o morador. Não há decisão automatizada sobre o titular.
 
 | Contra | Medida | Prova |
 |---|---|---|
-| acesso não autorizado | RLS em todas as tabelas, visitante sem privilégio, colunas sensíveis fechadas, senha com PBKDF2 | suítes em PostgreSQL real (permissão, colunas, anônimo, fichas) |
+| acesso não autorizado | RLS em todas as tabelas, visitante sem privilégio, colunas sensíveis fechadas (inclusive medicamentos), senha com PBKDF2, segundo fator no painel, limite de tentativas contado no banco | suítes em PostgreSQL real (permissão, colunas, anônimo, fichas, medicamentos); testes de `segundo-fator` |
 | destruição e perda | gravação local primeiro, fila de sincronização com retentativa, exclusão lógica | testes do `syncService` |
 | alteração | SQLCipher autenticado no aparelho, HTTPS com certificado fixado, trilha só de inclusão | [modelo-de-ameacas.md](modelo-de-ameacas.md) (T1, T2, R2) |
-| comunicação e difusão indevidas | banco do aparelho cifrado, backup automático desligado, relatório sem campo de senha | [masvs.md](masvs.md) |
+| comunicação e difusão indevidas | banco do aparelho cifrado, backup automático desligado, captura de tela bloqueada (`FLAG_SECURE`), relatório sem campo de senha | [masvs.md](masvs.md) |
 
 ## 5. Direitos do titular (art. 18) e incidentes
 
@@ -74,12 +74,12 @@ agentes **dependem do controlador**.
 | Item | Conteúdo |
 |---|---|
 | Descrição do tratamento | registro de visita domiciliar por ACS, sem conexão, sincronizado com o servidor da secretaria |
-| Dados | identificação (nome, CPF, Cartão SUS, endereço) e saúde (condições, gestação, puericultura, saúde da mulher, situação social) |
+| Dados | identificação (nome, CPF, Cartão SUS, endereço) e saúde (condições, gestação, puericultura, saúde da mulher, situação social, medicamentos em uso e dúvidas) |
 | Titulares | moradores da microárea, inclusive crianças e gestantes |
 | Riscos principais | aparelho perdido em campo; acesso indevido entre agentes; conta de coordenação comprometida; vazamento por exportação |
 | Medidas | grupo 4 e [modelo-de-ameacas.md](modelo-de-ameacas.md) |
-| Risco residual | segundo fator no painel ainda não existe; captura de tela das telas clínicas não é bloqueada; limite de tentativas do painel por instância |
-| Parecer | risco residual aceitável para piloto com poucos usuários, desde que o segundo fator do painel entre antes de uso em escala |
+| Risco residual | a API do banco ainda aceita sessão sem segundo fator, porque o aplicativo usa a mesma conta; texto livre (queixa, dúvida) pode conter identificação mesmo depois da anonimização do cadastro |
+| Parecer | risco residual aceitável para piloto: o painel, que lê o dado de todos, já exige segundo fator; levar o segundo fator ao aplicativo antes de uso em escala |
 
 ## 8. Encarregado
 
