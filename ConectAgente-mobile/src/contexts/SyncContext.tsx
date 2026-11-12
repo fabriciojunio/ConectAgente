@@ -4,6 +4,14 @@ import { syncService, SyncStatus } from '../services/syncService';
 import { syncQueueRepository } from '../database/repositories/syncQueueRepository';
 import { useNetwork } from './NetworkContext';
 import { SYNC_INTERVAL_MS } from '../utils/constants';
+import { comPrazo } from '../lib/fetchComPrazo';
+
+/**
+ * Prazo da sincronização inteira. Cada requisição já tem o próprio prazo;
+ * este é a rede de segurança para que o selo nunca fique parado em
+ * "Sincronizando..." e para que a próxima tentativa possa começar.
+ */
+export const PRAZO_DA_SINCRONIZACAO_MS = 3 * 60_000;
 
 /** O que a última tentativa deu, para quem pediu a sincronização mostrar. */
 export interface ResultadoDaSincronizacao {
@@ -32,19 +40,26 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     erro: null,
   });
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Trava em ref, e não no estado: o estado chega atrasado nas funções que o
+  // intervalo e o AppState guardaram, e duas sincronizações podiam começar
+  // juntas. A trava é sempre liberada no `finally`.
+  const emAndamento = useRef(false);
 
   const sincronizarAgora = useCallback(async (opcoes?: { reabrirErros?: boolean }): Promise<ResultadoDaSincronizacao> => {
-    if (status.sincronizando || !isOnline) {
+    if (emAndamento.current || !isOnline) {
       return { ok: false, erro: isOnline ? null : 'sem rede', pendentes: status.pendentes };
     }
+    emAndamento.current = true;
 
     setStatus((s) => ({ ...s, sincronizando: true, erro: null }));
     if (opcoes?.reabrirErros) await syncQueueRepository.reabrirComErro().catch(() => 0);
 
     try {
-      await syncService.sincronizar((progress, total) => {
-        // Atualizar progresso se necessário
-      });
+      await comPrazo(
+        syncService.sincronizar(() => undefined),
+        PRAZO_DA_SINCRONIZACAO_MS,
+        'A sincronização demorou demais. Os registros continuam guardados e serão enviados na próxima tentativa.',
+      );
       const pendentes = await syncService.contarPendentes();
       setStatus({
         sincronizando: false,
@@ -63,8 +78,10 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         erro: mensagem,
       }));
       return { ok: false, erro: mensagem, pendentes };
+    } finally {
+      emAndamento.current = false;
     }
-  }, [isOnline, status.sincronizando, status.pendentes]);
+  }, [isOnline, status.pendentes]);
 
   // Sincronizar quando o agente volta para o aplicativo. Com o celular em
   // segundo plano o Android adia a tarefa periódica; quem abre o app depois
