@@ -18,6 +18,14 @@ VALUES
   ('a11a11a1-0000-0000-0000-000000000007', 'Admin Onze',          '42000000007', 'adm11@x.test',    'h', 'G', 'UBS Sede',   'admin',       true)
 ON CONFLICT (id) DO NOTHING;
 
+-- Família e morador de quem está sem unidade.
+INSERT INTO residencias (id, agente_id, cep, logradouro, numero, bairro, cidade, estado)
+VALUES ('f11f11f1-0000-0000-0000-000000000006', 'a11a11a1-0000-0000-0000-000000000006', '17015000', 'Rua Onze', '6', 'Centro', 'Bauru', 'SP')
+ON CONFLICT (id) DO NOTHING;
+INSERT INTO moradores (id, nome, data_nascimento, sexo, agente_id, residencia_id)
+VALUES ('e11e11e1-0000-0000-0000-000000000006', 'Paciente Sem Area', '1980-01-01', 'feminino', 'a11a11a1-0000-0000-0000-000000000006', 'f11f11f1-0000-0000-0000-000000000006')
+ON CONFLICT (id) DO NOTHING;
+
 CREATE OR REPLACE FUNCTION pg_temp.como(p_papel TEXT, p_sub TEXT, p_sql TEXT)
 RETURNS TEXT LANGUAGE plpgsql AS $$
 DECLARE v TEXT := 'ok';
@@ -107,6 +115,19 @@ INSERT INTO chamada SELECT 'vazia', pg_temp.como('authenticated', 'a11a11a1-0000
 INSERT INTO resultado SELECT 'unid_vazia_nao_casa_com_vazia',
   CASE WHEN (SELECT retorno FROM chamada WHERE nome = 'vazia') = 'ok'
    AND (SELECT n FROM visto) = 0
+  THEN 'OK' ELSE 'FALHOU' END;
+
+-- O mesmo vale para paciente: pela lista e pela ficha completa.
+INSERT INTO chamada SELECT 'vazia_paciente', pg_temp.como('authenticated', 'a11a11a1-0000-0000-0000-000000000005',
+  'CREATE TEMP TABLE IF NOT EXISTS visto_paciente AS SELECT (SELECT count(*) FROM moradores WHERE id = ''e11e11e1-0000-0000-0000-000000000006'') AS lista, public.fn_ler_morador(''e11e11e1-0000-0000-0000-000000000006'') IS NOT NULL AS ficha');
+INSERT INTO resultado SELECT 'unid_vazia_nao_le_paciente_sem_area',
+  CASE WHEN (SELECT retorno FROM chamada WHERE nome = 'vazia_paciente') = 'ok'
+   AND (SELECT lista FROM visto_paciente) = 0
+   AND (SELECT ficha FROM visto_paciente) = false
+  THEN 'OK' ELSE 'FALHOU' END;
+
+INSERT INTO resultado SELECT 'unid_vazia_vira_nula_no_banco',
+  CASE WHEN (SELECT unidade_saude FROM agentes WHERE id = 'a11a11a1-0000-0000-0000-000000000005') IS NULL
   THEN 'OK' ELSE 'FALHOU' END;
 
 SELECT nome || '|' || status FROM resultado ORDER BY nome;
