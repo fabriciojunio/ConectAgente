@@ -1,5 +1,6 @@
 'use client';
 
+import { StatCard } from '@/components/ui/stat-card';
 import { useState, useEffect, useCallback } from 'react';
 import { useFilters } from '@/hooks/useFilters';
 import { FilterBar } from '@/components/layout/FilterBar';
@@ -87,9 +88,9 @@ export default function MonitoramentoPage() {
   const areasCriticas = cobertura.filter((c) => c.cobertura_pct < 50).length;
 
   const statCards = [
-    { label: 'Famílias em Atraso', value: familiasAtraso.length, icon: AlertTriangle, color: 'text-red-600 bg-red-50' },
-    { label: 'Cobertura Geral', value: `${coberturaGeral}%`, icon: Shield, color: 'text-primary-600 bg-primary-50' },
-    { label: 'Áreas Críticas', value: areasCriticas, icon: MapPin, color: 'text-yellow-600 bg-yellow-50' },
+    { label: 'Famílias em Atraso', value: familiasAtraso.length, icon: AlertTriangle, color: 'danger' as const },
+    { label: 'Cobertura Geral', value: `${coberturaGeral}%`, icon: Shield, color: 'primary' as const },
+    { label: 'Áreas Críticas', value: areasCriticas, icon: MapPin, color: 'attention' as const },
   ];
 
   const distribuicaoCards = [
@@ -123,17 +124,7 @@ export default function MonitoramentoPage() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {statCards.map((stat) => (
-          <div key={stat.label} className="bg-[var(--superficie)] rounded-xl border p-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${stat.color}`}>
-                <stat.icon className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-sm text-[var(--texto-claro)]">{stat.label}</p>
-                <p className="text-xl font-bold text-[var(--texto)]">{stat.value}</p>
-              </div>
-            </div>
-          </div>
+          <StatCard key={stat.label} title={stat.label} value={stat.value} icon={stat.icon} color={stat.color} />
         ))}
       </div>
 

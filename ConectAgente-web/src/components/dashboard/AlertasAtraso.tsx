@@ -56,7 +56,7 @@ export default function AlertasAtraso({ alertas, loading }: AlertasAtrasoProps) 
       <CardHeader>
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-warning-500" aria-hidden="true" />
-          <CardTitle>Alertas de Atraso</CardTitle>
+          <CardTitle>Famílias sem visita</CardTitle>
         </div>
       </CardHeader>
       <CardContent>

@@ -302,7 +302,7 @@ export default function SolicitacoesPage() {
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 placeholder="Mínimo 6 caracteres"
-                className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)]"
+                className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-sm focus:outline-none focus:border-[var(--primaria)]"
               />
             </div>
             <div className="flex gap-3">
@@ -346,7 +346,7 @@ export default function SolicitacoesPage() {
                 onChange={(e) => setMotivo(e.target.value)}
                 placeholder="Ex: Cargo não corresponde ao registro no sistema..."
                 rows={3}
-                className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] resize-none"
+                className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-sm focus:outline-none focus:border-[var(--primaria)] resize-none"
               />
             </div>
             <div className="flex gap-3">

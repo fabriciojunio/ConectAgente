@@ -1,5 +1,6 @@
 'use client';
 
+import { StatCard } from '@/components/ui/stat-card';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
@@ -89,10 +90,10 @@ export default function AdminPage() {
 
   const statCards = stats
     ? [
-        { label: 'Total de Agentes', value: stats.total_agentes, icon: UserCheck, color: 'text-primary-600 bg-primary-50' },
-        { label: 'Total de Famílias', value: stats.total_familias, icon: Home, color: 'text-green-600 bg-green-50' },
-        { label: 'Total de Visitas', value: stats.total_visitas, icon: ClipboardList, color: 'text-blue-600 bg-blue-50' },
-        { label: 'Total de Moradores', value: stats.total_moradores, icon: Users, color: 'text-purple-600 bg-purple-50' },
+        { label: 'Total de Agentes', value: stats.total_agentes, icon: UserCheck, color: 'primary' as const },
+        { label: 'Total de Famílias', value: stats.total_familias, icon: Home, color: 'info' as const },
+        { label: 'Total de Visitas', value: stats.total_visitas, icon: ClipboardList, color: 'warning' as const },
+        { label: 'Total de Moradores', value: stats.total_moradores, icon: Users, color: 'success' as const },
       ]
     : [];
 
@@ -133,17 +134,7 @@ export default function AdminPage() {
       {statCards.length > 0 && (
         <div className="card-grid">
           {statCards.map((stat) => (
-            <div key={stat.label} className="bg-[var(--superficie)] rounded-xl border p-4">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${stat.color}`}>
-                  <stat.icon className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-sm text-[var(--texto-claro)]">{stat.label}</p>
-                  <p className="text-xl font-bold text-[var(--texto)]">{stat.value.toLocaleString('pt-BR')}</p>
-                </div>
-              </div>
-            </div>
+            <StatCard key={stat.label} title={stat.label} value={stat.value} icon={stat.icon} color={stat.color} />
           ))}
         </div>
       )}

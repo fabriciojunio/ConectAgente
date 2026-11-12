@@ -28,17 +28,17 @@ export default function AgentesBarChart({ data, loading }: AgentesBarChartProps)
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Desempenho por Agente</CardTitle>
+        <CardTitle>Visitas por agente</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
           <Skeleton className="h-72 w-full" />
         ) : top10.length === 0 ? (
           <p className="py-12 text-center text-sm text-[var(--texto-claro)]">
-            Nenhum dado disponivel.
+            Nenhum dado no período.
           </p>
         ) : (
-          <div className="h-72 w-full" role="img" aria-label="Grafico de desempenho por agente">
+          <div className="h-72 w-full" role="img" aria-label="Gráfico de desempenho por agente">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={top10}

@@ -1,5 +1,6 @@
 'use client';
 
+import { StatCard } from '@/components/ui/stat-card';
 import { useState, useEffect, useCallback } from 'react';
 import { usePagination } from '@/hooks/usePagination';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -148,12 +149,12 @@ export default function MoradoresPage() {
       : moradores;
 
   const statCards = [
-    { label: 'Total de Pacientes', value: estatisticas.total, icon: Users, color: 'text-primary-600 bg-primary-50' },
-    { label: 'Hipertensos', value: estatisticas.hipertensos, icon: Heart, color: 'text-red-600 bg-red-50' },
-    { label: 'Diabéticos', value: estatisticas.diabeticos, icon: Droplets, color: 'text-blue-600 bg-blue-50' },
-    { label: 'Gestantes', value: estatisticas.gestantes, icon: Baby, color: 'text-pink-600 bg-pink-50' },
-    { label: 'Com Doenças', value: estatisticas.com_doenca, icon: Stethoscope, color: 'text-orange-600 bg-orange-50' },
-    { label: 'Domiciliados', value: estatisticas.domiciliados, icon: HomeIcon, color: 'text-purple-600 bg-purple-50' },
+    { label: 'Total de Pacientes', value: estatisticas.total, icon: Users, color: 'primary' as const },
+    { label: 'Hipertensos', value: estatisticas.hipertensos, icon: Heart, color: 'danger' as const },
+    { label: 'Diabéticos', value: estatisticas.diabeticos, icon: Droplets, color: 'primary' as const },
+    { label: 'Gestantes', value: estatisticas.gestantes, icon: Baby, color: 'pink' as const },
+    { label: 'Com Doenças', value: estatisticas.com_doenca, icon: Stethoscope, color: 'warning' as const },
+    { label: 'Domiciliados', value: estatisticas.domiciliados, icon: HomeIcon, color: 'info' as const },
   ];
 
   return (
@@ -166,17 +167,7 @@ export default function MoradoresPage() {
       {/* Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {statCards.map((stat) => (
-          <div key={stat.label} className="bg-[var(--superficie)] rounded-xl border p-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${stat.color}`}>
-                <stat.icon className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-[11px] text-[var(--texto-claro)] leading-tight">{stat.label}</p>
-                <p className="text-xl font-bold text-[var(--texto)]">{stat.value}</p>
-              </div>
-            </div>
-          </div>
+          <StatCard key={stat.label} title={stat.label} value={stat.value} icon={stat.icon} color={stat.color} />
         ))}
       </div>
 
@@ -285,14 +276,14 @@ export default function MoradoresPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t bg-[var(--superficie-alt)]">
               <p className="text-sm text-[var(--texto-claro)]">
-                Pagina {page} de {totalPages}
+                Página {page} de {totalPages}
               </p>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setPage(page - 1)} disabled={page <= 1}>
                   Anterior
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setPage(page + 1)} disabled={page >= totalPages}>
-                  Proxima
+                  Próxima
                 </Button>
               </div>
             </div>
@@ -370,7 +361,7 @@ export default function MoradoresPage() {
 
               {/* Condicoes de saude */}
               <div>
-                <p className="text-xs text-[var(--texto-claro)] mb-2">Condições de Saude</p>
+                <p className="text-xs text-[var(--texto-claro)] mb-2">Condições de saúde</p>
                 <div className="flex flex-wrap gap-2">
                   {selectedMorador.is_hipertenso && (
                     <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">Hipertenso</span>

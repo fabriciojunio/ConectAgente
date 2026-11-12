@@ -148,7 +148,7 @@ export default function SegundoFatorPage() {
               autoComplete="one-time-code"
               autoFocus
               placeholder="000000"
-              className="w-full px-4 py-3 border border-[var(--borda)] rounded-lg text-center text-2xl tracking-[0.5em] font-mono text-[var(--texto)] bg-[var(--superficie)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30"
+              className="w-full px-4 py-3 border border-[var(--borda)] rounded-lg text-center text-2xl tracking-[0.5em] font-mono text-[var(--texto)] bg-[var(--superficie)] focus:outline-none"
             />
             {erro && <p role="alert" className="text-sm text-[var(--erro)]">{erro}</p>}
             <button

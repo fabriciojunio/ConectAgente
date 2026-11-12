@@ -1,5 +1,6 @@
 'use client';
 
+import { StatCard } from '@/components/ui/stat-card';
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useFilters } from '@/hooks/useFilters';
@@ -122,9 +123,9 @@ export default function FamiliasPage() {
   const familiasComVisita = totalFamilias - familiasAtraso;
 
   const statCards = [
-    { label: 'Total Famílias', value: totalFamilias, icon: Users, color: 'text-[var(--texto-medio)]' },
-    { label: 'Com Visita Recente', value: familiasComVisita, icon: CheckCircle, color: 'text-green-600' },
-    { label: 'Em Atraso', value: familiasAtraso, icon: AlertTriangle, color: 'text-red-600' },
+    { label: 'Total Famílias', value: totalFamilias, icon: Users, color: 'neutral' as const },
+    { label: 'Com Visita Recente', value: familiasComVisita, icon: CheckCircle, color: 'success' as const },
+    { label: 'Em Atraso', value: familiasAtraso, icon: AlertTriangle, color: 'danger' as const },
   ];
 
   return (
@@ -139,17 +140,7 @@ export default function FamiliasPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {statCards.map((stat) => (
-          <div key={stat.label} className="bg-[var(--superficie)] rounded-xl border p-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg bg-[var(--superficie-alt)] ${stat.color}`}>
-                <stat.icon className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-sm text-[var(--texto-claro)]">{stat.label}</p>
-                <p className="text-xl font-bold text-[var(--texto)]">{stat.value}</p>
-              </div>
-            </div>
-          </div>
+          <StatCard key={stat.label} title={stat.label} value={stat.value} icon={stat.icon} color={stat.color} />
         ))}
       </div>
 

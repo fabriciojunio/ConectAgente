@@ -46,10 +46,10 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
   return (
     <nav
       className={cn('flex items-center justify-between', className)}
-      aria-label="Paginacao"
+      aria-label="Paginação"
     >
       <span className="text-sm text-[var(--texto-claro)]">
-        Pagina {currentPage} de {totalPages}
+        Página {currentPage} de {totalPages}
       </span>
 
       <div className="flex items-center gap-1">
@@ -60,7 +60,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
             'inline-flex h-8 w-8 items-center justify-center rounded-md text-sm transition-colors',
             'hover:bg-[var(--superficie-alt)] disabled:pointer-events-none disabled:opacity-50'
           )}
-          aria-label="Pagina anterior"
+          aria-label="Página anterior"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -84,7 +84,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
                   ? 'bg-primary-500 text-white font-medium'
                   : 'text-[var(--texto-medio)] hover:bg-[var(--superficie-alt)]'
               )}
-              aria-label={`Pagina ${page}`}
+              aria-label={`Página ${page}`}
               aria-current={page === currentPage ? 'page' : undefined}
             >
               {page}
@@ -99,7 +99,7 @@ export function Pagination({ currentPage, totalPages, onPageChange, className }:
             'inline-flex h-8 w-8 items-center justify-center rounded-md text-sm transition-colors',
             'hover:bg-[var(--superficie-alt)] disabled:pointer-events-none disabled:opacity-50'
           )}
-          aria-label="Proxima pagina"
+          aria-label="Próxima página"
         >
           <ChevronRight className="h-4 w-4" />
         </button>

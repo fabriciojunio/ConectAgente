@@ -190,7 +190,7 @@ export default function RegistroPage() {
                   onChange={(e) => updateField('nome', e.target.value)}
                   placeholder="Seu nome completo"
                   required
-                  className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm"
+                  className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:border-[var(--primaria)] transition-all text-sm"
                 />
               </div>
 
@@ -207,7 +207,7 @@ export default function RegistroPage() {
                     placeholder="000.000.000-00"
                     required
                     inputMode="numeric"
-                    className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm"
+                    className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:border-[var(--primaria)] transition-all text-sm"
                   />
                 </div>
                 <div>
@@ -220,7 +220,7 @@ export default function RegistroPage() {
                     onChange={(e) => updateField('telefone', formatPhone(e.target.value))}
                     placeholder="(00) 00000-0000"
                     inputMode="numeric"
-                    className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm"
+                    className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:border-[var(--primaria)] transition-all text-sm"
                   />
                 </div>
               </div>
@@ -237,7 +237,7 @@ export default function RegistroPage() {
                     if (e.target.value !== 'outro') updateField('cargo_outro', '');
                   }}
                   required
-                  className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm bg-[var(--superficie)]"
+                  className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] focus:outline-none focus:border-[var(--primaria)] transition-all text-sm bg-[var(--superficie)]"
                 >
                   <option value="">Selecione o cargo</option>
                   <option value="coordenador">Coordenador(a)</option>
@@ -251,7 +251,7 @@ export default function RegistroPage() {
                     onChange={(e) => updateField('cargo_outro', e.target.value)}
                     placeholder="Informe qual cargo"
                     required
-                    className="w-full mt-2 px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm"
+                    className="w-full mt-2 px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:border-[var(--primaria)] transition-all text-sm"
                   />
                 )}
                 <p className="text-[11px] text-[var(--marcador)] mt-1">
@@ -271,7 +271,7 @@ export default function RegistroPage() {
                     onChange={(e) => updateField('unidade_saude', e.target.value)}
                     placeholder="Ex: UBS Central"
                     required
-                    className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm"
+                    className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:border-[var(--primaria)] transition-all text-sm"
                   />
                 </div>
                 <div>
@@ -284,7 +284,7 @@ export default function RegistroPage() {
                     onChange={(e) => updateField('area_atuacao', e.target.value)}
                     placeholder="Ex: Área 01"
                     required
-                    className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm"
+                    className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:border-[var(--primaria)] transition-all text-sm"
                   />
                 </div>
               </div>
@@ -301,7 +301,7 @@ export default function RegistroPage() {
                   required
                   rows={3}
                   maxLength={500}
-                  className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm resize-none"
+                  className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:border-[var(--primaria)] transition-all text-sm resize-none"
                 />
                 <p className="text-[11px] text-[var(--marcador)] text-right mt-0.5">
                   {formData.justificativa.length}/500
@@ -322,7 +322,7 @@ export default function RegistroPage() {
                       placeholder="Mín. 6 caracteres"
                       required
                       minLength={6}
-                      className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm pr-10"
+                      className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:border-[var(--primaria)] transition-all text-sm pr-10"
                     />
                     <button
                       type="button"
@@ -344,7 +344,7 @@ export default function RegistroPage() {
                     placeholder="Repita a senha"
                     required
                     minLength={6}
-                    className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:ring-2 focus:ring-[var(--primaria)]/30 focus:border-[var(--primaria)] transition-all text-sm"
+                    className="w-full px-4 py-2.5 border border-[var(--borda)] rounded-lg text-[var(--texto)] placeholder-[var(--marcador)] focus:outline-none focus:border-[var(--primaria)] transition-all text-sm"
                   />
                 </div>
               </div>

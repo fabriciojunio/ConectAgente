@@ -24,7 +24,7 @@ export default function VisitasLineChart({ data, loading }: VisitasLineChartProp
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Visitas por Periodo</CardTitle>
+        <CardTitle>Visitas no período</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -33,10 +33,10 @@ export default function VisitasLineChart({ data, loading }: VisitasLineChartProp
           </div>
         ) : data.length === 0 ? (
           <p className="py-12 text-center text-sm text-[var(--texto-claro)]">
-            Nenhum dado disponivel para o periodo selecionado.
+            Nenhuma visita no período escolhido.
           </p>
         ) : (
-          <div className="h-72 w-full" role="img" aria-label="Grafico de visitas por periodo">
+          <div className="h-72 w-full" role="img" aria-label="Gráfico de visitas no período">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--borda)" />
@@ -79,7 +79,7 @@ export default function VisitasLineChart({ data, loading }: VisitasLineChartProp
                 <Line
                   type="monotone"
                   dataKey="nao_encontrado"
-                  name="Nao encontrado"
+                  name="Não encontrado"
                   stroke="var(--alerta)"
                   strokeWidth={2}
                   dot={{ r: 3 }}
