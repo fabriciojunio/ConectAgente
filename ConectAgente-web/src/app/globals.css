@@ -29,6 +29,7 @@
  * 30%), já calculadas: cor opaca, sem transparência empilhando.
  */
 :root {
+  color-scheme: light;
   --primaria:        #7B1FA2;
   --primaria-escura: #4A148C;
   --primaria-clara:  #AB47BC;
@@ -97,6 +98,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --primaria:        #CE93D8;
   --primaria-escura: #BA68C8;
   --primaria-clara:  #E1BEE7;
@@ -172,6 +174,14 @@ html { background-color: var(--fundo); }
   }
   /* Foco visível em tudo que recebe teclado, na cor da marca. */
   :focus-visible { outline: 2px solid var(--primaria); outline-offset: 2px; }
+  /* O plugin de formulários pinta todo campo de branco. Campo sem cor
+     própria seguia branco no tema escuro; aqui ele segue a superfície. A
+     especificidade (0,2,1) passa a do plugin, que é (0,1,0). */
+  input:not([type='checkbox']):not([type='radio']), select, textarea {
+    background-color: var(--superficie);
+    color: var(--texto);
+  }
+  input::placeholder, textarea::placeholder { color: var(--marcador); }
   /* Números de painel alinhados em coluna. */
   .tabular { font-variant-numeric: tabular-nums; }
 }
