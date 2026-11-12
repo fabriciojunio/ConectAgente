@@ -66,10 +66,7 @@ export default function AgentesPage() {
     if (agentes.length === 0) setLoading(true);
     setError('');
     try {
-      const agentesResult = await withTimeout(
-        getAgentes(filters, { page, per_page: perPage }),
-        { data: [], total: 0, page, per_page: perPage, total_pages: 0 }
-      );
+      const agentesResult = await withTimeout(getAgentes(filters, { page, per_page: perPage }));
 
       setAgentes(agentesResult.data);
       setTotalPages(agentesResult.total_pages);

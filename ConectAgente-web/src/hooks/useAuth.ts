@@ -156,12 +156,21 @@ export function useAuth(): UseAuthReturn {
     // Listen for auth state changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+    } = supabase.auth.onAuthStateChange((event, newSession) => {
       if (!mounted) return;
       setSession(newSession);
 
       if (event === 'SIGNED_IN' && newSession?.user) {
-        await fetchProfile(newSession.user.id, newSession.user.email);
+        // Fora do aviso, de propósito. O Supabase segura uma trava enquanto
+        // este aviso roda, e consultar o banco aqui dentro (o perfil) espera
+        // a mesma trava: o cliente inteiro fica parado. No painel isso
+        // aparecia como tudo zerado e sem o nome do usuário no topo, logo
+        // depois do código do segundo fator. A documentação do Supabase
+        // manda não chamar o cliente dentro do aviso.
+        const { id, email } = newSession.user;
+        setTimeout(() => {
+          if (mounted) void fetchProfile(id, email);
+        }, 0);
       } else if (event === 'SIGNED_OUT') {
         try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
         setUser(null);

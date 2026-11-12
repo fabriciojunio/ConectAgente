@@ -73,13 +73,10 @@ export default function FamiliasPage() {
     setError('');
     try {
       // Atrasos loads independently
-      withTimeout(getFamiliasEmAtraso(30, filters), [])
+      withTimeout(getFamiliasEmAtraso(30, filters))
         .then((r) => setFamiliasAtraso(r.length)).catch(() => {});
 
-      const familiasResult = await withTimeout(
-        getFamilias(filters, { page, per_page: perPage }),
-        { data: [], total: 0, page, per_page: perPage, total_pages: 0 }
-      );
+      const familiasResult = await withTimeout(getFamilias(filters, { page, per_page: perPage }));
       setFamilias(familiasResult.data);
       setTotalFamilias(familiasResult.total);
       setTotalPages(familiasResult.total_pages);

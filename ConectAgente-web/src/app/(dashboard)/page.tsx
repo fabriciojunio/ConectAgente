@@ -71,12 +71,12 @@ export default function DashboardPage() {
       if (!cancelled) setError(err instanceof Error ? err.message : 'Erro ao carregar o dashboard');
     };
 
-    withTimeout(getDashboardStats(f), SEM_INDICADORES).then((d) => { if (!cancelled) setStats(d); }).catch(falhou).finally(checkDone);
-    withTimeout(getVisitasPorPeriodo(inicio, fim, f), []).then((d) => { if (!cancelled) setVisitasPeriodo(d); }).catch(falhou).finally(checkDone);
-    withTimeout(getVisitasPorAgente(inicio, fim, f), []).then((d) => { if (!cancelled) setVisitasAgente(d); }).catch(falhou).finally(checkDone);
-    withTimeout(getVisitasPorBairro(inicio, fim), []).then((d) => { if (!cancelled) setVisitasBairro(d); }).catch(falhou).finally(checkDone);
-    withTimeout(getVisitasRecentes(10), []).then((d) => { if (!cancelled) setVisitasRecentes(d); }).catch(falhou).finally(checkDone);
-    withTimeout(getAlertasAtraso(30), []).then((d) => { if (!cancelled) setAlertas(d); }).catch(falhou).finally(checkDone);
+    withTimeout(getDashboardStats(f)).then((d) => { if (!cancelled) setStats(d); }).catch(falhou).finally(checkDone);
+    withTimeout(getVisitasPorPeriodo(inicio, fim, f)).then((d) => { if (!cancelled) setVisitasPeriodo(d); }).catch(falhou).finally(checkDone);
+    withTimeout(getVisitasPorAgente(inicio, fim, f)).then((d) => { if (!cancelled) setVisitasAgente(d); }).catch(falhou).finally(checkDone);
+    withTimeout(getVisitasPorBairro(inicio, fim)).then((d) => { if (!cancelled) setVisitasBairro(d); }).catch(falhou).finally(checkDone);
+    withTimeout(getVisitasRecentes(10)).then((d) => { if (!cancelled) setVisitasRecentes(d); }).catch(falhou).finally(checkDone);
+    withTimeout(getAlertasAtraso(30)).then((d) => { if (!cancelled) setAlertas(d); }).catch(falhou).finally(checkDone);
 
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps

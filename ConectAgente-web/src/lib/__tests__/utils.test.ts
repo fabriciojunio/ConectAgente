@@ -325,3 +325,20 @@ describe('data da visita no fuso do Brasil', () => {
     expect(calcularDiasSemVisita(`${diaLocal()}T00:00:00+00:00`)).toBe(0);
   });
 });
+
+describe('withTimeout sem valor falso', () => {
+  it('consulta que responde a tempo devolve o resultado', async () => {
+    const { withTimeout } = await import('../utils');
+    await expect(withTimeout(Promise.resolve(8), 50)).resolves.toBe(8);
+  });
+
+  it('consulta travada vira erro claro, e não zero como se fosse dado', async () => {
+    const { withTimeout, MENSAGEM_DE_PRAZO } = await import('../utils');
+    await expect(withTimeout(new Promise(() => {}), 20)).rejects.toThrow(MENSAGEM_DE_PRAZO);
+  });
+
+  it('erro da consulta passa adiante', async () => {
+    const { withTimeout } = await import('../utils');
+    await expect(withTimeout(Promise.reject(new Error('recusado')), 50)).rejects.toThrow('recusado');
+  });
+});

@@ -71,14 +71,11 @@ export default function VisitasPage() {
     setError('');
     try {
       // Progressive: each updates independently
-      withTimeout(getEstatisticasVisitas(filters), { total: 0, realizadas: 0, agendadas: 0, canceladas: 0, nao_encontrado: 0, taxa_conclusao: 0 })
+      withTimeout(getEstatisticasVisitas(filters))
         .then(setEstatisticas)
         .catch((err) => setError(err instanceof Error ? err.message : 'Erro ao contar visitas'));
 
-      const visitasResult = await withTimeout(
-        getVisitas(filters, { page, per_page: perPage }),
-        { data: [], total: 0, page, per_page: perPage, total_pages: 0 }
-      );
+      const visitasResult = await withTimeout(getVisitas(filters, { page, per_page: perPage }));
       setVisitas(visitasResult.data);
       setTotalPages(visitasResult.total_pages);
     } catch (err) {

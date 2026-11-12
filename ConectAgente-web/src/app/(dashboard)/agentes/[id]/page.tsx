@@ -60,9 +60,9 @@ export default function AgenteDetailPage() {
       setError('');
       try {
         const [agenteData, visitasData, familiasData] = await Promise.all([
-          withTimeout(getAgenteById(id), null),
-          withTimeout(getVisitasByAgente(id), []),
-          withTimeout(getAgenteFamilias(id), []),
+          withTimeout(getAgenteById(id)),
+          withTimeout(getVisitasByAgente(id)),
+          withTimeout(getAgenteFamilias(id)),
         ]);
 
         if (!agenteData) {

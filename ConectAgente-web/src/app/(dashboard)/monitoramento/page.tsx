@@ -57,11 +57,11 @@ export default function MonitoramentoPage() {
     const done = { count: 0, total: 3 };
     const checkDone = () => { if (++done.count >= done.total) setLoading(false); };
 
-    withTimeout(getCoberturaPorMicroarea(filters), [])
+    withTimeout(getCoberturaPorMicroarea(filters))
       .then(setCobertura).catch(() => {}).finally(checkDone);
-    withTimeout(getRankingAtrasos(filters), { microareas: [], agentes: [] })
+    withTimeout(getRankingAtrasos(filters))
       .then((d) => { setRankingMicroareas(d.microareas ?? []); setRankingAgentes(d.agentes ?? []); }).catch(() => {}).finally(checkDone);
-    withTimeout(getFamiliasEmAtraso(0, filters), [])
+    withTimeout(getFamiliasEmAtraso(0, filters))
       .then(setFamiliasAtraso).catch((err) => { setError(err instanceof Error ? err.message : 'Erro ao carregar monitoramento'); }).finally(checkDone);
   }, [filters, primeiraCarga]);
 

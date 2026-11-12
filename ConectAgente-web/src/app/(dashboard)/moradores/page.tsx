@@ -104,13 +104,10 @@ export default function MoradoresPage() {
     if (moradores.length === 0) setLoading(true);
     setError('');
     try {
-      withTimeout(getEstatisticasMoradores(), EMPTY_STATS)
+      withTimeout(getEstatisticasMoradores())
         .then(setEstatisticas).catch(() => {});
 
-      const result = await withTimeout(
-        getMoradores(undefined, { page, per_page: perPage }),
-        { data: [], total: 0, page, per_page: perPage, total_pages: 0 }
-      );
+      const result = await withTimeout(getMoradores(undefined, { page, per_page: perPage }));
       setMoradores(result.data);
       setTotalPages(result.total_pages);
     } catch (err) {

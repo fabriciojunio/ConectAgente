@@ -82,7 +82,7 @@ export default function SolicitacoesPage() {
   const loadSolicitacoes = useCallback(async () => {
     if (primeiraCarga.ehAPrimeira()) setLoading(true);
     try {
-      const result = await withTimeout(getSolicitacoes(filter || undefined), { data: [], total: 0, page: 1, per_page: 20, total_pages: 0 });
+      const result = await withTimeout(getSolicitacoes(filter || undefined));
       setSolicitacoes(result.data);
     } catch {
       setFeedback({ type: 'error', message: 'Erro ao carregar solicitações.' });

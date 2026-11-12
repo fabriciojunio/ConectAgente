@@ -66,9 +66,9 @@ export default function AdminPage() {
     const done = { count: 0, total: 2 };
     const checkDone = () => { if (++done.count >= done.total) setLoading(false); };
 
-    withTimeout(getAuditLogs(undefined, { page: 1, per_page: 20 }), { data: [], total: 0, page: 1, per_page: 20, total_pages: 0 })
+    withTimeout(getAuditLogs(undefined, { page: 1, per_page: 20 }))
       .then((d) => setLogs(d.data as AuditLog[])).catch(() => {}).finally(checkDone);
-    withTimeout(getEstatisticasSistema(), { total_agentes: 0, total_familias: 0, total_visitas: 0, total_moradores: 0, agentes_ativos: 0, ultimo_sync: '' })
+    withTimeout(getEstatisticasSistema())
       .then(setStats).catch((err) => { setError(err instanceof Error ? err.message : 'Erro ao carregar dados administrativos'); }).finally(checkDone);
   }, [primeiraCarga]);
 

@@ -54,9 +54,9 @@ export default function TerritorialPage() {
     const done = { count: 0, total: 2 };
     const checkDone = () => { if (++done.count >= done.total) setLoading(false); };
 
-    withTimeout(getCoberturaPorMicroarea(filters), [])
+    withTimeout(getCoberturaPorMicroarea(filters))
       .then(setCobertura).catch(() => {}).finally(checkDone);
-    withTimeout(getVisitasPorBairro(inicio, fim), [])
+    withTimeout(getVisitasPorBairro(inicio, fim))
       .then(setBairros).catch((err) => { setError(err instanceof Error ? err.message : 'Erro ao carregar dados territoriais'); }).finally(checkDone);
   }, [filters, primeiraCarga]);
 

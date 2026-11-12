@@ -70,7 +70,7 @@ export default function UsuariosPage() {
     if (usuarios.length === 0) setLoading(true);
     setError('');
     try {
-      const result = await withTimeout(getUsuarios({ page, per_page: perPage }), { data: [], total: 0, page, per_page: perPage, total_pages: 0 });
+      const result = await withTimeout(getUsuarios({ page, per_page: perPage }));
       setUsuarios(result.data);
       setTotalPages(result.total_pages);
     } catch (err) {

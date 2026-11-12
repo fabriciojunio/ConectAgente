@@ -274,3 +274,25 @@ describe('useAuth', () => {
     expect(signInResult.error).toBe('Invalid credentials');
   });
 });
+
+describe('useAuth - aviso de sessão sem travar o cliente', () => {
+  it('não consulta o banco dentro do aviso de login; consulta logo depois', async () => {
+    const { mock } = buildMockSupabase();
+    let aviso: ((evento: string, sessao: unknown) => unknown) | undefined;
+    mock.auth.onAuthStateChange = jest.fn((cb) => {
+      aviso = cb;
+      return { data: { subscription: { unsubscribe: jest.fn() } } };
+    });
+    mockCreateClient.mockReturnValue(mock as unknown as ReturnType<typeof createClient>);
+    renderHook(() => useAuth());
+    await waitFor(() => expect(aviso).toBeDefined());
+    mock.from.mockClear();
+
+    const retorno = aviso!('SIGNED_IN', { user: { id: 'u1', email: '02363006607@conectagente.local' } });
+
+    // Síncrono e sem consulta: o Supabase segura a trava enquanto o aviso roda.
+    expect(retorno).toBeUndefined();
+    expect(mock.from).not.toHaveBeenCalled();
+    await waitFor(() => expect(mock.from).toHaveBeenCalledWith('agentes'));
+  });
+});

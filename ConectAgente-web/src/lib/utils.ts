@@ -254,9 +254,20 @@ export function formatPercent(value: number): string {
  * Races a promise against a timeout. If the promise does not resolve within
  * `ms` milliseconds, resolves with `fallback` instead of hanging forever.
  */
-export function withTimeout<T>(promise: Promise<T>, fallback: T, ms = 10000): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
-  ]);
+export const MENSAGEM_DE_PRAZO = 'O servidor demorou para responder. Confira a conexão e tente de novo.';
+
+/**
+ * Espera a consulta até o prazo e, se estourar, falha com mensagem clara.
+ *
+ * Antes devolvia um valor vazio no estouro: a tela mostrava 0 agentes, 0
+ * visitas, como se fosse o número real, e ninguém sabia que a consulta
+ * tinha travado. Achado no painel de produção. Agora o erro chega à faixa
+ * de aviso que cada tela já tem.
+ */
+export function withTimeout<T>(promise: Promise<T>, ms = 10000): Promise<T> {
+  let relogio: ReturnType<typeof setTimeout> | undefined;
+  const prazo = new Promise<never>((_, rejeitar) => {
+    relogio = setTimeout(() => rejeitar(new Error(MENSAGEM_DE_PRAZO)), ms);
+  });
+  return Promise.race([promise, prazo]).finally(() => clearTimeout(relogio));
 }
