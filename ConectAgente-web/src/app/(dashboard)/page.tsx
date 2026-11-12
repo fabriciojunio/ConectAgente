@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { MapPinned } from 'lucide-react';
 import { useFilters } from '@/hooks/useFilters';
+import { useAuth } from '@/hooks/useAuth';
 import { FilterBar } from '@/components/layout/FilterBar';
 import DashboardCards from '@/components/dashboard/DashboardCards';
 import VisitasLineChart from '@/components/charts/VisitasLineChart';
@@ -31,6 +34,8 @@ import type {
 } from '@/types';
 
 export default function DashboardPage() {
+  const { user } = useAuth();
+  const semArea = user?.role === 'coordenador' && !user.unidade_saude?.trim();
   const { filters } = useFilters();
 
   const initStats = cacheGetStale<DashboardStats>(`dash_stats_${JSON.stringify(filters ?? {})}`);
@@ -85,9 +90,22 @@ export default function DashboardPage() {
   return (
     <div className="page-container">
       <div>
-        <h1 className="page-title">Dashboard</h1>
-        <p className="page-subtitle">Visão geral das operações</p>
+        <h1 className="page-title">Visão geral</h1>
+        <p className="page-subtitle">Visitas, famílias e equipe no recorte da sua conta</p>
       </div>
+
+      {semArea && (
+        <Link
+          href="/minha-area"
+          className="flex items-center gap-3 rounded-[var(--radius)] border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-700 hover:border-primary-500"
+        >
+          <MapPinned size={18} aria-hidden="true" />
+          <span>
+            <strong>Defina a sua área.</strong> Enquanto a conta não tem unidade, o painel não mostra a equipe nem os
+            pacientes. Clique para escolher.
+          </span>
+        </Link>
+      )}
 
       <FilterBar variant="dashboard" />
 
@@ -99,43 +117,26 @@ export default function DashboardPage() {
 
       <DashboardCards stats={stats} loading={loading} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-[var(--superficie)] rounded-xl border p-6">
-          <h3 className="section-title">Visitas nos Últimos 30 Dias</h3>
-          <VisitasLineChart data={visitasPeriodo} loading={loading} />
-        </div>
-        <div className="bg-[var(--superficie)] rounded-xl border p-6">
-          <h3 className="section-title">Distribuição por Status</h3>
-          <StatusPieChart
-            data={[
-              { name: 'Realizadas', value: (stats?.visitas_mes ?? 0) - (stats?.visitas_pendentes ?? 0), color: 'var(--primaria)' },
-              { name: 'Pendentes',  value: stats?.visitas_pendentes ?? 0, color: 'var(--primaria-clara)' },
-            ]}
-            loading={loading}
-          />
-        </div>
+      {/* Cada gráfico já vem no próprio cartão, com título: sem moldura em volta. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <VisitasLineChart data={visitasPeriodo} loading={loading} />
+        <StatusPieChart
+          data={[
+            { name: 'Realizadas', value: stats?.visitas_realizadas ?? 0, color: 'var(--primaria)' },
+            { name: 'Pendentes', value: stats?.visitas_pendentes ?? 0, color: 'var(--primaria-clara)' },
+          ]}
+          loading={loading}
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-[var(--superficie)] rounded-xl border p-6">
-          <h3 className="section-title">Top Agentes</h3>
-          <AgentesBarChart data={visitasAgente} loading={loading} />
-        </div>
-        <div className="bg-[var(--superficie)] rounded-xl border p-6">
-          <h3 className="section-title">Visitas por Bairro</h3>
-          <HeatmapBairros data={visitasBairro} loading={loading} />
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <AgentesBarChart data={visitasAgente} loading={loading} />
+        <HeatmapBairros data={visitasBairro} loading={loading} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-[var(--superficie)] rounded-xl border p-6">
-          <h3 className="section-title">Visitas Recentes</h3>
-          <RecentVisitas visitas={visitasRecentes} loading={loading} />
-        </div>
-        <div className="bg-[var(--superficie)] rounded-xl border p-6">
-          <h3 className="section-title">Alertas de Atraso</h3>
-          <AlertasAtraso alertas={alertas} loading={loading} />
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <RecentVisitas visitas={visitasRecentes} loading={loading} />
+        <AlertasAtraso alertas={alertas} loading={loading} />
       </div>
     </div>
   );

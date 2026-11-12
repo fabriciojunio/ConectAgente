@@ -3,8 +3,9 @@
 import { useState, useLayoutEffect, useEffect, Suspense } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { usePathname } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth, limparDadosLocais } from '@/hooks/useAuth';
 import { usePrefetch } from '@/hooks/usePrefetch';
+import { useAvisos } from '@/hooks/useAvisos';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import LoadingBar from '@/components/layout/LoadingBar';
@@ -13,8 +14,17 @@ import { signOutAction } from '@/app/actions/auth';
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
+/**
+ * O "Sair" roda no servidor (apaga o cookie da sessão), mas o cache de
+ * pacientes e o perfil ficam no navegador: são apagados aqui antes.
+ */
+async function sair() {
+  limparDadosLocais();
+  await signOutAction();
+}
+
 const PAGE_TITLES: Record<string, string> = {
-  '/': 'Dashboard',
+  '/': 'Visão geral',
   '/visitas': 'Visitas',
   '/familias': 'Famílias',
   '/moradores': 'Pacientes / Moradores',
@@ -25,6 +35,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin': 'Administração',
   '/admin/usuarios': 'Gestão de Usuários',
   '/admin/solicitacoes': 'Solicitações de Registro',
+  '/minha-area': 'Áreas e equipes',
 };
 
 function getPageTitle(pathname: string): string {
@@ -57,6 +68,15 @@ export default function DashboardLayout({
   // 2. Pre-carrega dados de todas as paginas em segundo plano
   usePrefetch();
 
+  const avisos = useAvisos(user);
+
+  // O título da aba diz a página: ajuda quem usa leitor de tela e quem tem
+  // várias abas abertas. O cabeçalho mostra papel e recorte, não repete o
+  // título que a própria página já tem.
+  useEffect(() => {
+    document.title = `${getPageTitle(pathname)} | ConectAgente`;
+  }, [pathname]);
+
   return (
     <div className="min-h-screen flex bg-[var(--fundo)]">
       <LoadingBar />
@@ -68,18 +88,20 @@ export default function DashboardLayout({
         userRole={user?.role ?? 'agente'}
         userName={user?.nome ?? ''}
         userUnidade={user?.unidade_saude}
-        onLogout={signOutAction}
+        onLogout={sair}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
 
       <div className="flex-1 flex flex-col min-h-screen lg:ml-60">
         <Header
-          title={getPageTitle(pathname)}
           userName={user?.nome}
           userRole={user?.role}
+          userUnidade={user?.unidade_saude}
+          userArea={user?.area_atuacao}
+          avisos={avisos}
           onMenuClick={() => setSidebarOpen(true)}
-          onLogout={signOutAction}
+          onLogout={sair}
         />
         {/*
           key muda de 'init' para 'ready' apos markHydrated().

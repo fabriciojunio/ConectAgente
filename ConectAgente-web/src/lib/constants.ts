@@ -17,6 +17,7 @@ export const ROUTES = {
   ADMIN: '/admin',
   ADMIN_USUARIOS: '/admin/usuarios',
   ADMIN_SOLICITACOES: '/admin/solicitacoes',
+  MINHA_AREA: '/minha-area',
   LOGIN: '/login',
   REGISTRO: '/registro',
 } as const;
@@ -96,7 +97,7 @@ export const PAGINATION = {
 /** Sidebar navigation items with role-based access control */
 export const SIDEBAR_ITEMS: SidebarItem[] = [
   {
-    label: 'Dashboard',
+    label: 'Visão geral',
     href: ROUTES.DASHBOARD,
     icon: 'LayoutDashboard',
     roles: ['agente', 'coordenador', 'gerente', 'admin'],
@@ -142,6 +143,13 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     href: ROUTES.RELATORIOS,
     icon: 'FileBarChart',
     roles: ['agente', 'coordenador', 'gerente', 'admin'],
+  },
+  {
+    // Coordenação define a própria unidade; gerência distribui as equipes.
+    label: 'Áreas e equipes',
+    href: ROUTES.MINHA_AREA,
+    icon: 'MapPinned',
+    roles: ['coordenador', 'gerente', 'admin'],
   },
   {
     label: 'Administração',

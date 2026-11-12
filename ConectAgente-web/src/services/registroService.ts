@@ -45,3 +45,17 @@ export async function getSolicitacoes(
     return result;
   });
 }
+
+/**
+ * Quantas solicitações de cadastro esperam análise. Só a contagem: o
+ * cabeçalho usa para o aviso, sem trazer CPF nem nome de ninguém.
+ */
+export async function contarSolicitacoesPendentes(): Promise<number> {
+  const supabase = createClient();
+  const { count, error } = await supabase
+    .from('solicitacoes_registro')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'pendente');
+  if (error) throw new Error('Não foi possível contar as solicitações.');
+  return count ?? 0;
+}

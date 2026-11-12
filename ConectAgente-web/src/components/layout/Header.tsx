@@ -1,257 +1,215 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Menu, Bell, Search, ChevronDown, X, LogOut, Heart, Users, ClipboardList, Home } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, MapPinned, Menu, ShieldCheck } from 'lucide-react';
 import { SeletorTema } from './SeletorTema';
+import { cn } from '@/lib/utils';
+import type { EstadoAvisos } from '@/hooks/useAvisos';
+import type { UserRole } from '@/types';
 
 interface HeaderProps {
-  title: string;
-  subtitle?: string;
   userName?: string;
-  userRole?: string;
+  userRole?: UserRole;
+  userUnidade?: string;
+  userArea?: string;
+  avisos: EstadoAvisos;
   onMenuClick?: () => void;
   onLogout?: () => void | Promise<void>;
 }
 
-function getRoleDisplay(role?: string): string {
-  const labels: Record<string, string> = {
-    admin: 'Administrador',
-    gerente: 'Gerente',
-    coordenador: 'Coordenador',
-    agente: 'Agente',
-  };
-  return role ? labels[role] || role : '';
+const PAPEL: Record<UserRole, string> = {
+  admin: 'Administrador',
+  gerente: 'Gerente',
+  coordenador: 'Coordenação',
+  agente: 'Agente',
+};
+
+/** Diz de onde vêm os números da tela: o mesmo recorte que o RLS aplica. */
+export function escopoDoPapel(role?: UserRole, unidade?: string, area?: string): string {
+  if (role === 'admin' || role === 'gerente') return 'Todas as unidades';
+  if (role === 'coordenador') return unidade?.trim() ? unidade : 'Área ainda não definida';
+  if (role === 'agente') return area?.trim() ? `Área ${area}` : 'Seus pacientes';
+  return '';
 }
 
-function getInitials(name: string): string {
-  if (!name?.trim()) return '?';
-  const parts = name.trim().split(' ');
+export function iniciais(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-// Placeholder notifications, substituir por dados reais quando disponível
-const MOCK_NOTIFICATIONS = [
-  { id: 1, title: 'Solicitação pendente', body: 'Nova solicitação de cadastro aguarda aprovação.', time: 'Agora', read: false },
-  { id: 2, title: 'Meta atingida', body: 'Agentes da Unidade 1 atingiram 80% das visitas.', time: '1h atrás', read: false },
-  { id: 3, title: 'Família em atraso', body: '3 famílias sem visita há mais de 30 dias.', time: '3h atrás', read: true },
-];
+const corDoAviso = {
+  primary: 'bg-primary-500',
+  warning: 'bg-warning-500',
+  danger: 'bg-danger-500',
+} as const;
 
-export default function Header({ title, subtitle, userName, userRole, onMenuClick, onLogout }: HeaderProps) {
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
-  const notifRef = useRef<HTMLDivElement>(null);
-  const userMenuRef = useRef<HTMLDivElement>(null);
+export default function Header({
+  userName,
+  userRole,
+  userUnidade,
+  userArea,
+  avisos,
+  onMenuClick,
+  onLogout,
+}: HeaderProps) {
+  const [avisosAbertos, setAvisosAbertos] = useState(false);
+  const [menuAberto, setMenuAberto] = useState(false);
+  const avisosRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
-
-  // Fechar ao clicar fora
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
-        setNotifOpen(false);
-      }
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
-        setUserMenuOpen(false);
+    function fora(e: MouseEvent) {
+      if (avisosRef.current && !avisosRef.current.contains(e.target as Node)) setAvisosAbertos(false);
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuAberto(false);
+    }
+    function esc(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setAvisosAbertos(false);
+        setMenuAberto(false);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', fora);
+    document.addEventListener('keydown', esc);
+    return () => {
+      document.removeEventListener('mousedown', fora);
+      document.removeEventListener('keydown', esc);
+    };
   }, []);
 
-  function markAllRead() {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  }
+  const total = avisos.avisos.length;
+  const escopo = escopoDoPapel(userRole, userUnidade, userArea);
+  const gerenciaArea = userRole === 'coordenador' || userRole === 'gerente' || userRole === 'admin';
 
   return (
-    <header
-      className="sticky top-0 z-30 h-14 flex items-center justify-between px-4 lg:px-6 shadow-sm"
-      style={{
-        background: 'linear-gradient(90deg, var(--primaria-escura) 0%, var(--primaria) 50%, var(--primaria) 100%)',
-      }}
-    >
-      {/* Left: menu + title */}
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-30 h-14 flex items-center justify-between gap-3 px-3 sm:px-4 lg:px-6 bg-[var(--faixa)] text-[var(--sobre-faixa)]">
+      <div className="flex items-center gap-3 min-w-0">
         {onMenuClick && (
           <button
             onClick={onMenuClick}
-            className="lg:hidden p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+            className="lg:hidden p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-md"
             aria-label="Abrir menu"
           >
             <Menu size={22} />
           </button>
         )}
-        <div className="hidden sm:block">
-          <h1 className="text-sm font-semibold text-white leading-tight">{title}</h1>
-          {subtitle && <p className="text-[11px] text-white/60">{subtitle}</p>}
-        </div>
+        {userRole && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider">
+            <ShieldCheck size={13} aria-hidden="true" />
+            {PAPEL[userRole]}
+          </span>
+        )}
+        {escopo && (
+          <span className="hidden sm:inline truncate text-sm text-white/80" title="Recorte dos dados desta conta">
+            {escopo}
+          </span>
+        )}
       </div>
 
-      {/* Center: search bar */}
-      <div className="flex-1 max-w-md mx-4 hidden md:block">
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
-          <input
-            type="text"
-            placeholder="Buscar..."
-            className="w-full pl-9 pr-4 py-1.5 bg-white/10 border border-white/15 rounded-lg text-sm text-white placeholder-white/40 focus:outline-none focus:bg-white/15 focus:border-white/30 transition-all"
-          />
-        </div>
-      </div>
-
-      {/* Right: notifications + user */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <SeletorTema />
 
-        {/* Notification bell */}
-        <div className="relative" ref={notifRef}>
+        <div className="relative" ref={avisosRef}>
           <button
-            onClick={() => setNotifOpen(v => !v)}
-            className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all relative"
-            aria-label="Notificações"
+            onClick={() => setAvisosAbertos((v) => !v)}
+            className="relative p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-md"
+            aria-label={total > 0 ? `Avisos: ${total}` : 'Avisos'}
+            aria-haspopup="true"
+            aria-expanded={avisosAbertos}
           >
             <Bell size={18} />
-            {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-[var(--erro)] rounded-full border border-[var(--primaria-escura)]" />
+            {total > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-danger-500 text-[10px] font-bold leading-4 text-white text-center">
+                {total}
+              </span>
             )}
           </button>
 
-          {/* Dropdown */}
-          {notifOpen && (
-            <div className="absolute right-0 top-10 w-80 bg-[var(--superficie)] rounded-xl shadow-2xl border border-[var(--borda-clara)] z-50 overflow-hidden">
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--borda-clara)]">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-[var(--texto)]">Notificações</span>
-                  {unreadCount > 0 && (
-                    <span className="bg-[var(--primaria)] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                      {unreadCount}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={markAllRead}
-                      className="text-[11px] text-[var(--primaria)] hover:underline font-medium"
-                    >
-                      Marcar todas
-                    </button>
-                  )}
-                  <button onClick={() => setNotifOpen(false)} className="text-[var(--marcador)] hover:text-[var(--texto-medio)]">
-                    <X size={14} />
-                  </button>
-                </div>
-              </div>
-
-              {/* List */}
-              <div className="max-h-72 overflow-y-auto divide-y divide-[var(--fundo)]">
-                {notifications.length === 0 ? (
-                  <p className="text-sm text-[var(--marcador)] text-center py-8">Nenhuma notificação</p>
-                ) : (
-                  notifications.map(n => (
-                    <div
-                      key={n.id}
-                      className={`px-4 py-3 hover:bg-[var(--fundo)] transition-colors cursor-pointer ${!n.read ? 'bg-[var(--superficie-alt)]' : ''}`}
-                      onClick={() => setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))}
-                    >
-                      <div className="flex items-start gap-2">
-                        {!n.read && <span className="w-2 h-2 rounded-full bg-[var(--primaria)] mt-1.5 flex-shrink-0" />}
-                        {n.read && <span className="w-2 h-2 flex-shrink-0" />}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-[var(--texto)]">{n.title}</p>
-                          <p className="text-xs text-[var(--texto-claro)] leading-snug mt-0.5">{n.body}</p>
-                          <p className="text-[10px] text-[var(--marcador)] mt-1">{n.time}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+          {avisosAbertos && (
+            <div className="absolute right-0 top-11 w-[min(20rem,calc(100vw-1.5rem))] bg-[var(--superficie)] text-[var(--texto)] rounded-[var(--radius)] shadow-xl border border-[var(--borda-clara)] z-50 overflow-hidden">
+              <p className="px-4 py-2.5 text-sm font-semibold border-b border-[var(--borda-clara)]">Avisos</p>
+              {avisos.carregando ? (
+                <p className="px-4 py-6 text-sm text-[var(--texto-claro)]">Conferindo…</p>
+              ) : total === 0 ? (
+                <p className="px-4 py-6 text-sm text-[var(--texto-claro)]">Nenhum aviso agora.</p>
+              ) : (
+                <ul className="divide-y divide-[var(--borda-clara)]">
+                  {avisos.avisos.map((a) => (
+                    <li key={a.id}>
+                      <Link
+                        href={a.href}
+                        onClick={() => setAvisosAbertos(false)}
+                        className="flex gap-3 px-4 py-3 hover:bg-[var(--superficie-alt)]"
+                      >
+                        <span className={cn('mt-1.5 h-2 w-2 flex-shrink-0 rounded-full', corDoAviso[a.tom])} aria-hidden="true" />
+                        <span>
+                          <span className="block text-[13px] font-semibold">{a.titulo}</span>
+                          <span className="block text-xs text-[var(--texto-claro)] leading-snug mt-0.5">{a.texto}</span>
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {avisos.falhou && (
+                <p className="px-4 py-2 text-xs text-[var(--alerta)] border-t border-[var(--borda-clara)]">
+                  Parte dos avisos não carregou. Recarregue a página para tentar de novo.
+                </p>
+              )}
             </div>
           )}
         </div>
 
-        {/* User info with dropdown */}
         {userName && (
-          <div className="relative" ref={userMenuRef}>
+          <div className="relative" ref={menuRef}>
             <button
-              onClick={() => setUserMenuOpen(v => !v)}
-              className="hidden sm:flex items-center gap-2 ml-2 pl-3 border-l border-white/20 hover:bg-white/10 rounded-lg py-1 px-2 transition-colors cursor-pointer"
+              onClick={() => setMenuAberto((v) => !v)}
+              className="flex items-center gap-2 ml-1 sm:pl-3 sm:border-l border-white/20 hover:bg-white/10 rounded-md py-1 px-1.5"
+              aria-haspopup="true"
+              aria-expanded={menuAberto}
+              aria-label={`Conta de ${userName}`}
             >
-              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                <span className="text-xs font-bold text-white">{getInitials(userName)}</span>
-              </div>
-              <div className="hidden lg:block text-left">
-                <p className="text-xs font-medium text-white leading-tight">{userName}</p>
-                <p className="text-[10px] text-white/60">{getRoleDisplay(userRole)}</p>
-              </div>
-              <ChevronDown size={14} className={`text-white/50 hidden lg:block transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+              <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">
+                {iniciais(userName)}
+              </span>
+              <span className="hidden lg:block text-left max-w-[180px]">
+                <span className="block text-xs font-semibold leading-tight truncate">{userName}</span>
+              </span>
+              <ChevronDown size={14} className={cn('hidden lg:block text-white/60 transition-transform', menuAberto && 'rotate-180')} />
             </button>
 
-            {userMenuOpen && (
-              <div className="absolute right-0 top-12 w-64 bg-[var(--superficie)] rounded-xl shadow-2xl border border-[var(--borda-clara)] z-50 overflow-hidden">
-                {/* User info header */}
-                <div className="px-4 py-3 border-b border-[var(--borda-clara)] bg-[var(--superficie-alt)]">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[var(--primaria)] flex items-center justify-center">
-                      <span className="text-sm font-bold text-white">{getInitials(userName)}</span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-[var(--texto)]">{userName}</p>
-                      <p className="text-xs text-[var(--texto-claro)]">{getRoleDisplay(userRole)}</p>
-                    </div>
-                  </div>
+            {menuAberto && (
+              <div className="absolute right-0 top-12 w-64 bg-[var(--superficie)] text-[var(--texto)] rounded-[var(--radius)] shadow-xl border border-[var(--borda-clara)] z-50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-[var(--borda-clara)]">
+                  <p className="text-sm font-semibold truncate">{userName}</p>
+                  <p className="text-xs text-[var(--texto-claro)]">
+                    {userRole ? PAPEL[userRole] : ''}
+                    {escopo ? ` · ${escopo}` : ''}
+                  </p>
                 </div>
-
-                {/* Quick navigation */}
-                <div className="py-1 border-b border-[var(--borda-clara)]">
-                  <p className="px-4 py-1.5 text-[10px] font-semibold text-[var(--marcador)] uppercase tracking-wider">Acesso Rápido</p>
-                  <Link
-                    href="/"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--texto-medio)] hover:bg-[var(--superficie-alt)] transition-colors"
-                  >
-                    <Home size={16} className="text-[var(--texto-claro)]" />
-                    Dashboard
-                  </Link>
-                  <Link
-                    href="/visitas"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--texto-medio)] hover:bg-[var(--superficie-alt)] transition-colors"
-                  >
-                    <ClipboardList size={16} className="text-[var(--texto-claro)]" />
-                    Visitas
-                  </Link>
-                  <Link
-                    href="/familias"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--texto-medio)] hover:bg-[var(--superficie-alt)] transition-colors"
-                  >
-                    <Users size={16} className="text-[var(--texto-claro)]" />
-                    Famílias
-                  </Link>
-                  <Link
-                    href="/moradores"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--texto-medio)] hover:bg-[var(--superficie-alt)] transition-colors"
-                  >
-                    <Heart size={16} className="text-[var(--texto-claro)]" />
-                    Pacientes / Moradores
-                  </Link>
-                </div>
-
-                {/* Actions */}
                 <div className="py-1">
+                  {gerenciaArea && (
+                    <Link
+                      href="/minha-area"
+                      onClick={() => setMenuAberto(false)}
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--texto-medio)] hover:bg-[var(--superficie-alt)]"
+                    >
+                      <MapPinned size={16} className="text-[var(--texto-claro)]" />
+                      {userRole === 'coordenador' ? 'Minha área' : 'Áreas e equipes'}
+                    </Link>
+                  )}
                   {onLogout && (
                     <button
-                      onClick={() => { setUserMenuOpen(false); onLogout(); }}
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--erro)] hover:bg-[var(--erro-claro)] transition-colors w-full"
+                      onClick={() => {
+                        setMenuAberto(false);
+                        void onLogout();
+                      }}
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--erro)] hover:bg-[var(--erro-claro)] w-full"
                     >
                       <LogOut size={16} />
-                      Sair do Sistema
+                      Sair
                     </button>
                   )}
                 </div>
