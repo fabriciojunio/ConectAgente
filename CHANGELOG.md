@@ -27,6 +27,14 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
   servidor segue os papéis do menu.
 - **CPF mascarado** na lista de usuários; a própria linha não oferece troca de
   papel nem desativação.
+- **Pentest gray box do próprio sistema** ([relatório](docs/pentest-2026-11.md)):
+  visita, morador e agendamento podiam ser gravados na família de outro agente
+  (seis policies antigas `FOR ALL` anulavam as regras finas); coordenação sem
+  unidade lia ficha de paciente pelas comparações diretas de unidade (sem
+  unidade agora é `NULL`); sessão de 400 dias sem `Secure` (agora 30 minutos
+  sem uso e 12 horas no máximo); mensagem técnica do banco na tela; exportação
+  de relatório sem rastro (agora auditada, e o arquivo leva aviso de sigilo).
+- `security.txt` público (RFC 9116).
 
 ### Adicionado
 
@@ -49,6 +57,9 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
   só vê a própria unidade. A busca do cabeçalho, que não buscava nada, saiu.
 - Textos com acento, títulos de gráfico sem repetição e rótulos de filtro
   ligados aos campos (leitor de tela).
+- Relatório em PDF com o cabeçalho roxo do painel, rodapé de sigilo, quem
+  gerou e numeração de página.
+- Registro das decisões de arquitetura em `docs/adr`.
 
 ## [1.2.5] - 2026-11-12
 
