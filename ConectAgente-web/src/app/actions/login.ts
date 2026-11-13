@@ -2,6 +2,7 @@
 
 import { headers } from 'next/headers';
 import { rateLimit } from '@/lib/rateLimit';
+import { ipDoCliente } from '@/lib/ipDoCliente';
 
 /**
  * Server-side rate limit check for login attempts.
@@ -12,7 +13,7 @@ export async function checkLoginRateLimit(
   cpf: string
 ): Promise<{ allowed: boolean; error?: string }> {
   const headersList = await headers();
-  const ip = headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const ip = ipDoCliente(headersList);
 
   // Rate limit by IP (broad protection)
   const ipCheck = await rateLimit(`login_ip:${ip}`, 10, 60_000);
