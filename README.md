@@ -197,10 +197,9 @@ localmente. A tradução e a remoção dos campos locais ficam num lugar só, em
   aplicativo. Para desenvolver, `npx expo run:android`.
 - **Não existe servidor próprio, e não vai existir.** O aplicativo e o painel
   falam direto com o PostgREST do Supabase, e quem decide quem lê o quê é o
-  RLS, dentro do banco. O repositório do time tem uma pasta
-  `ConectAgente-mobile/backend/` com um Express e Prisma que ficou para trás
-  nessa mudança; ela nunca esteve aqui e
-  nada a referencia. Trazê-la de volta significaria manter a regra de
+  RLS, dentro do banco. Uma versão anterior chegou a ter uma pasta
+  `ConectAgente-mobile/backend/` com Express e Prisma, que ficou para trás
+  nessa mudança; ela nunca esteve aqui e nada a referencia. Trazê-la de volta significaria manter a regra de
   autorização em dois lugares, e regra de autorização duplicada é a que fica
   desatualizada no lugar menos visível. Se um dia for preciso um servidor, ele
   entra para o que o RLS não resolve, não para repetir o que ele já faz.
@@ -260,13 +259,6 @@ Honestidade sobre o estado, que vale mais que uma lista de recursos:
   mesma conta sem segundo fator, então o banco ainda aceita sessão só com
   senha, dentro do RLS de cada papel. Exigir `aal2` no banco depende de levar
   o segundo fator para o aplicativo.
-- **A classificação de risco do time já está aqui**, portada do commit do Luan
-  em vez de fundida, porque a linha deles carrega junto 97 arquivos de
-  relatório de cobertura, logs de erro e telas substituídas.
-- **O histórico deste repositório não tem ancestral comum com o do time.**
-  Enquanto isso não for resolvido, melhoria daqui não chega lá por um
-  `git merge` normal: vai ter que ser por porte, como foi feito com a
-  classificação de risco, ou por uma decisão conjunta de refazer a base.
 
 ---
 

@@ -192,7 +192,7 @@ sense locally. Translation and removal of local fields live in one place,
   until someone remembers to open the app. To develop, `npx expo run:android`.
 - **There is no custom backend, and there will not be.** The app and the panel
   talk directly to Supabase's PostgREST, and who reads what is decided by RLS,
-  inside the database. The team repository has a
+  inside the database. An earlier version had a
   `ConectAgente-mobile/backend/` folder with Express and Prisma that was left
   behind in this change; it was never here and nothing references it. Bringing it
   back would mean keeping authorisation rules in two places, and duplicated
