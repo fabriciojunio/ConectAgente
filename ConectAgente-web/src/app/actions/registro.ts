@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { rateLimit } from '@/lib/rateLimit';
+import { ipDoCliente } from '@/lib/ipDoCliente';
 import { decidirSegundoFator } from '@/lib/segundoFator';
 import { z } from 'zod';
 import { registrarAcao } from '@/services/auditService';
@@ -47,12 +48,18 @@ export async function criarSolicitacao(formData: {
   senha: string;
 }): Promise<{ success: boolean; error?: string }> {
   try {
-    // Rate limit: 5 registration attempts per minute per IP
+    // Limite por IP e por CPF. Só por IP, quem troca de IP (proxy, VPN,
+    // proxy rotativo) repetia o cadastro sem parar; o CPF não muda.
     const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    const ip = ipDoCliente(headersList);
     const { allowed } = await rateLimit(`registro:${ip}`, 5, 60_000);
     if (!allowed) {
       return { success: false, error: 'Muitas tentativas. Aguarde um minuto antes de tentar novamente.' };
+    }
+    const cpfInformado = String(formData.cpf ?? '').replace(/\D/g, '');
+    const porCpf = await rateLimit(`registro_cpf:${cpfInformado}`, 3, 60 * 60_000);
+    if (!porCpf.allowed) {
+      return { success: false, error: 'Muitas tentativas para este CPF. Tente de novo mais tarde.' };
     }
 
     const parsed = registroSchema.safeParse(formData);

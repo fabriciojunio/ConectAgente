@@ -16,6 +16,7 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+import { fetchComPrazo } from './fetchComPrazo';
 
 const urlConfigurada = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 const chaveConfigurada = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
@@ -118,9 +119,11 @@ export const supabase = createClient(
   },
   global: {
     headers: {
-      'x-app-version': '1.0.0',
       'x-client': 'conectagente-mobile',
     },
+    // Sem prazo, uma conexão morta (tela apagada no meio do envio) deixava a
+    // sincronização pendurada para sempre. Ver lib/fetchComPrazo.ts.
+    fetch: fetchComPrazo,
   },
 });
 

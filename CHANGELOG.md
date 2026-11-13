@@ -36,6 +36,15 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
   de relatório sem rastro (agora auditada, e o arquivo leva aviso de sigilo).
 - `security.txt` público (RFC 9116).
 
+### Corrigido
+
+- **A sincronização ficava presa quando a tela apagava no meio do envio.**
+  Achado no S24: a conexão morreu sem resposta, o selo ficou em
+  "Sincronizando..." e nenhuma sincronização automática rodava mais até fechar
+  o app à força, com o registro do agente preso no aparelho. Agora cada
+  requisição tem prazo de 20 segundos, a sincronização inteira tem prazo de 3
+  minutos com aviso claro, e a trava é sempre liberada.
+
 ### Adicionado
 
 - **Áreas e equipes.** Catálogo de unidades (`migration_unidades.sql`). A

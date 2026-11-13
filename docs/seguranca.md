@@ -497,7 +497,8 @@ técnico (OWASP ASVS V7.4.1).
 
 A lista completa, por ameaça e com a prova de cada controle, está em
 [modelo-de-ameacas.md](modelo-de-ameacas.md); o mapa do OWASP MASVS em
-[masvs.md](masvs.md); e a auditoria LGPD com o relatório de impacto em
+[masvs.md](masvs.md); o do OWASP ASVS, para o painel e a API, em
+[asvs.md](asvs.md); e a auditoria LGPD com o relatório de impacto em
 [auditoria-lgpd.md](auditoria-lgpd.md).
 
 - **As fichas só fecham com a 1.2.2 instalada.** A migração recusa o upsert das
