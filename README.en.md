@@ -192,7 +192,7 @@ sense locally. Translation and removal of local fields live in one place,
   until someone remembers to open the app. To develop, `npx expo run:android`.
 - **There is no custom backend, and there will not be.** The app and the panel
   talk directly to Supabase's PostgREST, and who reads what is decided by RLS,
-  inside the database. The team repository has a
+  inside the database. An earlier version had a
   `ConectAgente-mobile/backend/` folder with Express and Prisma that was left
   behind in this change; it was never here and nothing references it. Bringing it
   back would mean keeping authorisation rules in two places, and duplicated
@@ -254,40 +254,6 @@ Honesty about the current state, which is worth more than a feature list:
 - **Two 1.2.5 migrations are applied by hand**
   (`migration_limite_de_tentativas.sql` and `migration_medicamentos.sql`). Until
   then the panel counts attempts in memory and medications stay on the device.
-
----
-
-## Credits
-
-ConectAgente is a team research project. Much of what is in this repository came
-from the October 2026 rewrite, which is my work, Fabrício Júnio Almeida Dias
-([@fabriciojunio](https://github.com/fabriciojunio)): the field app, the web panel,
-the database with its RLS policies, the test suites, the documentation and the
-APK packaging.
-
-Before that, contributions came from:
-
-- **Camila Pereira Raimundo** ([@CamilaRaimundo](https://github.com/CamilaRaimundo))
-  created the repository on 23/08/2025, with the login screen and the admin module.
-- **Luan** ([@LuanPaD](https://github.com/LuanPaD)) built the household risk
-  classification, on 18/06/2026.
-- **Kauã Limão Nunes** ([@Lim4o](https://github.com/Lim4o)) reviewed and
-  integrated that risk classification.
-
-The original history remains at
-[CamilaRaimundo/ConectAgente](https://github.com/CamilaRaimundo/ConectAgente).
-Its 20 commits came in here on 13/10/2026 as ancestors, through a merge with the
-`ours` strategy: authorship and dates belong to whoever made them, and no file of
-this code changed because of it. Credit is also written here and in
-`CITATION.cff`.
-
----
-
-## Use of AI
-
-This project was structured with the support of generative AI tools. Modelling,
-business rules, code review and conclusions were reviewed and validated by
-Fabrício Júnio.
 
 ---
 

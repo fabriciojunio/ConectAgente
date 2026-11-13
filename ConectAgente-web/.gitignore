@@ -37,3 +37,6 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# cache local da CLI do Supabase
+supabase/.temp/

@@ -11,6 +11,11 @@ updates:
     groups:
       menores-e-correcoes:
         update-types: ["minor", "patch"]
+      # Versão maior (Expo, Next, React Native, Tailwind) muda API e entra como
+      # migração planejada, testada no aparelho. Agrupada para virar um PR só,
+      # não um por pacote. Correção de segurança continua vindo à parte.
+      maiores:
+        update-types: ["major"]
     cooldown:
       default-days: 7
     commit-message:
@@ -24,6 +29,11 @@ updates:
     groups:
       menores-e-correcoes:
         update-types: ["minor", "patch"]
+      # Versão maior (Expo, Next, React Native, Tailwind) muda API e entra como
+      # migração planejada, testada no aparelho. Agrupada para virar um PR só,
+      # não um por pacote. Correção de segurança continua vindo à parte.
+      maiores:
+        update-types: ["major"]
     cooldown:
       default-days: 7
     commit-message:
