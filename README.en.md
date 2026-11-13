@@ -257,40 +257,6 @@ Honesty about the current state, which is worth more than a feature list:
 
 ---
 
-## Credits
-
-ConectAgente is a team research project. Much of what is in this repository came
-from the October 2026 rewrite, which is my work, Fabrício Júnio Almeida Dias
-([@fabriciojunio](https://github.com/fabriciojunio)): the field app, the web panel,
-the database with its RLS policies, the test suites, the documentation and the
-APK packaging.
-
-Before that, contributions came from:
-
-- **Camila Pereira Raimundo** ([@CamilaRaimundo](https://github.com/CamilaRaimundo))
-  created the repository on 23/08/2025, with the login screen and the admin module.
-- **Luan** ([@LuanPaD](https://github.com/LuanPaD)) built the household risk
-  classification, on 18/06/2026.
-- **Kauã Limão Nunes** ([@Lim4o](https://github.com/Lim4o)) reviewed and
-  integrated that risk classification.
-
-The original history remains at
-[CamilaRaimundo/ConectAgente](https://github.com/CamilaRaimundo/ConectAgente).
-Its 20 commits came in here on 13/10/2026 as ancestors, through a merge with the
-`ours` strategy: authorship and dates belong to whoever made them, and no file of
-this code changed because of it. Credit is also written here and in
-`CITATION.cff`.
-
----
-
-## Use of AI
-
-This project was structured with the support of generative AI tools. Modelling,
-business rules, code review and conclusions were reviewed and validated by
-Fabrício Júnio.
-
----
-
 ## Licence and use
 
 Academic research project. Use with real citizens' data depends on authorisation

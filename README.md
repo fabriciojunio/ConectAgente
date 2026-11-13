@@ -270,40 +270,6 @@ Honestidade sobre o estado, que vale mais que uma lista de recursos:
 
 ---
 
-## Quem fez
-
-O ConectAgente é um projeto de iniciação científica, feito em equipe. Grande
-parte do que está neste repositório veio da reescrita de outubro de 2026, que é
-trabalho meu, Fabrício Júnio Almeida Dias
-([@fabriciojunio](https://github.com/fabriciojunio)): o aplicativo de campo, o
-painel web, o banco com as policies de RLS, as suítes de teste, a documentação
-e o empacotamento do APK.
-
-Antes dela, contribuíram:
-
-- **Camila Pereira Raimundo** ([@CamilaRaimundo](https://github.com/CamilaRaimundo))
-  criou o repositório em 23/08/2025, com a tela de login e o módulo admin.
-- **Luan** ([@LuanPaD](https://github.com/LuanPaD)) fez a classificação de risco
-  das residências, em 18/06/2026.
-- **Kauã Limão Nunes** ([@Lim4o](https://github.com/Lim4o)) revisou e integrou
-  essa classificação de risco.
-
-O histórico original continua em
-[CamilaRaimundo/ConectAgente](https://github.com/CamilaRaimundo/ConectAgente).
-Os 20 commits de lá entraram aqui em 13/10/2026 como ancestrais, por um merge
-com estratégia `ours`: a autoria e as datas são de quem os fez, e nenhum
-arquivo deste código mudou com isso. O crédito também fica por escrito aqui e
-no `CITATION.cff`.
-
----
-
-## Uso de IA
-
-Este projeto foi estruturado com apoio de ferramentas de IA generativa. Modelagem, regras de
-negócio, revisão do código e conclusões foram revisadas e validadas por Fabrício Júnio.
-
----
-
 ## Licença e uso
 
 Projeto acadêmico de iniciação científica. O uso com dado real de munícipe
