@@ -1,0 +1,30 @@
+# Achados conferidos um a um: JWT de exemplo, sem assinatura, e chave fixa de teste.
+# A exceção é por commit, arquivo e linha, então um segredo novo continua barrado.
+01855b3f7dff59b84371c6e137840908b20125f5:README.md:generic-api-key:1052
+01855b3f7dff59b84371c6e137840908b20125f5:README.md:generic-api-key:1053
+29718ae32b365ee50ee81728841191574d55db47:docs/manual-tecnico.md:generic-api-key:1092
+29718ae32b365ee50ee81728841191574d55db47:docs/manual-tecnico.md:generic-api-key:1093
+29718ae32b365ee50ee81728841191574d55db47:docs/manual-tecnico.md:generic-api-key:917
+3bf091ec83a5bcbe12525f0d039633ae41fb4aa5:README.md:generic-api-key:888
+3c65ab7f4838cef24e79e41e4054400999c447fc:README.md:generic-api-key:888
+4f32471935f8b27da8b85cee10e597575cb8eb85:ConectAgente-web/src/lib/__tests__/env.test.ts:generic-api-key:67
+4fb0970693637c0d52ce1e5744c828fdb4b85e18:ConectAgente-web/src/lib/__tests__/env.test.ts:generic-api-key:67
+5247bfcb9402f6cdff2791ebb218be091a12ce69:README.md:generic-api-key:394
+61cde91b7acdb0efbe1029140ac019a2afd702c6:docs/manual-tecnico.md:generic-api-key:1092
+61cde91b7acdb0efbe1029140ac019a2afd702c6:docs/manual-tecnico.md:generic-api-key:1093
+61cde91b7acdb0efbe1029140ac019a2afd702c6:docs/manual-tecnico.md:generic-api-key:917
+768b5cdbecbdbb31dfb0f1248885eac117e5ea3a:ConectAgent/.env.example:generic-api-key:15
+768b5cdbecbdbb31dfb0f1248885eac117e5ea3a:ConectAgent/README.md:generic-api-key:349
+768b5cdbecbdbb31dfb0f1248885eac117e5ea3a:ConectAgent/src/utils/__tests__/encryption.test.ts:generic-api-key:39
+801654ab6fffd2a2fbb9285428a818543d47f657:ConectAgent/.env.example:generic-api-key:15
+801654ab6fffd2a2fbb9285428a818543d47f657:ConectAgent/README.md:generic-api-key:349
+801654ab6fffd2a2fbb9285428a818543d47f657:ConectAgent/src/utils/__tests__/encryption.test.ts:generic-api-key:39
+c5f3cea7ba676154fe8cb0fbe2a7b1ead2ac8516:README.md:generic-api-key:1052
+c5f3cea7ba676154fe8cb0fbe2a7b1ead2ac8516:README.md:generic-api-key:1053
+f220912c2445b5794e79a8ee99a33e12827ebace:README.md:generic-api-key:394
+ff2bcebd369c93f0f7c77780ec52fa809ffe54cf:ConectAgente-mobile/.env.example:generic-api-key:15
+ff2bcebd369c93f0f7c77780ec52fa809ffe54cf:ConectAgente-mobile/README.md:generic-api-key:394
+ff2bcebd369c93f0f7c77780ec52fa809ffe54cf:ConectAgente-mobile/src/utils/__tests__/encryption.test.ts:generic-api-key:39
+ff2bcebd369c93f0f7c77780ec52fa809ffe54cf:README.md:generic-api-key:1052
+ff2bcebd369c93f0f7c77780ec52fa809ffe54cf:README.md:generic-api-key:1053
+ff2bcebd369c93f0f7c77780ec52fa809ffe54cf:README.md:generic-api-key:889
