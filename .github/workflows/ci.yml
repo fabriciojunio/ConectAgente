@@ -91,7 +91,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: ConectAgente-web/package-lock.json
 
@@ -168,7 +168,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 20
+          node-version: 24
 
       # O que vai para producao tem que ficar em zero. A cadeia de
       # desenvolvimento nao entra: braces, sprintf-js e node-forge nao tem
