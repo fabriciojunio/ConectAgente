@@ -11,15 +11,15 @@ updates:
     groups:
       menores-e-correcoes:
         update-types: ["minor", "patch"]
-      # Versão maior (Expo, Next, React Native, Tailwind) muda API e entra como
-      # migração planejada, testada no aparelho. Agrupada para virar um PR só,
-      # não um por pacote. Correção de segurança continua vindo à parte.
-      maiores:
-        update-types: ["major"]
     cooldown:
       default-days: 7
     commit-message:
       prefix: "build(deps)"
+    ignore:
+      # Versão principal muda API e entra como migração planejada e testada. Correção de
+      # segurança não passa por aqui e continua vindo.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: "npm"
     directory: "/ConectAgente-mobile"
     schedule:
@@ -29,15 +29,36 @@ updates:
     groups:
       menores-e-correcoes:
         update-types: ["minor", "patch"]
-      # Versão maior (Expo, Next, React Native, Tailwind) muda API e entra como
-      # migração planejada, testada no aparelho. Agrupada para virar um PR só,
-      # não um por pacote. Correção de segurança continua vindo à parte.
-      maiores:
-        update-types: ["major"]
     cooldown:
       default-days: 7
     commit-message:
       prefix: "build(deps)"
+    ignore:
+      # Versão principal muda API e entra como migração planejada e testada. Correção de
+      # segurança não passa por aqui e continua vindo.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+      # O SDK do Expo fixa estas versões: sobem juntas, com `npx expo install --fix`.
+      - dependency-name: "expo"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "expo-*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "@expo/*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "jest-expo"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "react-native"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "react-native-*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "@react-native/*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "@react-native-*/*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
